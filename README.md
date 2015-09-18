@@ -1,6 +1,9 @@
-############################### 		PowerTools 		        ###############################
-###############################   Mathematical Optimisation for Power Systems   ###############################
-###############################   Created by Hassan Hijazi on 18 September 2015 ###############################
+PowerTools
+=======
+
+Mathematical Optimisation for Power Systems
+-----------
+###   Created by Hassan Hijazi on 18 September 2015
 *** Contributors **
 Hassan Hijazi ANU/Data61
 Ksenija Bestuzheva ANU/Data61
