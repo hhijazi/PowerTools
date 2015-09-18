@@ -49,8 +49,11 @@ To do so, follow these steps:
 
 Close Xcode.
 
+Edit the file utils/GCC\ 4.9.xcplugin/Contents/Resources/GCC\ 4.9.xcspec
+Look for the string "ExecPath" and update the path to your gcc-4.9. (by default this is pointing to "/opt/local/bin/gcc"
+
 Enter:
->\> cp utils/GCC\ 4.9.xcplugin /Applications/Xcode.app/Contents/Plugins/Xcode3Core.ideplugin/Contents/SharedSupport/Developer/Library/Xcode/Plug-ins/
+>\> sudo cp -r utils/GCC\ 4.9.xcplugin /Applications/Xcode.app/Contents/Plugins/Xcode3Core.ideplugin/Contents/SharedSupport/Developer/Library/Xcode/Plug-ins/
 
 >\> mkdir build
 

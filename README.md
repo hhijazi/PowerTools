@@ -6,7 +6,7 @@ Mathematical Optimisation for Power Systems
 Created by Hassan Hijazi on 18 September 2015
 
 ### ** Contributors **
-Hassan Hijazi ANU/Data61 | hassan.hijazi@anu.ed.au
+Hassan Hijazi ANU/Data61 | hassan.hijazi@anu.edu.au
 
 Ksenija Bestuzheva ANU/Data61
 
