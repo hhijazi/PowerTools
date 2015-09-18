@@ -40,7 +40,7 @@
         "com.apple.compilers.gcc.headers.4_2",
     );
     "BuiltinJambaseRuleName" = ProcessC;
-    ExecPath = "/usr/local/bin/gcc-4.9";
+    ExecPath = "/opt/local/bin/gcc";
     CommandOutputParser = "XCGccCommandOutputParser";
     PrecompStyle = pch;
     SupportsHeadermaps = Yes;
