@@ -3,9 +3,11 @@ PowerTools
 
 Mathematical Optimisation for Power Systems
 -----------
-###   Created by Hassan Hijazi on 18 September 2015
-*** Contributors **
+Created by Hassan Hijazi on 18 September 2015
+
+### ** Contributors **
 Hassan Hijazi ANU/Data61
+
 Ksenija Bestuzheva ANU/Data61
 
 See INSTALL.md for instructions on compiling PowerTools
