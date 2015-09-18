@@ -28,10 +28,15 @@ If you have brew installed, follow these steps:
 If you have macports installed, follow these steps:
 
 >\> sudo ports install gcc49
+
 >\> sudo port select --set gcc mp-gcc49
+
 >\> mkdir build
+
 >\> cd build
+
 >\> CC=gcc cmake ..
+
 >\> make
 
 ### NOTE ON XCODE
