@@ -12,6 +12,7 @@ Ksenija Bestuzheva ANU/Data61
 
 *****************************
 See INSTALL.md for instructions on compiling PowerTools
+
 After running make, the PowerTools executable can be found under bin/
 
 To run PowerTools, enter: ../bin/PowerTools filename ACPOL/ACRECT/SOCP/DC/OTS/SOCP_OTS ipopt/gurobi
