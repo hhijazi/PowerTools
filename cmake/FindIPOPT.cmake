@@ -1,8 +1,5 @@
 ##set(IPOPT_ROOT_DIR "$ENV{IPOPT_ROOT_DIR}" CACHE PATH "IPOPT root directory.")
-#set(IPOPT_ROOT_DIR "/state/partition1/clustershare/ORG/Ipopt-3.12.2" CACHE PATH "IPOPT root directory.")
 #set(IPOPT_ROOT_DIR "/usr/local" CACHE PATH "IPOPT root directory.")
-#set(IPOPT_ROOT_DIR "/Users/HH/Utils/CoinIpopt/build" CACHE PATH "IPOPT root directory.")
-set(IPOPT_ROOT_DIR "/Users/HH/Utils/OpenIpopt/build" CACHE PATH "IPOPT root directory.")
 message("Looking for Ipopt in ${IPOPT_ROOT_DIR}")
 
 #string(REGEX MATCH "[0-9]+" IPOPT_VERSION "${IPOPT_ROOT_DIR}")
