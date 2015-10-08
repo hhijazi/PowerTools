@@ -35,7 +35,7 @@ If you have macports installed, follow these steps:
 
 >\> cd build
 
->\> CC=gcc cmake ..
+>\> CC=gcc CXX=g++ cmake ..
 
 >\> make
 
@@ -59,7 +59,7 @@ Enter:
 
 >\> cd build
 
->\> CC=gcc-4.9 cmake -G Xcode ..
+>\> CC=gcc-4.9 CXX=g++ cmake -G Xcode ..
 
 Open the Xcode project found under ../build
 
@@ -76,7 +76,7 @@ Remove the -Wmost -Wno-four-char-constants and -Wno-unknown-pragmas flags as the
 
 >\> cd build
 
->\> CC=gcc-4.9 cmake ..
+>\> CC=gcc-4.9 CXX=g++4.9 cmake ..
 
 >\> make
 
