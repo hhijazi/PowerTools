@@ -21,7 +21,7 @@ If you have brew installed, follow these steps:
 
 >\> cd build
 
->\> CC=gcc-4.9 cmake ..
+>\> CC=gcc-4.9 CXX=g++-4.9 cmake ..
 
 >\> make
 
@@ -59,7 +59,7 @@ Enter:
 
 >\> cd build
 
->\> CC=gcc-4.9 CXX=g++ cmake -G Xcode ..
+>\> CC=gcc-4.9 CXX=g++-4.9 cmake -G Xcode ..
 
 Open the Xcode project found under ../build
 
