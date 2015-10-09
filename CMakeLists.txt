@@ -9,7 +9,7 @@ find_package(GUROBI REQUIRED)
 find_package(IPOPT REQUIRED)
 
 # Include gurobi and ipopt headers and libraries
-include_directories(${GUROBI_INCLUDE_DIRS} ${IPOPT_INCLUDE_DIRS})
+include_directories(${GUROBI_INCLUDE_DIRS} ${IPOPT_INCLUDE_DIRS}/..)
 set(LIBS ${LIBS} ${GUROBI_LIBRARIES} ${IPOPT_LIBRARIES})
 
 # Compiler options
