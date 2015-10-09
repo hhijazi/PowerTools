@@ -330,14 +330,11 @@ Quadratic& Quadratic::operator*=(double cst){
     if (cst==1) {
         return *this;
     }
-    
-    double coeff = 0;
     int vid = 0, vjd = 0;
     // Linear part
     for(auto& it:_coefs)
     {
         vid = it.first;
-        coeff= it.second;
         this->_coefs[vid]*=cst;
     }
     // Quadratic part
@@ -645,8 +642,12 @@ Quadratic operator-(Quadratic q, var_& v){
     return q-=v;
 };
 
-Quadratic operator*(Quadratic q, var_& v){
-    return q*=v;
+Function operator*(Quadratic q, var_& v){
+    if (!q.is_quadratic()) {
+        return Function(q*=v);
+    }
+    else
+        return Function(v) * Function(q);
 };
 
 Function operator/(Quadratic q, var_& v){
@@ -675,8 +676,13 @@ Quadratic operator-(var_& v, Quadratic q){
     return (-1*q + v);
 };
 
-Quadratic operator*(var_& v, Quadratic q){
-    return q*=v;
+Function operator*(var_& v, Quadratic q){
+    if (!q.is_quadratic()) {
+        return Function(q*=v);
+    }
+    else
+        return Function(v) * Function(q);
+
 };
 
 Function operator/(var_& v, Quadratic q){
@@ -727,13 +733,23 @@ Quadratic operator-(Quadratic q1, const Quadratic& q2){
     return q1-=q2;
 };
 
-Quadratic operator*(Quadratic q1, const Quadratic& q2){
-    return q1*=q2;
+Function operator*(Quadratic q1, const Quadratic& q2){
+    if (!q1.is_quadratic() && !q2.is_quadratic()) {
+        return Function(q1*=q2);
+    }
+    else
+        return Function(q1) * Function(q2);
+};
+
+
+Function sqrt(const Quadratic& q){
+    return sqrt(Function(q));
 };
 
 Function cos(const Quadratic& q){
     return cos(Function(q));
 };
+
 
 Function sin(const Quadratic& q){
     return sin(Function(q));
@@ -803,7 +819,8 @@ Quadratic Quadratic::concretise(){
                 }
                 else {
                     m_vj = (meta_var*)(vj);
-                    q+= coeff*(*m_vi->var)*(*m_vj->var);
+                    q+= (*m_vi->var)*(*m_vj->var);
+                    q*= coeff;
                 }
             }
             

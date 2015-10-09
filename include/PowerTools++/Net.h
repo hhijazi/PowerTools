@@ -24,6 +24,9 @@ public:
     
 
     double bMVA;
+    
+    string _name;
+    
     /** Set of nodes */
     std::vector<Node*> nodes;
     
@@ -44,6 +47,15 @@ public:
     
     /** Horton subnetwork */
     Net* horton_net;
+
+    /** Clone network */
+    Net* _clone;
+    
+    /** Tree decomposition bags */
+    std::vector<std::vector<Node*>*>* _bags;
+
+    /** Compute the tree decomposition bags **/
+    void get_tree_decomp_bags();
     
     double m_theta_ub;
     double m_theta_lb;
@@ -81,9 +93,12 @@ public:
      */
     std::string remove_end_node();
     
-    void add_arc(Arc* a);
+    bool add_arc(Arc* a);
     
-    std::vector<Arc*>::iterator remove_arc(Arc* a);
+    /** Returns true if the cycle in the bag is rotated in one direction only */
+    bool rotation_bag(vector<Node*>* b);
+    
+    void remove_arc(Arc* a);
 
     /** Sort nodes in decreasing degree */
     void orderNodes(Net* net);
@@ -135,8 +150,17 @@ public:
     int self_loops(std::ofstream &myfile, Arc* arc, int cycle_index);
     
     /** returns the arc formed by node ids n1 and n2 */
-    Arc* arc(int n1, int n2);
+    Arc* get_arc(Node* n1, Node* n2);
+
+    /** returns the arc formed by node ids n1 and n2 */
+    Arc* get_arc(int n1, int n2);
+
     
+    /** returns true if the arc formed by node ids n1 and n2 exists */
+    bool has_arc(int n1, int n2);
+
+    bool has_directed_arc(Node* n1, Node* n2);
+
     /** writes path p on myfile */
     void write(std::ofstream &myfile, Path* p, int cycle_index);
     

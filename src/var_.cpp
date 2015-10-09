@@ -131,7 +131,7 @@ Quadratic operator+(double cst, var_& v){
 };
 
 Quadratic operator-(double cst, var_& v){
-    return Quadratic(v)-=cst;
+    return -1*v+cst;
 };
 
 Quadratic operator*(double cst, var_& v){
@@ -159,6 +159,10 @@ Quadratic operator*(var_& v1, var_& v2){
 
 Function operator/(var_& v1, var_& v2){
     return Function(v1)/=v2;
+};
+
+Function sin(var_& v){
+    return sin(Function(v));
 };
 
 

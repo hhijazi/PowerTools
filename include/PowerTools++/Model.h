@@ -41,6 +41,7 @@ public:
     map<int, var_*>                 _meta_vars; /**< Sorted map (increasing index) pointing to all meta-variables contained in this model */
     map<std::string, int>           _hess_index; /**< Mapping variables to hessian index */
     Function*                       _obj; /** Objective function */
+    double                          _opt;
     ObjectiveType                   _objt; /** Minimize or maximize */
     /** Constructor */
     //@{
@@ -82,6 +83,11 @@ public:
     void delVar(var_* v);
     void addConstraint(Constraint c);
     void addConstraint(Constraint* c);
+    void on_off(Constraint c, var<bool>& on);
+    void on_off(var<>& v, var<bool>& on);
+    void add_on_off_McCormick(std::string name, var<>& v, var<>& v1, var<>& v2, var<bool>& on);
+    void add_McCormick(std::string name, var<>& v, var<>& v1, var<>& v2);
+
     int has_function(shared_ptr<Function> f);
     void init_functions(int size);
     void add_functions(shared_ptr<Function> f);

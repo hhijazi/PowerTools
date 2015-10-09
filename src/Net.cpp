@@ -28,7 +28,9 @@ using namespace std;
 
 Net::Net(){
     bMVA=0;
-    horton_net = NULL;
+    horton_net = nullptr;
+    _clone = nullptr;
+    _bags = nullptr;
 }
 
 void Net::add_node(Node* node){
@@ -39,27 +41,64 @@ void Net::add_node(Node* node){
     nodes.push_back(node);
 }
 
-void Net::add_arc(Arc* a){
-    string key;
+/** Returns true if the cycle in the bag is rotated in one direction only */
+bool Net::rotation_bag(vector<Node*>* bag){
+    assert(bag->size()==3);
+    Node* n1 = bag->at(0);
+    Node* n2 = bag->at(1);
+    Node* n3 = bag->at(2);
+    if (_clone->has_directed_arc(n1, n2) &&  _clone->has_directed_arc(n1,n3)){
+        return false;
+    }
+    if (_clone->has_directed_arc(n2, n1) &&  _clone->has_directed_arc(n2,n3)){
+        return false;
+    }
+    if (_clone->has_directed_arc(n3, n1) &&  _clone->has_directed_arc(n3,n2)){
+        return false;
+    }
+    
+    return true;
+}
+
+
+bool Net::add_arc(Arc* a){
+    bool parallel =false;
     set<Arc*>* s = NULL;
+    string src, dest, key, inv_key;
+    src = a->src->_name;
+    dest = a->dest->_name;
     key.clear();
-    string src = a->src->_name;
-    string dest = a->dest->_name;
+    inv_key.clear();
     key.append(src);
+    inv_key.append(dest);
     key.append(",");
+    inv_key.append(",");
     key.append(dest);
-    if(lineID.find(key)==lineID.end()){
+    inv_key.append(src);
+    if(lineID.find(key)==lineID.end() && lineID.find(inv_key)==lineID.end()){
         s = new set<Arc*>;
         s->insert(a);
         lineID.insert(pair<string, set<Arc*>*>(key,s));
     }
     else {
-        s = lineID[key];
+        if(lineID.find(key)!=lineID.end())
+            s = lineID[key];
+        if(lineID.find(inv_key)!=lineID.end())
+            s = lineID[inv_key];
         s->insert(a);
-        cout << "WARNING: adding another line between same nodes!\n";
+//        cout << "\nWARNING: adding another line between same nodes!\n";
+        a->parallel = true;
+        parallel = true;
         
     }
     arcs.push_back(a);
+    return parallel;
+}
+
+void Net::remove_arc(Arc* a){
+//    arcs.erase(arcs.at(a->id));
+    arcs[a->id] = nullptr;
+    lineID.erase(a->src->_name+","+a->dest->_name);
 }
 
 /* Destructors */
@@ -73,6 +112,7 @@ Net::~Net(){
     }
     if(!arcs.empty()){
         for (vector<Arc*>::iterator it = arcs.begin(); it != arcs.end(); it++){
+            if(*it)
                 delete (*it);
         }
         arcs.clear();
@@ -94,11 +134,84 @@ Net::~Net(){
     }
     if (horton_net!=NULL)
         delete horton_net;
+    if (_clone) {
+        delete _clone;
+    }
+    if (_bags) {
+        for(auto b:*_bags){
+            delete b;
+        }
+        delete _bags;
+    }
 }
+
+const bool node_compare(const Node* n1, const Node* n2) {
+    return n1->fill_in > n2->fill_in;
+}
+
+/* return true if there is an arc (n1,n2) */
+bool Net::has_directed_arc(Node* n1, Node* n2){
+    Arc* a = get_arc(n1, n2);
+        if (n1->ID == a->src->ID && n2->ID==a->dest->ID) {
+            return true;
+        }
+    return false;
+}
+
+
+void Net::get_tree_decomp_bags(){
+    _bags = new vector<vector<Node*>*>();
+    vector<Node*>* bag = nullptr;
+    Node* n = nullptr;
+    Node* u = nullptr;
+    Node* nn = nullptr;
+    Arc* arc = nullptr;
+    int id = 0;
+    int nb3 = 0;
+    while (_clone->nodes.size()>2) {
+        sort(_clone->nodes.begin(), _clone->nodes.end(), node_compare);
+        n = _clone->nodes.back();
+        bag = new vector<Node*>();
+//        cout << "new bag = { ";
+        for (auto a: n->branches) {
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+//            cout << nn->_name << ", ";
+        }
+        _clone->remove_end_node();
+        for (int i = 0; i<bag->size(); i++) {
+            u = bag->at(i);
+            for (int j = i+1; j<bag->size(); j++) {
+                nn = bag->at(j);
+                if (u->is_connected(nn)) {
+                    continue;
+                }
+                id = (int)_clone->arcs.size() + 1;
+                //arc = new Arc(u->_name+nn->_name);
+                arc = new Arc(to_string(id));
+                arc->id = id;
+                arc->src = u;
+                arc->dest = nn;
+                arc->tbound.min = -1.4999;
+                arc->tbound.max = 1.4999;
+                arc->connect();
+                _clone->add_arc(arc);
+            }
+        }
+        bag->push_back(n);
+//        cout << n->_name << "}\n";
+        _bags->push_back(bag);
+        if (bag->size()==3) {
+            nb3++;
+        }
+    }
+//    cout << "\nNumber of 3D bags = " << nb3 << endl;
+}
+
 
 /* returns true if an arc is already present between the given nodes */
 bool Net::duplicate(int n1, int n2, int id1){
-    int id2 = arc(n1, n2)->id;
+    int id2 = get_arc(n1, n2)->id;
     if (id2 < id1)
         return true;
     else return false;
@@ -148,13 +261,17 @@ void Net::combine(Node* src, Path* p){
  */
 string Net::remove_end_node(){
     Node* n = nodes.back();
+    Node * nn = nullptr;
     string n_id = n->_name;
-    Arc* a = NULL;
-    vector<Arc*>::iterator it = n->branches.begin();
-    while (it != n->branches.end()) {
-        a = (*it);
-        a->neighbour(n)->removeArc(a);
-        it = n->removeFirstArc();
+    for (auto a: n->branches) {
+        nn = a->neighbour(n);
+        nn->removeArc(a);
+        for (auto aa: nn->branches){
+            if (!aa->neighbour(nn)->is_connected(n)) {
+                nn->fill_in--;
+                assert(nn->fill_in >=0);
+            }
+        }
     }
     nodes.pop_back();
     return n_id;
@@ -186,9 +303,42 @@ void Net::reset_nodeExplored(){
     }
 }
 
+/* returns the arc formed by node ids n1 and n2 */
+Arc* Net::get_arc(Node* n1, Node* n2){
+    string src, dest, key, inv_key;
+    src = n1->_name;
+    dest = n2->_name;
+    key.clear();
+    inv_key.clear();
+    key.append(src);
+    inv_key.append(dest);
+    key.append(",");
+    inv_key.append(",");
+    key.append(dest);
+    inv_key.append(src);
+    map<string, set<Arc*>*>::iterator it= lineID.find(key);
+    if (it != lineID.end()) {
+        for (auto a: *it->second){
+            if (!a->parallel) {
+                return a;
+            }
+        }
+    }
+    it = lineID.find(inv_key);
+    if (it != lineID.end()) {
+        for (auto a: *it->second){
+            if (!a->parallel) {
+                return a;
+            }
+        }
+    }
+    return nullptr;
+}
+
+
 
 /* returns the Id of the arc formed by node ids n1 and n2 */
-Arc* Net::arc(int n1, int n2){
+Arc* Net::get_arc(int n1, int n2){
     string src, dest, key, inv_key;
     src = to_string(n1);
     dest = to_string(n2);
@@ -202,14 +352,47 @@ Arc* Net::arc(int n1, int n2){
     inv_key.append(src);
     map<string, set<Arc*>*>::iterator it= lineID.find(key);
     if (it != lineID.end()) {
-        return *(it->second->begin());
+        for (auto a: *it->second){
+            if (!a->parallel) {
+                return a;
+            }
+        }
     }
     it = lineID.find(inv_key);
     if (it != lineID.end()) {
-        return *(it->second->begin());
+        for (auto a: *it->second){
+            if (!a->parallel) {
+                return a;
+            }
+        }
     }
     return nullptr;
 }
+
+
+bool Net::has_arc(int n1, int n2){
+    string src, dest, key, inv_key;
+    src = to_string(n1);
+    dest = to_string(n2);
+    key.clear();
+    inv_key.clear();
+    key.append(src);
+    inv_key.append(dest);
+    key.append(",");
+    inv_key.append(",");
+    key.append(dest);
+    inv_key.append(src);
+    map<string, set<Arc*>*>::iterator it= lineID.find(key);
+    if (it != lineID.end()) {
+        return true;
+    }
+    it = lineID.find(inv_key);
+    if (it != lineID.end()) {
+        return true;
+    }
+    return false;
+}
+
 
 /* finds arc paralel to the given arc and prints the self loop */
 int Net::self_loops(ofstream &myfile, Arc* arc, int cycle_index){
@@ -248,7 +431,7 @@ void Net::write(ofstream &myfile, Path* p, int cycle_index){
     n++;
     (*n)->cycle = true;
     dest = (*n)->ID;
-    id = arc(src, dest)->id;
+    id = get_arc(src, dest)->id;
     arcs[id-1]->in_cycle = true;
     myfile << "set cycle[" << cycle_index+1 << "] :=\n(" << id << ", " << src << ", " ;
     n++;
@@ -256,7 +439,7 @@ void Net::write(ofstream &myfile, Path* p, int cycle_index){
         (*n)->cycle = true;
         src = dest;
         dest = (*n)->ID;
-        id = arc(src, dest)->id;
+        id = get_arc(src, dest)->id;
         arcs[id-1]->in_cycle = true;
         myfile << src << ")\n(" << id << ", " << src << ", " ;
         n++;
@@ -537,7 +720,7 @@ double Net::compute_constant(Path* cycle){
         loadp = (*it1)->pl()/bMVA;
         loadq = (*it1)->ql()/bMVA;
         ID2 = (*it1)->ID;
-        Arc* line = arc(ID1,ID2);
+        Arc* line = get_arc(ID1,ID2);
         ID1 = ID2;
         t1i = line->x + t1i;
         t1r = line->r + t1r;
@@ -548,7 +731,7 @@ double Net::compute_constant(Path* cycle){
             list<Node*>::iterator it2 = find(cycle->nodes.begin(), cycle->nodes.end(), (*it1));
             for (++it2; it2 != cycle->nodes.end();it2++){
                 id2 = (*it2)->ID;
-                line = arc(id1, id2);
+                line = get_arc(id1, id2);
                 id1 = id2;
                 t2i = line->x + t2i;
                 t2r = line->r + t2r;
@@ -588,11 +771,11 @@ void Net::addConstraint(int c, Path* cycle){
     cy ++;
     int genID = cycle->nodes.front()->ID;
     int next = (*cy)->ID;
-    int gen_next_ID = arc(genID, next)->id;
+    int gen_next_ID = get_arc(genID, next)->id;
     cy = cycle->nodes.end();
     ----cy;
     int prev = (*cy)->ID;
-    int gen_prev_ID = arc(genID, prev)->id;
+    int gen_prev_ID = get_arc(genID, prev)->id;
     New.cycle_index = c;
     New.arr[0] = genID, New.arr[1] = gen_next_ID, New.arr[2] = next, New.arr[3] = gen_prev_ID, New.arr[4] = prev;
     New.cnst = compute_constant(cycle);
@@ -812,7 +995,16 @@ int Net::readFile(string fname){
         cout << "Could not open file\n";
         return -1;
     }
+    _clone = new Net();
     string word;
+    while (word.compare("function")){
+        file >> word;
+    }
+    file.ignore(6);
+    file >> word;
+//    getline(file, word);
+    _name = word;
+//    cout << _name << endl;
     while (word.compare("mpc.baseMVA")){
         file >> word;
     }
@@ -827,6 +1019,7 @@ int Net::readFile(string fname){
     }
     getline(file, word);
     Node* node = NULL;
+    Node* node_clone = NULL;
     file >> word;
     while(word.compare("];")){
         name = word.c_str();
@@ -848,8 +1041,10 @@ int Net::readFile(string fname){
         getline(file, word,';');
         vmin = atof(word.c_str());
         node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
+        node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
         node->vs = vs;
         add_node(node);
+        _clone->add_node(node_clone);
 //        node->print();
         file >> word;
     }
@@ -882,7 +1077,7 @@ int Net::readFile(string fname){
         getline(file, word,'\n');
         if(status==1){
             node->_has_gen = true;
-            Gen* g = new Gen(node, to_string(gens.size()), pmin, pmax, qmin, qmax);
+            Gen* g = new Gen(node, to_string(node->_gen.size()), pmin, pmax, qmin, qmax);
             g->ps = ps;
             g->qs = qs;
             gens.push_back(g);
@@ -921,16 +1116,23 @@ int Net::readFile(string fname){
     getline(file, word);
     double res = 0;
     Arc* arc = NULL;
+    Arc* arc_clone = NULL;
     string src, dest;
     file >> word;
     while(word.compare("];")){
         src = word;
         file >> dest;
         id = (int)arcs.size() + 1;
+        //arc = new Arc(src+dest);
+        //arc_clone = new Arc(src+dest);
         arc = new Arc(to_string(id));
+        arc_clone = new Arc(to_string(id));
         arc->id = id;
+        arc_clone->id = id;
         arc->src = get_node(src);
         arc->dest= get_node(dest);
+        arc_clone->src = _clone->get_node(src);
+        arc_clone->dest = _clone->get_node(dest);
         file >> word;
         arc->r = atof(word.c_str());
         file >> word;
@@ -958,27 +1160,39 @@ int Net::readFile(string fname){
         arc->cc = arc->tr*cos(arc->as);
         arc->dd = arc->tr*sin(arc->as);
         arc->status = atof(word.c_str());
+        arc_clone->status = arc->status;
         file >> word;
         arc->tbound.min = atof(word.c_str())*M_PI/180;
+        arc_clone->tbound.min = arc->tbound.min;
         m_theta_lb += arc->tbound.min;
         file >> word;
         arc->tbound.max = atof(word.c_str())*M_PI/180;
+        arc_clone->tbound.max = arc->tbound.max;
         m_theta_ub += arc->tbound.max;
         if(arc->status==1){
             arc->connect();
-            add_arc(arc);
+            if(!add_arc(arc)){// not a parallel line
+                arc_clone->connect();
+                _clone->add_arc(arc_clone);
+            }
+            else {
+                delete arc_clone;
+            }
         }
         else {
+            delete arc_clone;
             delete arc;
         }
 //        arc->print();
         getline(file, word,'\n');
         file >> word;
     }
-    
-    
-
     file.close();
+    for (auto n:nodes) {
+//        n->print();
+//        cout << "node" << n->ID << ": fill_in = " << n->fill_in << endl;
+    }
+    get_tree_decomp_bags();
     return 0;
 }
 

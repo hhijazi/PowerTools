@@ -334,7 +334,7 @@ void Function::set_dfdx(int vid, shared_ptr<Function> f){
 
 
 /** A Function has the form: (_lparent _otype _rparent) + x^T.Q.x + a^T.x + b */
-double Function::eval(const double* x){
+double Function::eval(const double* x) const{
 //    if (_evaluated && same(x)) {
 //        return _val;
 //    }
@@ -514,6 +514,15 @@ shared_ptr<Function> Function::getTree() const{ /**< returns coeff*(_lparent _ot
     shared_ptr<Function> res(new Function());
     res->_coeff = _coeff;
     res->_otype = _otype;
+    int vid = 0;
+    for(auto& it:_hess)
+    {
+        vid = it.first;
+        for(int vjd:*it.second)
+        {
+            res->add_hess_link(vid, vjd);
+        }
+    }
     res->_lparent = shared_ptr<Function>(new Function(*_lparent.get()));
     res->merge_vars(*_lparent);
     if (_rparent) {
@@ -669,6 +678,15 @@ void Function::merge_vars(const Function& f1){
 //    for(auto& it:f1._dfdx){
 //        _dfdx.insert(pair<int, shared_ptr<Function>>(it.first, it.second));
 //    }
+}
+
+Function Function::outer_approx(const double* x) const{
+    Function res; // res = gradf(x*)*(x-x*) + f(x*)
+    for(auto it: _vars){
+        res -= eval_dfdx(it.first, x)*(x[it.first]-*(it.second));
+    }
+    res += eval(x);
+    return res;
 }
 
 void Function::merge_vars(const Quadratic& q){
@@ -880,10 +898,10 @@ Function& Function::operator*=(const Quadratic& q) {
         return (*this);
     }
     assert(_lparent);
-    if (is_quadratic() && _quad==q) {
-        *this = *this^2;
-        return (*this);
-    }
+//    if (is_quadratic() && _quad==q) {
+//        *this = *this^2;
+//        return (*this);
+//    }
     //    collapse_expr();
     _lparent = shared_ptr<Function>(new Function(*this));
     _otype = product_;
@@ -957,10 +975,10 @@ Function& Function::operator*=(const Function& f) {
         update_type();
         return (*this);
     }
-    if (*this==f) {
-        *this = *this^2;
-        return (*this);
-    }
+//    if (*this==f) {
+//        *this = *this^2;
+//        return (*this);
+//    }
     _lparent = shared_ptr<Function>(new Function(*this));
     _rparent = shared_ptr<Function>(new Function(f));
     _otype = product_;
@@ -1024,10 +1042,51 @@ Function operator^(Function f, int p){
     return f;
 }
 
-Function cos(Function f){
+Function cos(Function& f){
+    Function res;
+    res.merge_vars(f);
+    res._lparent = make_shared<Function>(f);
+    res._rparent = nullptr;
+    res._otype = cos_;
+    res.full_hess();
+    res.update_type();
+    return res;
+}
+
+//Function cos(Function& f){
+//    f._lparent = shared_ptr<Function>(new Function(f));
+//    f._rparent = nullptr;
+//    f._otype = cos_;
+//    f._quad.reset_coeffs();
+//    f._coeff = 1;
+//    f.full_hess();
+//    f.update_type();
+//    return f;
+//}
+
+Function sin(Function& f){
+    Function res;
+    res.merge_vars(f);
+    res._lparent = make_shared<Function>(f);
+    res._rparent = nullptr;
+    res._otype = sin_;
+    res.full_hess();
+    res.update_type();
+    return res;
+//    f._lparent = shared_ptr<Function>(new Function(f));
+//    f._rparent = nullptr;
+//    f._otype = sin_;
+//    f._quad.reset_coeffs();
+//    f._coeff = 1;
+//    f.full_hess();
+//    f.update_type();
+//    return f;
+}
+
+Function sqrt(Function& f){
     f._lparent = shared_ptr<Function>(new Function(f));
     f._rparent = nullptr;
-    f._otype = cos_;
+    f._otype = sqrt_;
     f._quad.reset_coeffs();
     f._coeff = 1;
     f.full_hess();
@@ -1035,16 +1094,91 @@ Function cos(Function f){
     return f;
 }
 
-Function sin(Function f){
-    f._lparent = shared_ptr<Function>(new Function(f));
-    f._rparent = nullptr;
-    f._otype = sin_;
-    f._quad.reset_coeffs();
-    f._coeff = 1;
-    f.full_hess();
-    f.update_type();
-    return f;
+
+Function cos(Function&& f){
+    Function res;
+    res.merge_vars(f);
+    res._lparent = make_shared<Function>(f);
+    res._rparent = nullptr;
+    res._otype = cos_;
+    res.full_hess();
+    res.update_type();
+    return res;
 }
+
+Function sin(Function&& f){
+        Function res;
+        res.merge_vars(f);
+        res._lparent = make_shared<Function>(f);
+        res._rparent = nullptr;
+        res._otype = sin_;
+        res.full_hess();
+        res.update_type();
+        return res;
+//    f._lparent = shared_ptr<Function>(new Function(f));
+//    f._rparent = nullptr;
+//    f._otype = sin_;
+//    f._quad.reset_coeffs();
+//    f._coeff = 1;
+//    f.full_hess();
+//    f.update_type();
+//    return f;
+}
+
+Function sqrt(Function&& f){
+    Function res;
+    res.merge_vars(f);
+    res._lparent = make_shared<Function>(f);
+    res._rparent = nullptr;
+    res._otype = sqrt_;
+    res.full_hess();
+    res.update_type();
+    return res;
+}
+
+//Function sqrt(Function& f){
+//    Function res;
+//    res.merge_vars(f);
+//    res._lparent = make_shared<Function>(f);
+//    res._rparent = nullptr;
+//    res._otype = sqrt_;
+//    res.full_hess();
+//    res.update_type();
+//    return res;
+//}
+
+//Function cos(Function&& f){
+//    Function res;
+//    res.merge_vars(f);
+//    res._lparent = make_shared<Function>(f);
+//    res._rparent = nullptr;
+//    res._otype = cos_;
+//    res.full_hess();
+//    res.update_type();
+//    return res;
+//}
+//
+//Function sin(Function&& f){
+//    Function res;
+//    res.merge_vars(f);
+//    res._lparent = make_shared<Function>(f);
+//    res._rparent = nullptr;
+//    res._otype = sin_;
+//    res.full_hess();
+//    res.update_type();
+//    return res;
+//}
+//
+//Function sqrt(Function&& f){
+//    Function res;
+//    res.merge_vars(f);
+//    res._lparent = make_shared<Function>(f);
+//    res._rparent = nullptr;
+//    res._otype = sqrt_;
+//    res.full_hess();
+//    res.update_type();
+//    return res;
+//}
 
 
 Function operator*(Function f1, const Function& f2){
@@ -1315,5 +1449,4 @@ void Function::print(bool domain) const {
                 break;
         }
     }
-    
 }

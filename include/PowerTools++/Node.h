@@ -25,6 +25,9 @@ public:
     bool cycle;
     /* if node in cycle and power flows in the cycle through this node */
     bool cg;
+    /* the number of edges needed to make the subgraph formed by adjacent nodes a clique */
+    int fill_in;
+    
     int ID;
     Node* predecessor;
     int distance;
@@ -43,7 +46,23 @@ public:
      @brief Adds a to the list of incident arcs
      */
     void addArc(Arc* a);
+    
+    void update_fill_in(Node* n);
 
+    /*
+     @brief Returns true if n is an adjacent node.
+     */
+    bool is_connected(Node* n);
+    
+    /*
+     @brief Returns true if there is an arc (this,n)
+     */
+    bool is_source(Node* n);
+    
+    /*
+     @brief Returns true if there is an arc (n,this)
+     */
+    bool is_sink(Node* n);
     /*
      @brief Find and remove incident arc from list of branches
      @return 0 if a was found and removed, -1 otherwise

@@ -90,22 +90,23 @@ public:
     
     friend Quadratic operator+(Quadratic q, var_& v);
     friend Quadratic operator-(Quadratic q, var_& v);
-    friend Quadratic operator*(Quadratic q, var_& v);
+    friend Function operator*(Quadratic q, var_& v);
     friend Function operator/(Quadratic q, var_& v);
     
     friend Quadratic operator+(var_& v, Quadratic q);
     friend Quadratic operator-(var_& v, Quadratic q);
-    friend Quadratic operator*(var_& v, Quadratic q);
+    friend Function operator*(var_& v, Quadratic q);
     friend Function operator/(var_& v, Quadratic q);
 
     
     friend Quadratic operator+(Quadratic q1, const Quadratic& q2);
     friend Quadratic operator-(Quadratic q1, const Quadratic& q2);
-    friend Quadratic operator*(Quadratic q1, const Quadratic& q2);
+    friend Function operator*(Quadratic q1, const Quadratic& q2);
     friend Function operator/(Quadratic q1, const Quadratic& q2);
 
     friend Function cos(const Quadratic& q);
     friend Function sin(const Quadratic& q);
+    friend Function sqrt(const Quadratic& q);
     
     Quadratic concretise();
     

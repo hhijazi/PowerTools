@@ -17,6 +17,7 @@ public:
     Node* src;
     Node* dest;
     bool in_cycle;
+    bool parallel;
     Path* horton_path;
     
     double weight;

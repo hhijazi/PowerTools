@@ -12,7 +12,6 @@
 #include "PowerTools++/Constraint.h"
 using namespace std;
 
-const double INF = 100000000;
 
 template<typename Number> var<Number>::var():var(NULL, -1){};
 template<typename Number> var<Number>::var(string name):var(NULL, name){};
@@ -20,16 +19,17 @@ template<typename Number> var<Number>::var(int idx):var(NULL, idx){};
 template<typename Number> var<Number>::var(Model* model, string name):var(model, name, -1){};
 template<typename Number> var<Number>::var(Model* model, int idx):var(model, "noname", idx){};
 template<typename Number> var<Number>::var(string name, int idx):var(NULL, name, idx){};
-template<typename Number> var<Number>::var(Model* model, string name, int idx):var(model, name, idx, -INF, INF){};
+template<typename Number> var<Number>::var(Model* model, string name, int idx):var(model, name, idx, -numeric_limits<Number>::infinity(), numeric_limits<Number>::infinity()){};
 //@}
 
 /** Constructor with lower Bound only */
-template<typename Number> var<Number>::var(Model* model, string name, int idx, Number lb):var(NULL, name, idx, lb, INF){};
+template<typename Number> var<Number>::var(Model* model, string name, int idx, Number lb):var(NULL, name, idx, lb, numeric_limits<Number>::infinity()){};
 
 //@{
 /** Bounded variable constructor */
 template<typename Number> var<Number>::var(string name, Number lb, Number ub):var(NULL, name, -1, lb, ub){};
-template<typename Number> var<Number>::var(Model* model, string name, int idx, Number lb, Number ub){
+template<typename Number> var<Number>::var(Model* model, string name, int idx, Number lb, Number ub):var(model,name,idx,lb,ub,lb,ub){};
+template<typename Number> var<Number>::var(Model* model, string name, int idx, Number lb, Number ub, Number lb_off, Number ub_off){
     _name = name;
     _model = model;
     _idx = idx;
@@ -51,15 +51,17 @@ template<typename Number> var<Number>::var(Model* model, string name, int idx, N
     }
     _bounded_down = true;
     _bounded_up = true;
-    if (lb==-INF) {
+    if (lb==-numeric_limits<Number>::infinity()) {
         _bounded_down = false;
     }
     else
-    if (ub==INF) {
+    if (ub==numeric_limits<Number>::infinity()) {
         _bounded_up = false;
     }
     _lb = lb;
     _ub = ub;
+    _lb_off = lb_off;
+    _ub_off = ub_off;
     _val = 0.0;
 };
 //@}
@@ -80,6 +82,13 @@ template<typename Number>Number var<Number>::get_lb() const{
 template<typename Number>Number var<Number>::get_ub() const{
     return _ub;
 };
+template<typename Number>Number var<Number>::get_lb_off() const{
+    return _lb_off;
+};
+template<typename Number>Number var<Number>::get_ub_off() const{
+    return _ub_off;
+};
+
 template<typename Number>Number var<Number>::get_value() const{
     return _val;
 };
@@ -88,19 +97,27 @@ template<typename Number>Number var<Number>::get_value() const{
 /* Modifiers */
 
 template<typename Number>void var<Number>::init(string name, Number lb, Number ub){
+    init(name, lb, ub, lb, ub);
+};
+
+
+template<typename Number>void var<Number>::init(string name, Number lb, Number ub, Number lb_off, Number ub_off){
     init(name);
     _bounded_down = true;
     _bounded_up = true;
-    if (lb==-INF) {
+    if (lb==-numeric_limits<Number>::infinity()) {
         _bounded_down = false;
     }
     else
-        if (ub==INF) {
+        if (ub==numeric_limits<Number>::infinity()) {
             _bounded_up = false;
         }
     _lb = lb;
     _ub = ub;
-};
+    _lb_off = lb_off;
+    _ub_off = ub_off;
+}
+
 
 template<typename Number>void var<Number>::init(string name){
     _name = name;
@@ -112,7 +129,6 @@ template<typename Number>void var<Number>::init(string name){
         _type = binary;
         _lb = false;
         _ub = true;
-        // WARNING setting bounds of a binary variable!
     }
     else{
         if(typeid(Number)==typeid(int))
@@ -126,8 +142,10 @@ template<typename Number>void var<Number>::init(string name){
     }
     _bounded_down = false;
     _bounded_up = false;
-    _lb=-INF;
-    _ub=INF;
+    _lb=-numeric_limits<Number>::infinity();
+    _ub=numeric_limits<Number>::infinity();
+    _lb_off=0;
+    _ub_off=0;
     _val = 0.0;
 };
 

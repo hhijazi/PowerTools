@@ -20,15 +20,15 @@ using   Ipopt::IpoptApplication;
 using namespace Ipopt;
 
 class IpoptProgram : public TNLP {
-private:
-    Model* model;
+
     
 public:
-    IpoptApplication solver;
+    Model* model;
     
     IpoptProgram(Model* m):model(m){}
     
     ~IpoptProgram(){}
+    
     
     /** Method to return some info about the nlp */
     virtual bool get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,

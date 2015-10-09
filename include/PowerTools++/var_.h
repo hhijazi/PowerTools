@@ -90,6 +90,8 @@ public:
     friend Quadratic operator-(var_& v1, var_& v2);
     friend Quadratic operator*(var_& v1, var_& v2);
     friend Function operator/(var_& v1, var_& v2);
+    friend Function sin(var_& v);
+    friend Function cos(var_& v);
     
     var_& operator=(const var_& v);
 //    Function operator^(int p);

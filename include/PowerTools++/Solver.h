@@ -17,9 +17,9 @@
 class Solver {
     
 protected:
-    Model*                          _model;
     union {
-        GurobiProgram* grbprog;
+        GurobiProgram* grb_prog;
+        IpoptProgram* ipopt_prog;
     } prog;
 
 public:
@@ -27,11 +27,10 @@ public:
     /** Constructor */
     //@{
     Solver();
-    
-    Solver(Model* m);
 
-    Solver(Model* m, SolverType stype);
+    Solver(Model* model, SolverType stype);
     //@}
+    void set_model(Model* m);
     
     /* Destructor */
     ~Solver();

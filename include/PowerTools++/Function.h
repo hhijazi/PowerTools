@@ -68,7 +68,7 @@ public:
     double get_coeff(int vid) const;
     template<typename Number> var<Number>* get_var_(int idx) const;
     double get_q_coeff(int vid1, int vid2) const;
-    double eval(const double* x);
+    double eval(const double* x) const;
     double eval_meta(const double *x, map<int, double>& meta_coeff, map<int, var_*>& meta_vars, int meta_link);
     double eval_dfdx(int vid, const double* x) const;
     shared_ptr<Function> getTree() const; /**< returns coeff*(_lparent _otype _rparent) */
@@ -105,6 +105,9 @@ public:
     void full_hess();
     void full_hess(const Function& f);
     void refactor(); /**< Update the expression tree by separating the nonlinear part from the quadratic part */
+    
+    Function outer_approx(const double* x) const;
+    
     bool operator==(const Function& f) const;
     bool operator!=(const Function& f) const;
 
@@ -142,9 +145,14 @@ public:
     friend Function operator/(double cst, Function f1);
     
     friend Function operator^(Function f, int p);
-    friend Function cos(Function f);
-    friend Function sin(Function f);
-    
+    friend Function cos(Function& f);
+    friend Function sin(Function& f);
+    friend Function sqrt(Function& f);
+
+    friend Function cos(Function&& f);
+    friend Function sin(Function&& f);
+    friend Function sqrt(Function&& f);
+
     Function& operator=(const Function& f);
     
     Function concretise();

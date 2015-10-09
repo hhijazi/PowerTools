@@ -6,15 +6,17 @@
 
 class GurobiProgram {
 private:
-    Model *model;
+
     GRBModel* grb_mod;
     GRBEnv* grb_env;
     std::map<int, GRBVar*> _grb_vars; /** Mapping variables to Gurobi variables */
 public:
+    Model *model;
     int _output;
     GurobiProgram();
+    GurobiProgram(Model* m);
     ~GurobiProgram();
-    void set_model(Model* m);
+    void reset_model();
 
     void solve(bool relax);
     void prepare_model();

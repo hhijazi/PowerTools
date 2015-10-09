@@ -36,6 +36,7 @@ Constraint::Constraint(const Constraint& c){
     _idx = c._idx;
     _ctype = c._ctype;
     _ftype = c._ftype;
+    _otype = c._otype;
     _rhs = c._rhs;
     _meta_constr = c._meta_constr;
     _meta_link = c._meta_link;

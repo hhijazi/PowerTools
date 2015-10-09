@@ -8,8 +8,14 @@ GurobiProgram::GurobiProgram(){
     grb_env->set(GRB_DoubleParam_TimeLimit,7200);
     grb_env->set(GRB_DoubleParam_MIPGap,0.00001);
     grb_env->set(GRB_IntParam_Threads,1);
+    grb_env->set(GRB_IntParam_OutputFlag,0);
 //    grb_mod = new GRBModel(*grb_env);
     grb_mod = NULL;
+}
+
+GurobiProgram::GurobiProgram(Model* m):GurobiProgram(){
+    grb_mod = new GRBModel(*grb_env);
+    model = m;
 }
 
 GurobiProgram::~GurobiProgram() {
@@ -17,12 +23,11 @@ GurobiProgram::~GurobiProgram() {
     delete grb_env;
 }
 
-void GurobiProgram::set_model(Model *m){
+void GurobiProgram::reset_model(){
     if (grb_mod != NULL) delete grb_mod;
     _grb_vars.clear();
-    grb_env->set(GRB_IntParam_OutputFlag,_output);
+//    grb_env->set(GRB_IntParam_OutputFlag,_output);
     grb_mod = new GRBModel(*grb_env);
-    model = m;
 }
 
 void GurobiProgram::solve(bool relax){
@@ -45,7 +50,7 @@ void GurobiProgram::solve(bool relax){
             cout << "\n";
         }
     }
-    //cout << "Obj: " << grb_mod->get(GRB_DoubleAttr_ObjVal) << endl;
+    cout << "\n***** Optimal Objective = " << grb_mod->get(GRB_DoubleAttr_ObjVal) << " *****\n";
     if (grb_mod->get(GRB_IntAttr_IsMIP)) {
         cout.setf(ios::fixed);
         cout.precision(3);
@@ -122,8 +127,10 @@ void GurobiProgram::fill_in_grb_vmap(){
             case real:
             case longreal:
                 vr = (var<double>*)it;
-                lb = min(vr->get_lb(), vr->get_lb());
-                ub = max(vr->get_ub(), vr->get_ub());
+                lb = min(vr->get_lb(), vr->get_lb_off());
+                ub = max(vr->get_ub(), vr->get_ub_off());
+//                lb = vr->get_lb();
+//                ub = vr->get_ub();
                 gvar = new GRBVar(grb_mod->addVar(lb, ub, 0.0, GRB_CONTINUOUS, vr->_name));
                 break;
             default:

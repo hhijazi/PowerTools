@@ -19,7 +19,7 @@ Arc::~Arc(){
 }
 
 
-Arc::Arc(string name):Line(name), src(NULL), dest(NULL), in_cycle(false), horton_path(NULL){
+Arc::Arc(string name):Line(name), src(NULL), dest(NULL), in_cycle(false), parallel(false), horton_path(NULL){
 }
 
 
@@ -27,20 +27,36 @@ Arc::Arc(Node* s, Node* d){
     src = s;
     dest = d;
     in_cycle = false;
+    parallel = false;
     connect();
 }
 
 
 Arc* Arc::clone(){
-    Arc* copy = new Arc(to_string(id));
+    Arc* copy = new Arc(_name);
     copy->src = src;
     copy->dest = dest;
+    copy->tbound.min = tbound.min;
+    copy->tbound.max = tbound.max;
+    copy->parallel = parallel;
+    copy->in_cycle = in_cycle;
+    copy->status = status;
     return copy;
 }
 
 
 /* Connects the current arc to its source and destination, adding itself to the list of branches in these nodes */
 void Arc::connect(){
+    src->update_fill_in(dest);
+    dest->update_fill_in(src);
+    Node* common = nullptr;
+    for (auto a:src->branches) {
+        common = a->neighbour(src);
+        if (common->is_connected(dest)) {
+            common->fill_in--;
+            assert(common->fill_in >=0);
+        }
+    }
     src->addArc(this);
     dest->addArc(this);
 }

@@ -18,7 +18,7 @@ Node::Node(){
     
 }
 
-Node::Node(string name, int id, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase):Bus(name,pl,ql,gs,bs,v_min,v_max,kvb,phase), ID(id), explored(false), cycle(false), cg(false), distance(INT_MAX), predecessor(NULL){}
+Node::Node(string name, int id, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase):Bus(name,pl,ql,gs,bs,v_min,v_max,kvb,phase), ID(id), explored(false), cycle(false), cg(false), fill_in(0), distance(INT_MAX), predecessor(NULL){}
 
 Node::Node(string name, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase):Node(name, -1, pl, ql, gs, bs, v_min, v_max, kvb, phase){}
 
@@ -54,6 +54,39 @@ int Node::removeArc(Arc* a){
     return -1;
 }
 
+bool Node::is_connected(Node* n){
+    for (auto a:branches) {
+        if (n->ID==a->neighbour(this)->ID) {
+            return true;
+        }
+    }
+    for (auto a:n->branches) {
+        if (ID==a->neighbour(n)->ID) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Node::is_source(Node* n){
+    for (auto a:branches) {
+        if (ID == a->src->ID && n->ID==a->dest->ID) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Node::is_sink(Node* n){
+    for (auto a:n->branches) {
+        if (n->ID == a->src->ID && ID==a->dest->ID) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 /*
  @brief Adds a to the list of incident arcs
  */
@@ -61,6 +94,19 @@ void Node::addArc(Arc* a){
     branches.push_back(a);
 }
 
+void Node::update_fill_in(Node* n){
+    Node * nn = nullptr;
+    for(auto a:branches){
+        nn = a->neighbour(this);
+        if (nn->ID==n->ID) {
+            continue;
+        }
+        if (!n->is_connected(nn)) {
+            fill_in++;
+        }
+        
+    }
+}
 /*
  @brief Removes first incident arc from list of branches
  @return the next branch if any

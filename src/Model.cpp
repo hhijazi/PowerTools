@@ -154,6 +154,7 @@ var_* Model::getVar(int vid){
 void Model::addVar(var_& v){
     _vars.push_back(&v);
     v.set_idx(_idx_var++);
+//    v.print();
 };
 
 void Model::addMetaVar(var_& v){
@@ -252,7 +253,7 @@ void Model::addConstraint(Constraint* c){
     }
     _nnz_g+=c->get_nb_vars();
     
-    //    c->print();
+//        c->print();
 };
 
 
@@ -357,6 +358,8 @@ void Model::concretise(meta_Constraint& mc, int meta_link, string name){
     }
     c->_meta_constr = &mc;
     addConstraint(c);
+//    mc.concretise().print(false);
+//    cout << endl;
     //    c.Function::print(true);
     mc._nb_concrete++;
 //    return *c;
@@ -367,6 +370,7 @@ void Model::addMetaConstraint(meta_Constraint& c){
     int idx = 0;
     _meta_cons.insert(pair<int, meta_Constraint*>(_meta_cons.size(), &c));
     c.set_idx((int)_meta_cons.size()-1);
+//    c.print();
     if (c._lparent) {
         idx = has_function(c._lparent);
         if (idx!=-1) {
@@ -396,7 +400,7 @@ void Model::addMetaConstraint(meta_Constraint& c){
         }
         vi->addConstraint(&c);
         if (c.get_ftype()==nlin_ || c.has_meta()) {
-            
+//            c.print();
             c.compute_dfdx(vi);
 //            if (c._dfdx[vid]->_lparent) {
 //                add_functions(*c._dfdx[vid]->_lparent);
@@ -440,14 +444,14 @@ void Model::addMetaConstraint(meta_Constraint& c){
                     }
                     else
                         add_functions(c._dfdx[vid]->_dfdx[vjd]);
-//                    c->print();
+//                    c.print();
 //                    vi->print();
 //                    cout << " : ";
-//                    dfdx->print(true);
-//                    vj = c->get_var(vjd);
+//                    c._dfdx[vid]->print(true);
+//                    vj = c.get_var(vjd);
 //                    vj->print();
 //                    cout << " : ";
-//                    dfdx->get_dfdx(vjd)->print(true);
+//                    c._dfdx[vid]->_dfdx[vjd]->print(true);
                     //
                     
                 }
@@ -456,6 +460,120 @@ void Model::addMetaConstraint(meta_Constraint& c){
         }
     }
 };
+
+void Model::on_off(Constraint c, var<bool>& on){
+    if (c.get_ftype() != lin_) {
+        cerr << "Nonlinear constraint.\n";
+        exit(-1);
+    }
+    var<>* v;
+    const Quadratic *orig_q;
+    Constraint res(c.get_name() + "_on/off");
+    double b;
+    orig_q = c.get_quad();
+    b = c.get_rhs() - orig_q->get_const();
+    for(auto it: orig_q->_coefs) {
+        v = getVar_<double>(it.first);
+        if (!v->is_bounded_below() || !v->is_bounded_above()) {
+            cerr << "Variable does not have finite bounds.\n";
+            exit(1);
+        }
+        if (c.get_type() == leq || c.get_type() == eq) {
+            if (it.second < 0) res -= it.second*v->get_lb_off() - (0+on)*it.second*v->get_lb_off();
+            else res -= it.second*v->get_ub_off() - it.second*v->get_ub_off()*on;
+        }
+        else{ // geq
+            if (it.second < 0) res -= it.second*v->get_ub_off() - (0+on)*it.second*v->get_ub_off();
+            else res -= it.second*v->get_lb_off() - it.second*v->get_lb_off()*on;
+        }
+        /*Constraint xi1(c.get_name() + "_on/off_" + v->_name);
+         xi1 += *v;
+         xi1 -= (0+on)*v->get_ub() + v->get_ub_off() - (0+on)*v->get_ub_off();
+         xi1 <= 0;
+         addConstraint(xi1);
+         Constraint xi2(c.get_name() + "_on/off_" + v->_name);
+         xi2 += *v;
+         xi2 -= (0+on)*v->get_lb() + v->get_lb_off() - (0+on)*v->get_lb_off();
+         xi2 >= 0;
+         addConstraint(xi2);*/
+    }
+    if (c.get_type() == eq) {
+        Constraint res2(c.get_name() + "_on/off2");
+        for(auto it: orig_q->_coefs) {
+            v = getVar_<double>(it.first);
+            if (it.second < 0) res2 -= it.second*v->get_ub_off() - it.second*v->get_ub_off()*on;
+            else res2 -= it.second*v->get_lb_off() - it.second*v->get_lb_off()*on;
+        }
+        res2 += *orig_q;
+        res2 -= b*on;
+        res2 >= 0;
+        addConstraint(res2);
+    }
+    res += *orig_q;
+    res -= orig_q->get_const();
+    res -= b*on;
+    if (c.get_type() == eq or c.get_type() == leq) res <= 0;
+    else res >= 0;
+    addConstraint(res);
+}
+
+void Model::on_off(var<>& v, var<bool>& on){
+    Constraint UB(v._name+"_UB_on/off");
+    UB += v - v.get_ub()*on - (1-on)*v.get_ub_off();
+    UB <= 0;
+    addConstraint(UB);
+    Constraint LB(v._name+"_LB_on/off");
+    LB += v - v.get_lb()*on - (1-on)*v.get_lb_off();
+    LB >= 0;
+    addConstraint(LB);
+}
+
+void Model::add_McCormick(std::string name, var<>& v, var<>& v1, var<>& v2) {
+    Constraint MC1(name+"_McCormick1");
+    MC1 += v;
+    MC1 -= v1.get_lb()*v2 + v2.get_lb()*v1 - v1.get_lb()*v2.get_lb();
+    MC1 >= 0;
+    addConstraint(MC1);
+    Constraint MC2(name+"_McCormick2");
+    MC2 += v;
+    MC2 -= v1.get_ub()*v2 + v2.get_ub()*v1 - v1.get_ub()*v2.get_ub();
+    MC2 >= 0;
+    addConstraint(MC2);
+    Constraint MC3(name+"_McCormick3");
+    MC3 += v;
+    MC3 -= v1.get_lb()*v2 + v2.get_ub()*v1 - v1.get_lb()*v2.get_ub();
+    MC3 <= 0;
+    addConstraint(MC3);
+    Constraint MC4(name+"_McCormick4");
+    MC4 += v;
+    MC4 -= v1.get_ub()*v2 + v2.get_lb()*v1 - v1.get_ub()*v2.get_lb();
+    MC4 <= 0;
+    addConstraint(MC4);
+}
+
+
+void Model::add_on_off_McCormick(std::string name, var<>& v, var<>& v1, var<>& v2, var<bool>& on) {
+    Constraint MC1(name+"_McCormick1");
+    MC1 += v;
+    MC1 -= v1.get_lb()*v2 + v2.get_lb()*v1 - v1.get_lb()*v2.get_lb();
+    MC1 >= 0;
+    on_off(MC1, on);
+    Constraint MC2(name+"_McCormick2");
+    MC2 += v;
+    MC2 -= v1.get_ub()*v2 + v2.get_ub()*v1 - v1.get_ub()*v2.get_ub();
+    MC2 >= 0;
+    on_off(MC2, on);
+    Constraint MC3(name+"_McCormick3");
+    MC3 += v;
+    MC3 -= v1.get_lb()*v2 + v2.get_ub()*v1 - v1.get_lb()*v2.get_ub();
+    MC3 <= 0;
+    on_off(MC3, on);
+    Constraint MC4(name+"_McCormick4");
+    MC4 += v;
+    MC4 -= v1.get_ub()*v2 + v2.get_lb()*v1 - v1.get_ub()*v2.get_lb();
+    MC4 <= 0;
+    on_off(MC4, on);
+}
 
 
 void Model::delConstraint(Constraint* c){
@@ -567,6 +685,7 @@ void Model::fill_in_var_bounds(double* x_l ,double* x_u) {
                 break;
             case longreal:
                 long_real_var = (var<>*)v;
+//                long_real_var->print();
                 x_l[idx] = long_real_var->get_lb();
                 x_u[idx] = long_real_var->get_ub();
                 break;
@@ -624,11 +743,11 @@ void Model::fill_in_cstr(const double* x , double* res, bool new_x){
 //            }
             if (meta_link!=c_meta_link) {
                 meta_link = c_meta_link;
-                if (new_x) {
+//                if (new_x) {
                     for (auto& f: _functions) {
                         f->_evaluated[meta_link] = false;
                     }
-                }
+//                }
 //                for (auto& f: _functions) {
 //                    f->eval_meta(x, c->_meta_coeff, c->_meta_vars, c_meta_link);
 //                }
@@ -676,7 +795,7 @@ void Model::fill_in_jac(const double* x , double* res, bool new_x){
 //        t.join();
 //    }
 
-    int c_meta_link = 0;
+    int c_meta_link = -1;
         /* return the values of the jacobian of the constraints */
     for(auto& c :_cons)
         {
@@ -687,11 +806,11 @@ void Model::fill_in_jac(const double* x , double* res, bool new_x){
 //                c->_meta_constr->_evaluated[c->_meta_link] = false;
 //                if (meta_link!=c->_meta_link) {
                     meta_link = c_meta_link;
-                    if (new_x) {
+//                    if (new_x) {
                         for (auto& f: _functions) {
                             f->_evaluated[meta_link] = false;
                         }
-                    }
+//                    }
 //                    for (auto& f: _functions) {
 //                        f->eval_meta(x, c->_meta_coeff, c->_meta_vars, c_meta_link);
 //                    }
@@ -750,12 +869,12 @@ void Model::fill_in_jac_nnz(int* iRow , int* jCol){
     for(auto& c :_cons)
     {
         cid = c->get_idx();
-//        assert(cid==c->get_idx());
+        assert(cid==c->get_idx());
         for(auto itv = c->_vars.cbegin(); itv != c->_vars.cend(); ++itv)
         {
             vid = itv->first;
             v = itv->second;
-//            assert(vid==v->get_idx());
+            assert(vid==v->get_idx());
             iRow[idx] = cid;
             jCol[idx] = vid;
             idx++;
@@ -1529,13 +1648,13 @@ void Model::fill_in_cstr_bounds(double* g_l ,double* g_u) {
 }
 
 void Model::print_functions() const{
-    cout << " Number of atomic functions = " << _functions.size();
+    cout << "Number of atomic functions = " << _functions.size();
     cout << endl;
 //    for (auto& f: _functions){
 //        f->print(false);
 //        cout << endl;
 //    }
-//    cout << endl;
+    cout << endl;
 }
 
 void Model::print_solution() const{
@@ -1570,7 +1689,6 @@ void Model::print_solution() const{
         } ;
         idx++;
     }
-
 }
 
 

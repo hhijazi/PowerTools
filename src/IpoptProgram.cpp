@@ -18,7 +18,7 @@ bool IpoptProgram::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
     m = (Index)model->get_nb_cons();
     nnz_jac_g = (Index)model->get_nb_nnz_g();
     model->update_hess_link();
-    cout << "\n############## CALLING update_hess_link ##############\n";
+//    cout << "\n############## CALLING update_hess_link ##############\n";
 
     nnz_h_lag = (Index)model->get_nb_nnz_h();
     model->_nnz_h = nnz_h_lag;
@@ -67,7 +67,8 @@ void IpoptProgram::finalize_solution(    Ipopt::SolverReturn               statu
         } ;
     }
 //    model->check_feasible(x);
-    cout << "\n************** Objective Function Value = " << model->_obj->eval(x) << " **************" << endl;
+    model->_opt = model->_obj->eval(x);
+    cout << "\n************** Objective Function Value = " << model->_opt << " **************" << endl;
 }
 
 bool IpoptProgram::get_bounds_info(Index n, Number* x_l, Number* x_u,
@@ -76,9 +77,11 @@ bool IpoptProgram::get_bounds_info(Index n, Number* x_l, Number* x_u,
     assert(n==model->get_nb_vars());
     assert(m==model->get_nb_cons());
     model->fill_in_var_bounds(x_l , x_u);
-//    for (int i = 0; i<n; i++) {
-//        printf("%f <= x[%d] <= %f\n",x_l[i], i, x_u[i]);
-//    }
+    for (int i = 0; i<n; i++) {
+//        if (x_l[i]==x_u[i]) {
+//            printf("%f <= x[%d] <= %f\n",x_l[i], i, x_u[i]);
+//        }
+    }
     model->fill_in_cstr_bounds(g_l , g_u);
 //    for (int i = 0; i<m; i++) {
 //        printf("%f <= g[%d] <= %f\n",g_l[i], i, g_u[i]);
