@@ -12,6 +12,9 @@
 
 
 Solver::Solver(Model* model, SolverType stype){
+    using namespace Ipopt;
+    using namespace Bonmin;
+
     _stype = stype;
     switch (stype) {
         case ipopt:
@@ -25,6 +28,9 @@ Solver::Solver(Model* model, SolverType stype){
                 cerr << e.getMessage() << endl;
                 exit(1);
             }
+            break;
+        case bonmin:
+            prog.bonmin_prog = new BonminProgram(model);
             break;
         default:
             break;

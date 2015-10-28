@@ -10,9 +10,11 @@
 #define __PowerTools____Solver__
 
 #include <stdio.h>
+#include <BonTMINLP.hpp>
 #include <PowerTools++/Model.h>
 #include <PowerTools++/IpoptProgram.h>
 #include <PowerTools++/GurobiProgram.h>
+#include <PowerTools++/BonminProgram.h>
 
 class Solver {
     
@@ -20,6 +22,7 @@ protected:
     union {
         GurobiProgram* grb_prog;
         IpoptProgram* ipopt_prog;
+        BonminProgram* bonmin_prog;
     } prog;
 
 public:
