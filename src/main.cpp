@@ -102,6 +102,7 @@ int main (int argc, const char * argv[])
     
         if(!strcmp(argv[2],"ACPOL")) pmt = ACPOL;
         else if(!strcmp(argv[2],"ACRECT")) pmt = ACRECT;
+        else if(!strcmp(argv[2],"ACREF")) pmt = ACREF;
         else if(!strcmp(argv[2],"QC")) pmt = QC;
         else if(!strcmp(argv[2],"QC_SDP")) pmt = QC_SDP;
         else if(!strcmp(argv[2],"OTS")) pmt = OTS;

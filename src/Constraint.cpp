@@ -38,6 +38,8 @@ Constraint::Constraint(const Constraint& c){
     _ftype = c._ftype;
     _otype = c._otype;
     _rhs = c._rhs;
+    _lparent = c._lparent;
+    _rparent = c._rparent;
     _meta_constr = c._meta_constr;
     _meta_link = c._meta_link;
     for (auto &it:c._meta_coeff){

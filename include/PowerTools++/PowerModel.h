@@ -18,7 +18,7 @@
 #include <PowerTools++/meta_var.h>
 #include <PowerTools++/meta_Constraint.h>
 
-typedef enum { ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
+typedef enum { ACPOL, ACRECT, ACREF, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
 typedef enum { MinCost, MinLoss, MinDelta, MaxDelta } Obj;
 
 class PowerModel {
@@ -43,6 +43,7 @@ public:
     void add_AC_gen_vars();
     void add_AC_Pol_vars();
     void add_AC_Rect_vars();
+    void add_AC_Ref_vars();
     void add_QC_vars();
     void add_AC_OTS_vars();
     void add_AC_SOCP_vars();
@@ -67,6 +68,7 @@ public:
     /** Models */
     void post_AC_Polar();
     void post_AC_Rect();
+    void post_AC_Ref();
     void post_QC();
     void post_AC_SOCP();
     void post_AC_OTS();

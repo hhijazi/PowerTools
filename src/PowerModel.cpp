@@ -34,6 +34,10 @@ void PowerModel::build(){
             add_AC_Rect_vars();
             post_AC_Rect();
             break;
+        case ACREF:
+            add_AC_Ref_vars();
+            post_AC_Ref();
+            break;
         case QC:
             add_QC_vars();
             post_QC();
@@ -255,6 +259,29 @@ void PowerModel::add_AC_Rect_vars(){
         _model->addVar(n->vi);
         n->init_complex(false);
         
+    }
+    add_AC_gen_vars();
+}
+
+void PowerModel::add_AC_Ref_vars(){
+    for (auto a:_net->arcs) {
+        if (a->status==0) {
+            continue;
+        }
+        a->pi.init("p("+a->_name+","+a->src->_name+","+a->dest->_name+")");
+        _model->addVar(a->pi);
+        a->pj.init("p("+a->_name+","+a->dest->_name+","+a->src->_name+")");
+        _model->addVar(a->pj);
+        a->qi.init("q("+a->_name+","+a->src->_name+","+a->dest->_name+")");
+        _model->addVar(a->qi);
+        a->qj.init("q("+a->_name+","+a->dest->_name+","+a->src->_name+")");
+        _model->addVar(a->qj);
+        a->init_complex();
+    }
+    for (auto n:_net->nodes) {
+        n->w.init("w"+n->_name, n->vbound.min*n->vbound.min, n->vbound.max*n->vbound.max);
+        _model->addVar(n->w);
+        n->init_complex(true);
     }
     add_AC_gen_vars();
 }
@@ -1590,6 +1617,54 @@ void PowerModel::post_AC_Rect(){
     
     
 }
+
+void PowerModel::post_AC_Ref(){
+    Node* src = NULL;
+    Node* dest = NULL;
+
+    for (auto n:_net->nodes)
+        add_AC_KCL(n, false);
+
+    for (auto a:_net->arcs) {
+
+        src = a->src;
+        dest = a->dest;
+
+        Constraint PF1("PF1");
+        PF1 += src->w - dest->w;
+        PF1 -= 2*(a->r*a->pi + a->x*a->qi);
+        PF1 += (a->r*a->r + a->x*a->x)*((a->pi + a->pj + a->qi + a->qj)/(a->r + a->x));
+        PF1 = 0;
+        _model->addConstraint(PF1);
+
+        Constraint PF1ji("PF1ji");
+        PF1ji += dest->w - src->w;
+        PF1ji -= 2*(a->r*a->pj + a->x*a->qj);
+        PF1ji += (a->r*a->r + a->x*a->x)*((a->pi + a->pj + a->qi + a->qj)/(a->r + a->x));
+        PF1ji = 0;
+        _model->addConstraint(PF1ji);
+
+        Constraint PF2("PF2"); // this one is symmetrical
+        PF2 +=a->r*(a->qi + a->qj) - a->x*(a->pi + a->pj);
+        PF2 = 0;
+        _model->addConstraint(PF2);
+
+        Constraint PF3("PF3");
+        PF3 += a->pi + a->pj + a->qi + a->qj;
+        PF3 -= (a->r + a->x)*(a->pi*a->pi + a->qi*a->qi)/src->w;
+        PF3 = 0;
+        _model->addConstraint(PF3);
+
+/*        Constraint PF3ji("PF3ji");
+        PF3ji += a->pi + a->pj + a->qi + a->qj;
+        PF3ji -= (a->r + a->x)*(a->pj*a->pj + a->qj*a->qj)*(1/dest->w);
+        PF3ji = 0;
+        _model->addConstraint(PF3ji);*/
+
+        add_AC_thermal(a, false);
+    }
+}
+
 
 
 void PowerModel::post_DC(){
