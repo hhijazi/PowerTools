@@ -7,6 +7,8 @@
 //
 
 #include "PowerTools++/PTSolver.h"
+#include <coin/BonBonminSetup.hpp>
+#include <coin/BonCbc.hpp>
 
 namespace {
     void gurobiNotAvailable()
@@ -124,5 +126,28 @@ int PTSolver::run(int output, bool relax){
 #else
     gurobiNotAvailable();
 #endif
+    else if(_stype==bonmin) {
+        BonminSetup bonmin;
+        bonmin.initializeOptionsAndJournalist();
+        bonmin.initialize(prog.bonmin_prog);
+        try {
+            Bab bb;
+            bb(bonmin);
+        }
+        catch(TNLPSolver::UnsolvedError *E) {
+            //There has been a failure to solve a problem with Ipopt.
+            std::cerr<<"Ipopt has failed to solve a problem"<<std::endl;
+        }
+        catch(OsiTMINLPInterface::SimpleError &E) {
+            std::cerr<<E.className()<<"::"<<E.methodName()
+            <<std::endl
+            <<E.message()<<std::endl;
+        }
+        catch(CoinError &E) {
+            std::cerr<<E.className()<<"::"<<E.methodName()
+            <<std::endl
+            <<E.message()<<std::endl;
+        }
+    }
     return -1;
 }

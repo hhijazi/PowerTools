@@ -7,7 +7,7 @@ if (NOT ENABLE_GUROBI)
 endif()
 
 add_library(PowerTools++ ${SOURCES} ${HEADERS})
-target_link_libraries(PowerTools++ ${GUROBI_LIBRARIES} ${IPOPT_LIBRARIES})
+target_link_libraries(PowerTools++ ${GUROBI_LIBRARIES} ${IPOPT_LIBRARIES} ${BONMIN_LIBRARIES} ${SCIP_LIBRARIES})
 
 add_executable(PowerTools main.cpp)
 target_link_libraries(PowerTools PowerTools++)

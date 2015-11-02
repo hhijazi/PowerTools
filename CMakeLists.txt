@@ -35,6 +35,15 @@ find_package(IPOPT REQUIRED)
 include_directories(${IPOPT_INCLUDE_DIRS}/..)
 set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
 
+# Find BONMIN.
+find_package(BONMIN REQUIRED)
+include_directories(${BONMIN_INCLUDE_DIRS}/..)
+set(LIBS ${LIBS} ${BONMIN_LIBRARIES})
+
+# find_package(SCIP REQUIRED)
+#include_directories(${SCIP_INCLUDE_DIRS}/..)
+#set(LIBS ${LIBS} ${SCIP_LIBRARIES})
+
 # Compiler options
 
 # specify the cross compiler
