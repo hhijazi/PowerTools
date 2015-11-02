@@ -14,5 +14,5 @@ typedef enum { geq, leq, eq } ConstraintType;
 typedef enum { constant_, lin_, quad_, nlin_ } Functiontype;  /* Function type in constraint: Constant, Linear, Quadratic or Nonlinear constraint */
 typedef enum { minimize, maximize } ObjectiveType;
 typedef enum { id_, plus_, minus_, product_, div_, power_, cos_, sin_, sqrt_} OperatorType;  /* Operation type in the expression tree */
-typedef enum { ipopt, gurobi, bonmin } SolverType;  /* Solver type */
+typedef enum { ipopt, gurobi } SolverType;  /* Solver type */
 #endif

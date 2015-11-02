@@ -10,11 +10,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 # Find gurobi and ipopt on system
 find_package(GUROBI REQUIRED)
 find_package(IPOPT REQUIRED)
-find_package(BONMIN REQUIRED)
 
 # Include gurobi and ipopt headers and libraries
-include_directories(${GUROBI_INCLUDE_DIRS} ${IPOPT_INCLUDE_DIRS}/.. ${BONMIN_INCLUDE_DIRS})
-set(LIBS ${LIBS} ${GUROBI_LIBRARIES} ${IPOPT_LIBRARIES} ${BONMIN_LIBRARIES})
+include_directories(${GUROBI_INCLUDE_DIRS} ${IPOPT_INCLUDE_DIRS}/..)
+set(LIBS ${LIBS} ${GUROBI_LIBRARIES} ${IPOPT_LIBRARIES})
 
 # Compiler options
 

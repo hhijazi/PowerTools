@@ -20,7 +20,6 @@
 #include <vector>
 #include <coin/IpIpoptApplication.hpp>
 #include <coin/IpTNLP.hpp>
-#include <BonTMINLP.hpp>
 #include <thread>
 #include <gurobi_c++.h>
 
@@ -115,7 +114,6 @@ public:
     void fill_in_hess_nnz(int* iRow , int* jCol);
     void fill_in_var_linearity(Ipopt::TNLP::LinearityType* var_types);
     void fill_in_cstr_linearity(Ipopt::TNLP::LinearityType* const_types);
-    void fill_in_var_types(Bonmin::TMINLP::VariableType* var_types);
     void solve();
     friend std::vector<int> bounds(int parts, int mem);
 //    IpoptProgram* create_ipopt_program();
