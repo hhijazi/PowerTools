@@ -30,7 +30,7 @@ find_path(BONMIN_INCLUDE_DIR
 
 if(APPLE)
     find_library(BONMIN_LIBRARY
-            libipopt.dylib
+            libbonmin.dylib
             HINTS /usr/local/lib
             HINTS ${BONMIN_ROOT_DIR}/lib
     )
