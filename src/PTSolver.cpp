@@ -1,19 +1,20 @@
 //
-//  Solver.cpp
+//  PTSolver.cpp
 //  PowerTools++
 //
 //  Created by Hassan on 30/01/2015.
 //  Copyright (c) 2015 NICTA. All rights reserved.
 //
 
-#include "PowerTools++/Solver.h"
+#include "PowerTools++/PTSolver.h"
+#include <coin/BonBonminSetup.hpp>
+#include <coin/BonCbc.hpp>
 
 
 
 
-Solver::Solver(Model* model, SolverType stype){
+PTSolver::PTSolver(Model* model, SolverType stype){
     using namespace Ipopt;
-    using namespace Bonmin;
 
     _stype = stype;
     switch (stype) {
@@ -38,18 +39,18 @@ Solver::Solver(Model* model, SolverType stype){
     
 };
 
-Solver::~Solver(){
+PTSolver::~PTSolver(){
     if (_stype == gurobi) delete prog.grb_prog;
 //    if (_stype == ipopt) delete prog.ipopt_prog;
 }
 
-void Solver::set_model(Model* m) {
+void PTSolver::set_model(Model* m) {
     if (_stype == gurobi) prog.grb_prog->model = m;
     if (_stype == ipopt) prog.ipopt_prog->model = m; 
 }
 
 
-int Solver::run(int output, bool relax){
+int PTSolver::run(int output, bool relax){
     //GurobiProgram* grbprog;
     // Initialize the IpoptApplication and process the options
 
@@ -97,5 +98,28 @@ int Solver::run(int output, bool relax){
                 cerr << "\nError code = " << e.getErrorCode() << endl;
                 cerr << e.getMessage() << endl;
             }
+    else if(_stype==bonmin) {
+        BonminSetup bonmin;
+        bonmin.initializeOptionsAndJournalist();
+        bonmin.initialize(prog.bonmin_prog);
+        try {
+            Bab bb;
+            bb(bonmin);
+        }
+        catch(TNLPSolver::UnsolvedError *E) {
+            //There has been a failure to solve a problem with Ipopt.
+            std::cerr<<"Ipopt has failed to solve a problem"<<std::endl;
+        }
+        catch(OsiTMINLPInterface::SimpleError &E) {
+            std::cerr<<E.className()<<"::"<<E.methodName()
+            <<std::endl
+            <<E.message()<<std::endl;
+        }
+        catch(CoinError &E) {
+            std::cerr<<E.className()<<"::"<<E.methodName()
+            <<std::endl
+            <<E.message()<<std::endl;
+        }
+    }
     return -1;
 }

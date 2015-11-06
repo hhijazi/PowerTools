@@ -13,7 +13,7 @@
 #include <fstream>
 #include "PowerTools++/Net.h"
 #include "PowerTools++/IpoptProgram.h"
-#include "PowerTools++/Solver.h"
+#include "PowerTools++/PTSolver.h"
 #include "PowerTools++/Complex.h"
 #include "PowerTools++/PowerModel.h"
 
@@ -119,6 +119,7 @@ int main (int argc, const char * argv[])
         if(!strcmp(argv[3],"ipopt")) st = ipopt;
         
         else if(!strcmp(argv[3],"gurobi")) st = gurobi;
+        else if(!strcmp(argv[3],"bonmin")) st = bonmin;
         else{
             cerr << "Unknown solver type.\n";
             exit(1);

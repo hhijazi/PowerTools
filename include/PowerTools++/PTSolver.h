@@ -1,5 +1,5 @@
 //
-//  Solver.h
+//  PTSolver.h
 //  PowerTools++
 //
 //  Created by Hassan on 30/01/2015.
@@ -16,7 +16,7 @@
 #include <PowerTools++/GurobiProgram.h>
 #include <PowerTools++/BonminProgram.h>
 
-class Solver {
+class PTSolver {
     
 protected:
     union {
@@ -29,14 +29,14 @@ public:
     SolverType                      _stype;
     /** Constructor */
     //@{
-    Solver();
+    PTSolver();
 
-    Solver(Model* model, SolverType stype);
+    PTSolver(Model* model, SolverType stype);
     //@}
     void set_model(Model* m);
     
     /* Destructor */
-    ~Solver();
+    ~PTSolver();
     
     int run(int output, bool relax);
 };

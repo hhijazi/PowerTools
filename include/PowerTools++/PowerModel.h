@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <PowerTools++/Model.h>
-#include <PowerTools++/Solver.h>
+#include "PowerTools++/PTSolver.h"
 #include <PowerTools++/Net.h>
 #include <PowerTools++/Constraint.h>
 #include <PowerTools++/meta_constant.h>
@@ -26,7 +26,7 @@ public:
     PowerModelType      _type;
     Obj                 _objective;
     Model*              _model;
-    Solver*             _solver;
+    PTSolver *             _solver;
     Net*                _net;
     SolverType          _stype;
     

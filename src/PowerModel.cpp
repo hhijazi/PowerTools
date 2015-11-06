@@ -24,7 +24,7 @@ PowerModel::~PowerModel(){
 
 void PowerModel::build(){
     _model = new Model();
-    _solver = new Solver(_model, _stype);
+    _solver = new PTSolver(_model, _stype);
     switch (_type) {
         case ACPOL:
             add_AC_Pol_vars();
@@ -463,12 +463,12 @@ void PowerModel::propagate_bounds(){
     fill_n(tol_v_l, _net->nodes.size(), 1);
     fill_n(tol_v_u, _net->nodes.size(), 1);
 
-    _solver = new Solver(NULL,_stype);
+    _solver = new PTSolver(NULL,_stype);
     
     while(maxtol > tol) {
         cout << "\nmaxtol = " << maxtol << "\n";
         _model = new Model();
-        //        _solver = new Solver(_model,_stype);
+        //        _solver = new PTSolver(_model,_stype);
         _solver->set_model(_model);
         maxtol = 0;
         //        add_QC_OTS_vars();
@@ -1637,12 +1637,12 @@ void PowerModel::post_AC_Ref(){
         PF1 = 0;
         _model->addConstraint(PF1);
 
-        Constraint PF1ji("PF1ji");
+/*        Constraint PF1ji("PF1ji");
         PF1ji += dest->w - src->w;
         PF1ji -= 2*(a->r*a->pj + a->x*a->qj);
         PF1ji += (a->r*a->r + a->x*a->x)*((a->pi + a->pj + a->qi + a->qj)/(a->r + a->x));
         PF1ji = 0;
-        _model->addConstraint(PF1ji);
+        _model->addConstraint(PF1ji);*/
 
         Constraint PF2("PF2"); // this one is symmetrical
         PF2 +=a->r*(a->qi + a->qj) - a->x*(a->pi + a->pj);
@@ -1650,8 +1650,8 @@ void PowerModel::post_AC_Ref(){
         _model->addConstraint(PF2);
 
         Constraint PF3("PF3");
-        PF3 += a->pi + a->pj + a->qi + a->qj;
-        PF3 -= (a->r + a->x)*(a->pi*a->pi + a->qi*a->qi)/src->w;
+        PF3 += a->pi*src->w + a->pj*src->w + a->qi*src->w + a->qj*src->w;
+        PF3 -= (a->r + a->x)*(a->pi*a->pi + a->qi*a->qi);
         PF3 = 0;
         _model->addConstraint(PF3);
 
