@@ -8,7 +8,7 @@ cmake: http://www.cmake.org (Version 3.2 or better)
 
 ********* IMPORTANT *********
 --------
-PowerTools currently only compiles with gcc 4.9 (due to a lack of c++11 support by Gurobi).
+If you are using a version of Gurobi that is older than 6.5, you will need to compile PowerTools with gcc 4.9 (due to a lack of c++11 support by the older versions of Gurobi).
 --------
 
 ---------------------- For Mac Users ----------------------
