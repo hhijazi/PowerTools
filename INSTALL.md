@@ -1,6 +1,7 @@
 DEPENDENCIES
 -------
-ipopt: https://projects.coin-or.org/Ipopt
+
+bonmin: https://projects.coin-or.org/Bonmin
 
 gurobi: http://www.gurobi.com
 
