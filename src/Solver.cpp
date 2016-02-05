@@ -8,8 +8,14 @@
 
 #include "PowerTools++/Solver.h"
 
-
-
+namespace {
+    void gurobiNotAvailable()
+    {
+        cerr << "Can't use Gurobi for solver: this version of PowerTools "
+            "was compiled without Gurobi support." << endl;
+        exit(1);
+    }
+}
 
 Solver::Solver(Model* model, SolverType stype){
     _stype = stype;
@@ -18,13 +24,17 @@ Solver::Solver(Model* model, SolverType stype){
             prog.ipopt_prog = new IpoptProgram(model);
             break;
         case gurobi:
-            try{
+#ifdef ENABLE_GUROBI
+            try {
                 prog.grb_prog = new GurobiProgram(model);
-            }catch(GRBException e) {
+            } catch(GRBException e) {
                 cerr << "\nError code = " << e.getErrorCode() << endl;
                 cerr << e.getMessage() << endl;
                 exit(1);
             }
+#else
+            gurobiNotAvailable();
+#endif
             break;
         default:
             break;
@@ -33,12 +43,24 @@ Solver::Solver(Model* model, SolverType stype){
 };
 
 Solver::~Solver(){
-    if (_stype == gurobi) delete prog.grb_prog;
+    if (_stype == gurobi) {
+#ifdef ENABLE_GUROBI
+        delete prog.grb_prog;
+#else
+        gurobiNotAvailable();
+#endif
+    }
 //    if (_stype == ipopt) delete prog.ipopt_prog;
 }
 
 void Solver::set_model(Model* m) {
-    if (_stype == gurobi) prog.grb_prog->model = m;
+    if (_stype == gurobi) {
+#ifdef ENABLE_GUROBI
+        prog.grb_prog->model = m;
+#else
+        gurobiNotAvailable();
+#endif
+    }
     if (_stype == ipopt) prog.ipopt_prog->model = m; 
 }
 
@@ -80,7 +102,8 @@ int Solver::run(int output, bool relax){
             return 150;
         }
     }
-    else if(_stype==gurobi)
+    else if(_stype==gurobi) {
+#ifdef ENABLE_GUROBI
             try{
                 //                prog.grbprog = new GurobiProgram();
                 prog.grb_prog->_output = output;
@@ -91,5 +114,9 @@ int Solver::run(int output, bool relax){
                 cerr << "\nError code = " << e.getErrorCode() << endl;
                 cerr << e.getMessage() << endl;
             }
+#else
+            gurobiNotAvailable();
+#endif
+    }
     return -1;
 }

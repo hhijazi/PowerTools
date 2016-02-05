@@ -21,7 +21,9 @@
 #include <coin/IpIpoptApplication.hpp>
 #include <coin/IpTNLP.hpp>
 #include <thread>
+#ifdef ENABLE_GUROBI
 #include <gurobi_c++.h>
+#endif
 
 class Model {
     

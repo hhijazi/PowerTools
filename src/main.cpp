@@ -117,8 +117,15 @@ int main (int argc, const char * argv[])
         
         if(!strcmp(argv[3],"ipopt")) st = ipopt;
         
-        else if(!strcmp(argv[3],"gurobi")) st = gurobi;
-        else{
+        else if(!strcmp(argv[3],"gurobi")) {
+#ifdef ENABLE_GUROBI
+            st = gurobi;
+#else
+            cerr << "Can't use Gurobi for solver: this version of PowerTools "
+                    "was not compiled with Gurobi support." << endl;
+            exit(1);
+#endif
+        } else {
             cerr << "Unknown solver type.\n";
             exit(1);
         }
