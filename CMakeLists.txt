@@ -1,19 +1,40 @@
 cmake_minimum_required(VERSION 3.2)
 
+project(PowerTools)
+
+# The version number.
+set (PowerTools_VERSION_MAJOR 1)
+set (PowerTools_VERSION_MINOR 0)
+
+# Find Gurobi (optional).
+option(ENABLE_GUROBI "Link to Gurobi libraries" ON)
+
+# configure a header file to pass some of the CMake settings
+# to the source code.
+configure_file (
+    "${PROJECT_SOURCE_DIR}/PowerToolsConfig.h.in"
+    "${PROJECT_BINARY_DIR}/PowerToolsConfig.h")
+
+# add the binary tree to the search path for include files
+# so that we will find PowerToolsConfig.h.
+include_directories("${PROJECT_BINARY_DIR}")
+ 
 set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER "g++")
 
-project(PowerTools)
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
-# Find gurobi and ipopt on system
-find_package(GUROBI REQUIRED)
-find_package(IPOPT REQUIRED)
+# Find Gurobi?
+if (ENABLE_GUROBI)
+    find_package(GUROBI)
+    include_directories(${GUROBI_INCLUDE_DIRS})
+    set(LIBS ${LIBS} ${GUROBI_LIBRARIES})
+endif()
 
-# Include gurobi and ipopt headers and libraries
-include_directories(${GUROBI_INCLUDE_DIRS} ${IPOPT_INCLUDE_DIRS}/..)
-set(LIBS ${LIBS} ${GUROBI_LIBRARIES} ${IPOPT_LIBRARIES})
+# Find Ipopt.
+find_package(IPOPT REQUIRED)
+include_directories(${IPOPT_INCLUDE_DIRS}/..)
+set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
 
 # Compiler options
 
