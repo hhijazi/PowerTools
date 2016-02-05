@@ -8,3 +8,9 @@ target_link_libraries(PowerTools++ ${GUROBI_LIBRARIES} ${IPOPT_LIBRARIES})
 
 add_executable(PowerTools main.cpp)
 target_link_libraries(PowerTools PowerTools++)
+
+install(TARGETS PowerTools++ PowerTools 
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib/PowerTools
+  ARCHIVE DESTINATION lib/PowerTools
+)

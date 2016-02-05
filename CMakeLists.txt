@@ -56,3 +56,7 @@ set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_BUILD_TYPE "Debug")
 
 add_subdirectory(src)
+
+# Install
+install(DIRECTORY include/PowerTools++ DESTINATION include)
+install(FILES ${PROJECT_BINARY_DIR}/PowerToolsConfig.h DESTINATION include/PowerTools++)
