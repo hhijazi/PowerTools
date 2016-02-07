@@ -1,9 +1,12 @@
 PowerTools
 =======
 
-Mathematical Optimisation for Power Systems
+Mathematical Programming for Power Systems
 -----------
 Created by Hassan Hijazi on 18 September 2015
+
+http://hhijazi.github.io/PowerTools/
+-----------
 
 ### ** Contributors **
 Hassan Hijazi ANU/Data61 | hassan.hijazi@anu.edu.au
