@@ -10,6 +10,8 @@ Hassan Hijazi ANU/Data61 | hassan.hijazi@anu.edu.au
 
 Ksenija Bestuzheva ANU/Data61
 
+Dan Gordon ANU/Data61
+
 *****************************
 See INSTALL.md for instructions on compiling PowerTools
 
