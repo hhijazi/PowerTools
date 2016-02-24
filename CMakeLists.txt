@@ -7,7 +7,7 @@ set (PowerTools_VERSION_MAJOR 1)
 set (PowerTools_VERSION_MINOR 0)
 
 # Find Gurobi (optional).
-option(ENABLE_GUROBI "Link to Gurobi libraries" ON)
+option(ENABLE_GUROBI "Link to Gurobi libraries" OFF)
 
 # configure a header file to pass some of the CMake settings
 # to the source code.
