@@ -1298,7 +1298,7 @@ void PowerModel::add_SDP_cuts(int dim){
     Arc* a12 = nullptr;
     Arc* a13 = nullptr;
     Arc* a32 = nullptr;
-    _model->init_functions(_net->_bags->size());
+    _model->init_functions(_net->_bags->size()+1);
     _model->print_functions();
     
     int id = 0;
@@ -1312,7 +1312,6 @@ void PowerModel::add_SDP_cuts(int dim){
         if (b->size()==dim) {
             rot_bag = _net->rotation_bag(b);
             if (rot_bag) {
-                //                cout << "rot_bag: ";
                 n1 = b->at(0);
                 if (_net->_clone->has_directed_arc(n1, b->at(1))){
                     n2 = b->at(1);
@@ -1338,7 +1337,6 @@ void PowerModel::add_SDP_cuts(int dim){
             a12 = _net->get_arc(n1,n2);
             
             if(!a12 || a12->status==0) {
-                //                continue;
                 if (!a12) {
                     a12 = _net->_clone->get_arc(n1,n2)->clone();
                     a12->status=1;
@@ -1347,34 +1345,17 @@ void PowerModel::add_SDP_cuts(int dim){
                     a12->connect();
                     _net->add_arc(a12);
                 }
-                //                else {
-                //                    assert(false);
-                //                }
-                if (a12->tbound.min < 0 && a12->tbound.max > 0)
-                    a12->cs.init("cs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",min(cos(a12->tbound.min), cos(a12->tbound.max)), 1.);
-                else
-                    a12->cs.init("cs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",min(cos(a12->tbound.min), cos(a12->tbound.max)), max(cos(a12->tbound.min),cos(a12->tbound.max)));
                 a12->vv.init("vv("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->src->vbound.min*a12->dest->vbound.min,a12->src->vbound.max*a12->dest->vbound.max);
                 if (_type==QC_SDP) {
-                    a12->vcs.init("vcs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*a12->cs.get_lb(), a12->vv.get_ub()*a12->cs.get_ub());
-                    if(a12->tbound.min < 0 && a12->tbound.max > 0)
-                        a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
-                    if (a12->tbound.min >= 0)
-                        a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
-                    if (a12->tbound.max <= 0)
-                        a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_lb()*sin(a12->tbound.max));
+                    a12->vcs.init("vcs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",-a12->vv.get_ub(), a12->vv.get_ub());
+                    a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",-a12->vv.get_ub(), a12->vv.get_ub());
                     _model->addVar(a12->vcs);
                     a12->vcs = 1;
                     _model->addVar(a12->vsn);
                 }
                 else {
-                    a12->wr.init("wr("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*a12->cs.get_lb(), a12->vv.get_ub()*a12->cs.get_ub());
-                    if(a12->tbound.min < 0 && a12->tbound.max > 0)
-                        a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
-                    if (a12->tbound.min >= 0)
-                        a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
-                    if (a12->tbound.max <= 0)
-                        a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_lb()*sin(a12->tbound.max));
+                    a12->wr.init("wr("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",-a12->vv.get_ub(), a12->vv.get_ub());
+                    a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",-a12->vv.get_ub(), a12->vv.get_ub());
                     a12->wr = 1;
                     _model->addVar(a12->wr);
                     _model->addVar(a12->wi);
@@ -1391,12 +1372,10 @@ void PowerModel::add_SDP_cuts(int dim){
                 }
                 SOCP1 >= 0;
                 _model->addConstraint(SOCP1);
-                //                SOCP1.print();
-                //                _net->_clone->remove_arc(a12);
+
             }
             if(!a13 || a13->status==0) {
                 if(!a13) {
-                    //                    continue;
                     if (rot_bag) {
                         a13 = _net->_clone->get_arc(n3,n1)->clone();
                     }
@@ -1409,35 +1388,17 @@ void PowerModel::add_SDP_cuts(int dim){
                     a13->connect();
                     _net->add_arc(a13);
                 }
-                //                else {
-                //                    assert(false);
-                //                }
-                if (a13->tbound.min < 0 && a13->tbound.max > 0)
-                    a13->cs.init("cs("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",min(cos(a13->tbound.min), cos(a13->tbound.max)), 1.);
-                else
-                    a13->cs.init("cs("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",min(cos(a13->tbound.min), cos(a13->tbound.max)), max(cos(a13->tbound.min),cos(a13->tbound.max)));
                 a13->vv.init("vv("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->src->vbound.min*a13->dest->vbound.min,a13->src->vbound.max*a13->dest->vbound.max);
-                
                 if (_type==QC_SDP) {
-                    a13->vcs.init("vcs("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*a13->cs.get_lb(), a13->vv.get_ub()*a13->cs.get_ub());
-                    if(a13->tbound.min < 0 && a13->tbound.max > 0)
-                        a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
-                    if (a13->tbound.min >= 0)
-                        a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
-                    if (a13->tbound.max <= 0)
-                        a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_lb()*sin(a13->tbound.max));
-                    _model->addVar(a13->vcs);
+                    a13->vcs.init("vcs("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",-a13->vv.get_ub(), a13->vv.get_ub());
+                    a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",-a13->vv.get_ub(), a13->vv.get_ub());
                     a13->vcs = 1;
+                    _model->addVar(a13->vcs);
                     _model->addVar(a13->vsn);
                 }
                 else {
-                    a13->wr.init("wr("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*a13->cs.get_lb(), a13->vv.get_ub()*a13->cs.get_ub());
-                    if(a13->tbound.min < 0 && a13->tbound.max > 0)
-                        a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
-                    if (a13->tbound.min >= 0)
-                        a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
-                    if (a13->tbound.max <= 0)
-                        a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_lb()*sin(a13->tbound.max));
+                    a13->wr.init("wr("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",-a13->vv.get_ub(), a13->vv.get_ub());
+                    a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",-a13->vv.get_ub(), a13->vv.get_ub());
                     a13->wr = 1;
                     _model->addVar(a13->wr);
                     _model->addVar(a13->wi);
@@ -1454,11 +1415,9 @@ void PowerModel::add_SDP_cuts(int dim){
                 }
                 SOCP2 >= 0;
                 _model->addConstraint(SOCP2);
-                //                _net->_clone->remove_arc(a13);
             }
             if(!a32 || a32->status==0) {
                 if (!a32) {
-                    //                    continue;
                     if (rot_bag) {
                         a32 = _net->_clone->get_arc(n2,n3)->clone();
                     }
@@ -1471,39 +1430,22 @@ void PowerModel::add_SDP_cuts(int dim){
                     a32->connect();
                     _net->add_arc(a32);
                 }
-                //                else {
-                //                    assert(false);
-                //                }
-                if (a32->tbound.min < 0 && a32->tbound.max > 0)
-                    a32->cs.init("cs("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",min(cos(a32->tbound.min), cos(a32->tbound.max)), 1.);
-                else
-                    a32->cs.init("cs("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",min(cos(a32->tbound.min), cos(a32->tbound.max)), max(cos(a32->tbound.min),cos(a32->tbound.max)));
                 a32->vv.init("vv("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->src->vbound.min*a32->dest->vbound.min,a32->src->vbound.max*a32->dest->vbound.max);
-                
                 if (_type==QC_SDP) {
-                    a32->vcs.init("vcs("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*a32->cs.get_lb(), a32->vv.get_ub()*a32->cs.get_ub());
-                    if(a32->tbound.min < 0 && a32->tbound.max > 0)
-                        a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
-                    if (a32->tbound.min >= 0)
-                        a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
-                    if (a32->tbound.max <= 0)
-                        a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_lb()*sin(a32->tbound.max));
-                    _model->addVar(a32->vcs);
+                    a32->vcs.init("vcs("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",-a32->vv.get_ub(), a32->vv.get_ub());
+                    a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",-a32->vv.get_ub(), a32->vv.get_ub());
                     a32->vcs = 1;
+                    _model->addVar(a32->vcs);
                     _model->addVar(a32->vsn);
                 }
                 else {
-                    a32->wr.init("wr("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*a32->cs.get_lb(), a32->vv.get_ub()*a32->cs.get_ub());
-                    if(a32->tbound.min < 0 && a32->tbound.max > 0)
-                        a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
-                    if (a32->tbound.min >= 0)
-                        a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
-                    if (a32->tbound.max <= 0)
-                        a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_lb()*sin(a32->tbound.max));
+                    a32->wr.init("wr("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",-a32->vv.get_ub(), a32->vv.get_ub());
+                    a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",-a32->vv.get_ub(), a32->vv.get_ub());
                     a32->wr = 1;
                     _model->addVar(a32->wr);
                     _model->addVar(a32->wi);
                 }
+
                 Constraint SOCP3("SOCP3");
                 SOCP3 += _net->get_node(n3->_name)->w*_net->get_node(n2->_name)->w;
                 if (_type==QC_SDP) {
@@ -1516,7 +1458,6 @@ void PowerModel::add_SDP_cuts(int dim){
                 }
                 SOCP3 >= 0;
                 _model->addConstraint(SOCP3);
-                //                _net->_clone->remove_arc(a32);
             }
             
             if (_type==QC_SDP) {
