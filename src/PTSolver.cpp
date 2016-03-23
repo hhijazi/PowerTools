@@ -6,8 +6,6 @@
 //  Copyright (c) 2015 NICTA. All rights reserved.
 //
 
-#include <coin/BonBonminSetup.hpp>
-#include <coin/BonCbc.hpp>
 #include "PowerTools++/PTSolver.h"
 
 namespace {
@@ -52,7 +50,7 @@ PTSolver::~PTSolver(){
         gurobiNotAvailable();
 #endif        
     }
-//    if (_stype == ipopt) delete prog.ipopt_prog;
+    if (_stype == ipopt) delete prog.ipopt_prog;
 }
 
 void PTSolver::set_model(Model* m) {
