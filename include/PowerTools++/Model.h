@@ -42,6 +42,7 @@ public:
     Function*                       _obj; /** Objective function */
     double                          _opt;
     ObjectiveType                   _objt; /** Minimize or maximize */
+    bool                            _store_duals = false; /** Store dual values */
     /** Constructor */
     //@{
     Model();
