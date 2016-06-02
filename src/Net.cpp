@@ -1016,7 +1016,7 @@ int Net::readpvmax(string fname){
         n->_cond[0]->_pvmax.push_back(0);                        //pvmax[0]=0
     }
     
-    //github
+    //github weihao
     while(file.peek()!=EOF)
     {
         t++;                                          //new time interval
