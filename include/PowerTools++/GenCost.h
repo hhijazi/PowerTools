@@ -8,8 +8,9 @@
 
 #ifndef __PowerTools____GenCost__
 #define __PowerTools____GenCost__
-
+#include <vector>
 #include <stdio.h>
+
 class GenCost{
 public:
 /** @brief Constant cost coefficient */
@@ -20,5 +21,16 @@ double c1;
 double c2;
 };
 
+
+
+class GenTimeCost{
+public:
+    /** @brief Constant cost coefficient */
+    std::vector<double> c0;
+    /** @brief Linear cost coefficient */
+    std::vector<double> c1;
+    /** @brief Quadratic cost coefficient */
+    std::vector<double> c2;
+};
 
 #endif /* defined(__PowerTools____GenCost__) */

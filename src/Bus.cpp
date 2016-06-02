@@ -40,7 +40,7 @@ void Bus::init_lifted_complex(){
 
 /** @brief Returns the active power load at this bus */
 double Bus::pl(){
-    return _cond[0]->_pl;
+    return _cond[0]->_pl[0];
 };
 
 /** @brief Returns the reactive power load at this bus */
@@ -58,6 +58,14 @@ double Bus::bs(){
     return _cond[0]->_bs;
 };
 
+/** @brief Returns the pv power limit at this bus */
+double Bus::pvmax(){
+    return _cond[0]->_pvmax[0];
+};
+
+
+
+
 
 /** @brief Returns the lower bound on the voltage magnitude at this bus */
 double Bus::vmin(){
@@ -70,7 +78,7 @@ double Bus::vmax(){
 }
 
 void Bus::print(){
-    printf("\nBus Id: %s | load = %.02f | shunt = (%.02f,%.02f) | vbounds = (%.02f,%.02f)\n", _name.c_str(), _cond[0]->_pl, _cond[0]->_gs, _cond[0]->_bs, vbound.min, vbound.max);
+    printf("\nBus Id: %s | load = %.02f | shunt = (%.02f,%.02f) | vbounds = (%.02f,%.02f)\n", _name.c_str(), _cond[0]->_pl[0], _cond[0]->_gs, _cond[0]->_bs, vbound.min, vbound.max);
         v.print();
         theta.print();
     if(_has_gen){

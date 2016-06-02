@@ -25,6 +25,7 @@
 #include <math.h>
 #include <queue>
 #include <time.h>
+#include <sstream>
 
 using namespace std;
 
@@ -987,6 +988,281 @@ void Net::precise(ofstream &myfile, float f){
 //}
 
 
+
+int Net::readpvmax(string fname){
+    cout << "Loading file " << fname << endl;
+    ifstream file(fname.c_str());
+    if(!file.is_open()){
+        cout << "Could not open file\n";
+        return -1;
+    }
+    
+    
+    
+    if(file.peek()==EOF)
+    {cout << "File is empty" <<endl;
+        return 999;
+    }
+    
+    
+    string line;
+    string word;
+    
+    getline(file,line);                               //first line to ignore
+    int t=0;
+    int i=0;
+    
+    for (auto &n: nodes){
+        n->_cond[0]->_pvmax.push_back(0);                        //pvmax[0]=0
+    }
+    
+    
+    while(file.peek()!=EOF)
+    {
+        t++;                                          //new time interval
+        getline(file,line);                           //second line store in 'line'
+        
+        i=0;                                          //initialize i, new line
+        std::stringstream copy(line);                 //store the whole line into copy
+        getline(copy,word,',');                       //first column to ignore
+        
+        while(getline(copy,word,','))                 //start with the second column
+        {
+            nodes[i]->_cond[0]->_pvmax.push_back(atof(word.c_str())/1000/bMVA);         //*MW
+            i++;
+        }
+    }
+    for (int j = i; j < nodes.size(); j++)
+    {
+        nodes[j]->_cond[0]->_pvmax.push_back(0);
+    }
+    
+}
+
+
+
+
+
+
+int Net::readcost(string fname){
+    cout << "Loading file " << fname << endl;
+    ifstream file(fname.c_str());
+    if(!file.is_open()){
+        cout << "Could not open file\n";
+        return -1;
+    }
+    
+    
+    
+    if(file.peek()==EOF)
+    {cout << "File is empty" <<endl;
+        return 999;
+    }
+    
+ 
+    string line;
+    string word;
+    
+    getline(file,line);                               //first line to ignore
+    int t=0;
+    
+
+    for (auto &n: gens){
+        n->_timecost->c0.push_back(0);                        //c0[0]=0
+        n->_timecost->c1.push_back(0);                        //c1[0]=0
+        n->_timecost->c2.push_back(0);                        //c2[0]=0
+    }
+
+    
+    while(file.peek()!=EOF)
+    {
+        t++;                                          //new time interval start from 1
+        getline(file,line);                           //second line store in 'line'
+        
+      
+        std::stringstream copy(line);                 //store the whole line into copy
+        getline(copy,word,',');                       //first column to ignore
+        getline(copy,word,',');                       //c0
+        gens[1]->_timecost->c0.push_back(atof(word.c_str())/1000/bMVA);
+        
+        getline(copy,word,',');                       //c1
+        gens[1]->_timecost->c1.push_back(atof(word.c_str())/1000/bMVA);
+        
+        getline(copy,word,',');                       //c2
+        gens[1]->_timecost->c2.push_back(atof(word.c_str())/1000/bMVA);
+        
+
+
+}
+
+}
+
+
+
+
+int Net::readload(string fname){
+    cout << "Loading file " << fname << endl;
+    ifstream file(fname.c_str());
+    if(!file.is_open()){
+        cout << "Could not open file\n";
+        return -1;
+    }
+    
+    if(file.peek()==EOF)
+    {cout << "File is empty" <<endl;
+        return 999;
+    }
+    
+
+    int i=0;                                         //number of bus
+    int t=0;                                         //time
+    
+//    int pos=0;
+    
+    string line;
+    string word;
+    
+    getline(file,line);                               //first line to ignore
+    getline(file,line);                               //second line to ignore
+
+    for (auto &n: nodes){
+        n->_cond[0]->_pl[t]=0;                        //erase data from anu.m by 0
+    }
+
+    
+    double av = 0;
+    double tot = 0;
+    double remain = 0;
+    
+    while(file.peek()!=EOF)
+    {
+        t++;                                          //new time interval
+        getline(file,line);                           //third line store in 'line'
+
+        i=0;                                          //initialize i, new line
+        std::stringstream copy(line);                 //store the whole line into copy
+        getline(copy,word,',');                       //first column to ignore
+        tot = 0;
+        while(getline(copy,word,','))                 //start with the second column
+        {
+//            int length=word.length();
+            int len=word.length()-2;                  //erase 'kW'
+            
+            string c=word.substr(0,len);
+            
+          
+//            double test = atof(c.c_str());            //simulate pl(i,t)
+//            cout << i << " ";
+            
+            nodes[i]->_cond[0]->_pl.push_back(atof(c.c_str())/1000/bMVA);         //*MW
+            
+            if (nodes[i]->_cond[0]->_pl[t] > 10/bMVA)
+            {nodes[i]->_cond[0]->_pl[t]=nodes[i]->_cond[0]->_pl[t-1];}       //replace the wrong load data with previous time shot
+            
+            tot += nodes[i]->_cond[0]->_pl[t];                                      //*MW
+            i++;
+        }
+//        cout << "TOTAL = " << tot << "__"<< t << endl;
+        remain = 0.35 - tot;                                                 //assumed limit=0.35MW...making sure no bus gets negative power
+                                                                             //*shouble be chenged again when the loadfile is accurate*
+        
+        double tot2 = tot;
+    
+        av = remain/(nodes.size() - i);
+        for (int j = i; j < nodes.size(); j++)
+        {
+            nodes[j]->_cond[0]->_pl.push_back(av);
+            tot2 += av;
+        }
+//        cout << "TOTAL2 = " << tot2 << endl;
+//        for (int j = 0; j< nodes.size(); j++)
+//        {cout<<j<<" "<<nodes[j]->_cond[0]->_pl[t]<<endl;}
+        
+//        t++;
+     }
+ 
+
+        
+        
+        
+        
+//    while (pos<=0)
+//    {
+ //       getline(file, word,',');
+//        pos=word.find("Sydney");
+//        int length=sizeof(word.c_str());
+//    }
+
+//    getline(file, word,',');
+//        int length=sizeof(word);
+//        if (word!="\"\"")
+//    {
+//        int length=word.length();
+//        int len=word.length()-2;
+        
+//    string c=word.substr(0,len);
+        
+        
+//        nodes[i]->_cond[0]->_pl.push_back(atof(c.c_str()));
+//    i++;
+//    if (word.find("\n")>>0) t++;
+        
+//    }
+//        else {
+//            nodes[i]->_cond[0]->_pl[t] = 0;
+//            i++;
+//            if (word.find("\n")>>0) t++;
+//        }
+//    }
+    
+    
+    
+}
+
+
+
+
+
+    
+    
+    
+    
+    
+int Net::choosetime(){
+    string time;
+    cout<<"type in time interval number"<<endl;
+    cin>>time;
+    int t=atoi(time.c_str());
+//    cout<<t<<endl;
+    
+    if (t> (nodes[0]->_cond[0]->_pl.size()))
+    { cout<<"invalid time shot"<<endl;
+        return -1;}
+    else {
+    
+   
+    for (auto &n: nodes)
+    {
+        n->_cond[0]->_pl[0]=n->_cond[0]->_pl[t];
+//        cout<<n->_cond[0]->_pl[0]<<endl;
+        n->_cond[0]->_pvmax[0]=n->_cond[0]->_pvmax[t];
+        cout<<n->_cond[0]->_pvmax[0]<<endl;
+    }
+        
+    for (auto &n: gens){
+        n->_timecost->c0[0]=n->_timecost->c0[t];
+        n->_timecost->c1[0]=n->_timecost->c1[t];
+        n->_timecost->c2[0]=n->_timecost->c2[t];
+        }
+
+    
+    return 0;
+}
+}
+
+
+
+
 int Net::readFile(string fname){
     string name;
     double pl = 0, ql = 0, gs = 0, bs = 0, kvb = 0, vmin = 0, vmax = 0, vs = 0;
@@ -1149,9 +1425,9 @@ int Net::readFile(string fname){
         
         file >> word;
         arc->ch = atof(word.c_str());
-        file >> word;
+        file >> word >> ws >> word >> ws >> word;   //reading rate C;
         arc->limit = atof(word.c_str())/bMVA;
-        file >> ws >> word >> ws >> word >> ws >> word;
+        file >> word;
         if(atof(word.c_str()) == 0)
             arc->tr = 1.0;
         else

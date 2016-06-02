@@ -117,6 +117,11 @@ public:
     /* Input Output */
     
     int readFile(std::string fname);
+    int readload(std::string ffname);
+    int readpvmax(std::string ffname);
+    int readcost(std::string ffname);
+    int choosetime();
+    
    
     void writeDAT(std::string name);
     

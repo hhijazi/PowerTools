@@ -36,8 +36,13 @@ public:
     /** @brief voltage magnitude bounds */
     Bound vbound;
     
+     /** @brief pv power magnitude bounds */
+    Bound pvbound;
+    
+    
     /** @brief Corresponding set of generators if installed  */
     std::vector<Gen*> _gen;
+    
     
     /** @brief Corresponding set of conductors
      @note By default, the network is in one phase, thus exactly one conductor is added to the bus when created. In a three phase network, this array will contain three conductors.
@@ -61,6 +66,9 @@ public:
     var<>  vi;
 
     /** Active Power Load violation */
+    var<> pv;
+    
+    /** active power from PV pannels */
     var<>  plv;
 
     /** Reactive Power Load violation */
@@ -104,6 +112,10 @@ public:
     
     /** @brief Returns the reactive power load at this bus */
     double ql();
+    
+    /** @brief Returns the pv power limit at this bus */
+    double pvmax();
+
 
     /** @brief Returns the lower bound on the voltage magnitude at this bus */
     double vmin();

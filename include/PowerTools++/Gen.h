@@ -41,6 +41,10 @@ public:
     /** @brief generation cost function/coefficients */
     GenCost* _cost;
     
+   /** @brief time dependent generation cost function/coefficients */
+    GenTimeCost* _timecost;
+    
+    
     /** @brief snapshot value of active power generation */
     double ps;
     /** @brief snapshot value of reactive power generation */

@@ -74,13 +74,14 @@ int main (int argc, const char * argv[])
 //    PowerModelType pmt = ACPOL;
 //    PowerModelType pmt = SDP;
 //    setenv("GRB_LICENSE_FILE", "/home/kbestuzheva/gurobi.research.lic", 1);
-    PowerModelType pmt = QC;
+    
+    PowerModelType pmt = ACPF_PV;
+
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 
     //  Start Timers
-    double wall0 = get_wall_time();
-    double cpu0  = get_cpu_time();
+
 //    PowerModelType pmt = SDP;
 //    PowerModelType pmt = QC;
 //    PowerModelType pmt = QC_SDP;
@@ -88,7 +89,12 @@ int main (int argc, const char * argv[])
 //    PowerModelType pmt = ACRECT;
     SolverType st = ipopt;
 //    SolverType st = gurobi;
-        string filename = "../../data/nesta_case3_lmbd.m";
+        string filename = "../../data/anu.m";
+        string loadfile = "../../data/loadfile.csv";
+        string pvfile = "../../data/pvmax.csv";
+        string costfile = "../../data/gencost.csv";
+
+    
 //    string filename = "/Users/hassan/Documents/Dropbox/Work/Dev/Private_PT/data/nesta_case30_ieee.m";
 //    string filename = "../../data/nesta_case3_lmbd.m";
 //    string filename = "../data/nesta_case118_ieee__api.m";
@@ -136,8 +142,31 @@ int main (int argc, const char * argv[])
 
     cout << "############################## POWERTOOLS ##############################\n\n";
     Net net;
+
+    
     if(net.readFile(filename)==-1)
         return -1;
+    
+    
+    if(net.readload(loadfile)==-1)
+        return -1;
+    
+    
+    if(net.readcost(costfile)==-1)
+        return -1;
+    
+    if(net.readpvmax(pvfile)==-1)
+        return -1;
+    
+    
+    if(net.choosetime()==-1)                 
+        return -1;
+  
+
+    
+    
+    
+    
 //    net.readFile("data/nesta/nesta_case2383wp_mp.m");
 //    net.readFile("data/nesta/nesta_case300_ieee.m");
 //    net.readFile("../../data/nesta/nesta_case9241_pegase.m");
@@ -147,6 +176,8 @@ int main (int argc, const char * argv[])
     cout << "\nTo run PowerTools with a different input/power flow model, enter:\nPowerTools filename ACPOL/ACRECT/SOCP/QC/QC_SDP/SDPDC/OTS/SOCP_OTS ipopt/gurobi\n\n";
     PowerModel power_model(pmt,&net,st);
     //power_model.propagate_bounds();
+    double wall0 = get_wall_time();
+    double cpu0  = get_cpu_time();
     power_model.build();
     power_model.min_cost();
     int status = power_model.solve();
@@ -154,6 +185,7 @@ int main (int argc, const char * argv[])
     double wall1 = get_wall_time();
     double cpu1  = get_cpu_time();
     cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " << power_model._model->_opt<< ", " << status << ", " << wall1 - wall0<< ", -inf\n";
+    power_model._model->print_solution();
     return 0;
 
 }

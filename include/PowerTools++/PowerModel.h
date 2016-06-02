@@ -18,8 +18,8 @@
 #include <PowerTools++/meta_var.h>
 #include <PowerTools++/meta_Constraint.h>
 
-typedef enum { ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
-typedef enum { MinCost, MinLoss, MinDelta, MaxDelta } Obj;
+typedef enum { ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
+typedef enum { MinCostPv, MinCost, MinLoss, MinDelta, MaxDelta } Obj;
 
 class PowerModel {
 public:
@@ -43,6 +43,7 @@ public:
     void add_AC_gen_vars();
     void add_AC_Pol_vars();
     void add_AC_Rect_vars();
+    void add_AC_Rect_PV_vars();
     void add_QC_vars();
     void add_AC_OTS_vars();
     void add_AC_SOCP_vars();
@@ -56,8 +57,11 @@ public:
     void add_AC_Voltage_Bounds(Node* n);
     void add_AC_Power_Flow(Arc* a, bool polar);
     void add_AC_KCL(Node* n, bool switch_lines);
+    void add_AC_KCL_PV(Node* n, bool switch_lines);
     void add_Cosine(Arc* a);
     void add_SDP_cuts(int dim);
+    void add_fixed_V(Gen* g);
+    void add_fixed_Pg(Gen* g);
     /** Operators */
     int get_order(vector<Node*>* bag, int i);
     
@@ -66,6 +70,8 @@ public:
     
     /** Models */
     void post_AC_Polar();
+    void post_AC_PF();
+    void post_AC_PF_PV();
     void post_AC_Rect();
     void post_QC();
     void post_AC_SOCP();
@@ -79,6 +85,7 @@ public:
     /** Solve */
     int solve(int output = 1,bool relax = false);
     void min_cost();
+    void min_cost_pv();
     void min_var(var<>& v);
     void max_var(var<>& v);
     void min_cost_load();

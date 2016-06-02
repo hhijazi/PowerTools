@@ -26,6 +26,14 @@ void PowerModel::build(){
     _model = new Model();
     _solver = new PTSolver(_model, _stype);
     switch (_type) {
+        case ACPF_PV:
+            add_AC_Rect_PV_vars();
+            post_AC_PF_PV();
+            break;
+        case ACPF:
+            add_AC_Rect_vars();
+            post_AC_PF();
+            break;
         case ACPOL:
             add_AC_Pol_vars();
             post_AC_Polar();
@@ -84,6 +92,54 @@ void PowerModel::build(){
             break;
     }
 }
+
+void PowerModel::post_AC_PF_PV(){
+    
+    for (auto n:_net->nodes) {
+        add_AC_KCL_PV(n, false);
+    }
+    for (auto a:_net->arcs) {
+        add_AC_Power_Flow(a, false);
+        add_AC_thermal(a, false);
+    }
+    for (auto g: _net->gens){
+        add_fixed_V(g);
+        //        add_fixed_Pg(g);
+    }
+    
+}
+
+
+void PowerModel::post_AC_PF(){
+    
+    for (auto n:_net->nodes) {
+        add_AC_KCL(n, false);
+    }
+    for (auto a:_net->arcs) {
+        add_AC_Power_Flow(a, false);
+        add_AC_thermal(a, false);
+    }
+   for (auto g: _net->gens){
+        add_fixed_V(g);
+//        add_fixed_Pg(g);
+   }
+    
+}
+
+void PowerModel::add_fixed_V(Gen* g){
+    Constraint Fixed_v("Fixed_v"+g->_name);
+    Fixed_v += g->_bus->_V_.square_magnitude();
+    Fixed_v = pow(g->_bus->vs,2);
+    _model->addConstraint(Fixed_v);
+}
+
+void PowerModel::add_fixed_Pg(Gen *g){
+    Constraint Fixed_Pg("Fixed_Pg"+g->_name);
+    Fixed_Pg += g->pg;
+    Fixed_Pg = g->ps;
+    _model->addConstraint(Fixed_Pg);
+}
+
 
 void PowerModel::reset(){
     delete _solver;
@@ -150,6 +206,8 @@ Function* PowerModel::objective(){
     return _model->_obj;
 }
 
+
+
 /** Objective Functions */
 void PowerModel::min_cost(){
     _objective = MinCost;
@@ -161,9 +219,33 @@ void PowerModel::min_cost(){
     }
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-    //    obj->print(true);
+        obj->print(true);
     //    _solver->run();
 }
+
+
+/** Objective Functions */
+void PowerModel::min_cost_pv(){
+    _objective = MinCostPv;
+    Function* obj = new Function();
+    for (auto g:_net->gens) {
+        if (!g->_active)
+            continue;
+        g->_cost->c0=g->_timecost->c0[0];
+        g->_cost->c1=g->_timecost->c1[0];
+        g->_cost->c2=g->_timecost->c2[0];
+        
+        *obj += _net->bMVA*g->_cost->c1*(g->pg) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg^2) + g->_cost->c0;
+    }
+    _model->setObjective(obj);
+    _model->setObjectiveType(minimize); // currently for gurobi
+    obj->print(true);
+    //    _solver->run();
+}
+
+
+
+
 
 void PowerModel::min_var(var<>& v){
     _objective = MinDelta;
@@ -192,7 +274,8 @@ void PowerModel::add_AC_gen_vars(){
     for (auto g:_net->gens) {
         if (!g->_active)
             continue;
-        g->pg.init("pg"+g->_name+":"+g->_bus->_name, g->pbound.min, g->pbound.max);
+//        g->pg.init("pg"+g->_name+":"+g->_bus->_name, g->pbound.min, g->pbound.max);
+        g->pg.init("pg"+g->_name+":"+g->_bus->_name, 0, g->pbound.max);
 //        g->pg = g->ps;
 //        g->pg = g->pbound.max;
         _model->addVar(g->pg);
@@ -231,7 +314,7 @@ void PowerModel::add_AC_Pol_vars(){
     }
 }
 
-void PowerModel::add_AC_Rect_vars(){
+void PowerModel::add_AC_Rect_PV_vars(){
     for (auto a:_net->arcs) {
         if (a->status==0) {
             continue;
@@ -254,6 +337,44 @@ void PowerModel::add_AC_Rect_vars(){
         n->vi.init("vi"+n->_name, -n->vbound.max, n->vbound.max);
         _model->addVar(n->vi);
         n->init_complex(false);
+        
+        n->pv.init("pv"+n->_name, n->pvbound.min, n->pvbound.max);
+        n->pv.set_lb(0);
+        n->pv.set_ub(n->pvmax());
+        _model->addVar(n->pv);
+        
+    }
+    add_AC_gen_vars();
+}
+
+void PowerModel::add_AC_Rect_vars(){
+    for (auto a:_net->arcs) {
+        if (a->status==0) {
+            continue;
+        }
+        a->pi.init("p("+a->_name+","+a->src->_name+","+a->dest->_name+")");
+        _model->addVar(a->pi);
+        a->pj.init("p("+a->_name+","+a->dest->_name+","+a->src->_name+")");
+        _model->addVar(a->pj);
+        a->qi.init("q("+a->_name+","+a->src->_name+","+a->dest->_name+")");
+        _model->addVar(a->qi);
+        a->qj.init("q("+a->_name+","+a->dest->_name+","+a->src->_name+")");
+        _model->addVar(a->qj);
+        a->init_complex();
+    }
+    for (auto n:_net->nodes) {
+        n->vr.init("vr"+n->_name, -n->vbound.max, n->vbound.max);
+        n->vr = n->vs;
+        //                n->vr = 1;
+        _model->addVar(n->vr);
+        n->vi.init("vi"+n->_name, -n->vbound.max, n->vbound.max);
+        _model->addVar(n->vi);
+        n->init_complex(false);
+        
+//        n->pv.init("pv"+n->_name, n->pvbound.min, n->pvbound.max);
+//        n->pv.set_lb(0);
+//        n->pv.set_ub(100);
+//        _model->addVar(n->pv);
         
     }
     add_AC_gen_vars();
@@ -527,7 +648,12 @@ void PowerModel::add_AC_thermal(Arc* a, bool switch_lines){
         Constraint Thermal_Limit_from("Thermal_Limit_from");
         Thermal_Limit_from += a->_Si_.square_magnitude();
         if (!switch_lines){
-            Thermal_Limit_from <= pow(a->limit,2.);
+            if(pow(a->limit,2.)>0.004){
+                Thermal_Limit_from <= pow(a->limit,2.);
+            }
+            else{
+                Thermal_Limit_from <= 0.03;
+            }
         }
         else{
             Thermal_Limit_from -= pow(a->limit,2.)*a->on + (1-a->on)*a->smax;
@@ -537,7 +663,13 @@ void PowerModel::add_AC_thermal(Arc* a, bool switch_lines){
         Constraint Thermal_Limit_to("Thermal_Limit_to");
         Thermal_Limit_to += a->_Sj_.square_magnitude();
         if (!switch_lines){
-            Thermal_Limit_to <= pow(a->limit,2.);
+            if(pow(a->limit,2.)>0.004){
+                Thermal_Limit_to <= pow(a->limit,2.);
+            }
+            else{
+                Thermal_Limit_to <= 0.03;
+            }
+
         }
         else{
             Thermal_Limit_to -= pow(a->limit,2.)*a->on + (1-a->on)*a->smax;
@@ -669,7 +801,7 @@ void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
 }
 
 
-void PowerModel::add_AC_KCL(Node* n, bool switch_lines){
+void PowerModel::add_AC_KCL_PV(Node* n, bool switch_lines){
     /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
      subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
      */
@@ -677,6 +809,7 @@ void PowerModel::add_AC_KCL(Node* n, bool switch_lines){
     KCL_P += sum(n->get_out(), "pi",switch_lines);
     KCL_P += sum(n->get_in(), "pj",switch_lines);
     KCL_P -= sum(n->_gen, "pg");
+    KCL_P -= n->pv;
     KCL_P += n->gs()*(n->_V_.square_magnitude()) + n->pl();
     KCL_P = 0;
     _model->addConstraint(KCL_P);
@@ -689,6 +822,28 @@ void PowerModel::add_AC_KCL(Node* n, bool switch_lines){
     KCL_Q = 0;
     _model->addConstraint(KCL_Q);
 }
+
+void PowerModel::add_AC_KCL(Node* n, bool switch_lines){
+    /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
+     subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
+     */
+    Constraint KCL_P("KCL_P");
+    KCL_P += sum(n->get_out(), "pi",switch_lines);
+    KCL_P += sum(n->get_in(), "pj",switch_lines);
+    KCL_P -= sum(n->_gen, "pg");
+    KCL_P += n->gs()*(n->_V_.square_magnitude()) + n->pl();
+    KCL_P = 0;
+    _model->addConstraint(KCL_P);
+    
+    Constraint KCL_Q("KCL_Q");
+    KCL_Q += sum(n->get_out(), "qi",switch_lines);
+    KCL_Q += sum(n->get_in(), "qj",switch_lines);
+    KCL_Q -= sum(n->_gen, "qg");
+    KCL_Q -= n->bs()*(n->_V_.square_magnitude()) - n->ql();
+    KCL_Q = 0;
+    _model->addConstraint(KCL_Q);
+}
+
 
 void PowerModel::post_AC_Polar(){
     for (auto n:_net->nodes) {

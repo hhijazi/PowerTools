@@ -1,5 +1,12 @@
-set(IPOPT_ROOT_DIR "$ENV{IPOPT_ROOT_DIR}" CACHE PATH "IPOPT root directory.")
+##set(IPOPT_ROOT_DIR "$ENV{IPOPT_ROOT_DIR}" CACHE PATH "IPOPT root directory.")
+set(IPOPT_ROOT_DIR "/Users/jinweihao/Project/Ipopt-3.12.4/build" CACHE PATH "IPOPT root directory.")
 message("Looking for Ipopt in ${IPOPT_ROOT_DIR}")
+
+#string(REGEX MATCH "[0-9]+" IPOPT_VERSION "${IPOPT_ROOT_DIR}")
+
+#message("Ipopt version ${IPOPT_VERSION}")
+
+#string(SUBSTRING ${IPOPT_VERSION} 0 2 IPOPT_VERSION_SHORT)
 
 
 find_path(IPOPT_INCLUDE_DIR

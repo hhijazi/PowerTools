@@ -10,13 +10,19 @@
 #define __PowerTools____Conductor__
 
 #include <stdio.h>
+
+#include <vector>
+
 class Bus;
 
 class Conductor {
     
 public:
     /** @brief Conductor active power load */
-    double _pl;
+    std::vector<double> _pl;
+    
+    /** @brief Conductor pv limit */
+    std::vector<double> _pvmax;
     
     /** @brief Conductor reactive power load */
     double _ql;

@@ -212,7 +212,7 @@ void Model::addConstraint(Constraint c_){
     }
     _nnz_g+=c->get_nb_vars();
 
-//    c->print();
+    c->print();
 };
 
 void Model::addConstraint(Constraint* c){
@@ -674,6 +674,7 @@ void Model::fill_in_var_bounds(double* x_l ,double* x_u) {
     int idx=0;
     for(auto& v: _vars)
     {
+        v->print();
         switch (v->get_type()) {
             case real:
                 real_var = (var<float>*)v;
@@ -698,6 +699,7 @@ void Model::fill_in_var_bounds(double* x_l ,double* x_u) {
             default:
                 break;
         } ;
+        cout << " in [" <<x_l[idx] << ", " << x_u[idx] << "]" << endl;
         idx++;
     }
 //    cout << "idx = " << idx << endl;
