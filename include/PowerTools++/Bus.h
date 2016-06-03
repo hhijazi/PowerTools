@@ -60,15 +60,27 @@ public:
     var<>  v;
     /** Voltage magnitude squared variable */
     var<>  w;
+
     /** Real Voltage */
     var<>  vr;
     /** Imaginary Voltage */
     var<>  vi;
+    
+    /** Real Voltage (time dependent)*/
+    vector<var<>>  vr_t;
+    /** Imaginary Voltage (time dependent)*/
+    vector<var<>>  vi_t;
 
-    /** Active Power Load violation */
+    /** Active power from PV pannels*/
     var<> pv;
     
-    /** active power from PV pannels */
+     /** Active power from PV pannels (time dependent)*/
+    vector<var<>> pv_t;
+    
+    /** Active power rating for PV pannels*/
+    var<> pv_rate;
+    
+    /** Active Power Load violation */
     var<>  plv;
 
     /** Reactive Power Load violation */
@@ -102,6 +114,9 @@ public:
 
     /** @brief Returns the active power load at this bus */
     double pl();
+
+    /** @brief Returns the active power load at this bus at given time step*/
+    double pl(int time);
 
     /** @brief Returns the real part of the bus shunt */
     double gs();

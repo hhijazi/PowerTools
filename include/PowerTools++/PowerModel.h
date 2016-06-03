@@ -17,9 +17,10 @@
 #include <PowerTools++/meta_constant.h>
 #include <PowerTools++/meta_var.h>
 #include <PowerTools++/meta_Constraint.h>
+#include <vector>
 
-typedef enum { ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
-typedef enum { MinCostPv, MinCost, MinLoss, MinDelta, MaxDelta } Obj;
+typedef enum { ACPF_PV_T, ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
+typedef enum { MinCostPv_T, MinCostPv, MinCost, MinLoss, MinDelta, MaxDelta } Obj;
 
 class PowerModel {
 public:
@@ -29,21 +30,29 @@ public:
     PTSolver *           _solver;
     Net*                _net;
     SolverType          _stype;
+    int                 _timesteps;
+    
     
     PowerModel();
     PowerModel(PowerModelType type, Net* net, SolverType stype);
     ~PowerModel();
     void reset();
-    void build();
+    void build(int time_steps=1);
     void run_grb_lin_test();
     void run_grb_quad_test();
     /** Accessors */
     Function* objective();
     /** Variables */
     void add_AC_gen_vars();
+    void add_AC_gen_vars_Time();
+
     void add_AC_Pol_vars();
     void add_AC_Rect_vars();
+    void add_AC_Rect_vars_Time();
+    
     void add_AC_Rect_PV_vars();
+    void add_AC_Rect_PV_vars_Time();
+    
     void add_QC_vars();
     void add_AC_OTS_vars();
     void add_AC_SOCP_vars();
@@ -53,9 +62,22 @@ public:
     /** Constraints */
     void add_Wr_Wi(Arc* a);
     void add_AC_thermal(Arc* a, bool switch_lines);
+    
+    void add_AC_thermal_Time(Arc* a);
+    
     void add_AC_Angle_Bounds(Arc* a, bool switch_lines);
     void add_AC_Voltage_Bounds(Node* n);
+
+    void add_AC_Voltage_Bounds_Time(Node* n);
+    
     void add_AC_Power_Flow(Arc* a, bool polar);
+    
+    void add_AC_Power_Flow_Time(Arc* a);
+
+    void add_AC_KCL_PV_Time(Node* n);
+    void add_link_PV_Rate_NoCurt(Node* n);
+    void add_link_PV_Rate_Curt(Node* n);
+    
     void add_AC_KCL(Node* n, bool switch_lines);
     void add_AC_KCL_PV(Node* n, bool switch_lines);
     void add_Cosine(Arc* a);
@@ -67,11 +89,16 @@ public:
     
     Function sum(vector<Arc*> vec, string var, bool switch_lines);
     Function sum(vector<Gen*> vec, string var);
+
+    Function sum_Time(vector<Arc*> vec, string var, int time);
+    Function sum_Time(vector<Gen*> vec, string var, int time);
+
     
     /** Models */
     void post_AC_Polar();
     void post_AC_PF();
     void post_AC_PF_PV();
+    void post_AC_PF_PV_Time();
     void post_AC_Rect();
     void post_QC();
     void post_AC_SOCP();

@@ -36,6 +36,9 @@ public:
     /** Set of generators */
     std::vector<Gen*> gens;
     
+    /**radiation limit time dependent*/
+    std::vector<double>      _radiation;
+    
     /** Mapping the arcs to their source-destination */
     std::map<std::string, std::set<Arc*>*> lineID;
     
@@ -121,6 +124,7 @@ public:
     int readpvmax(std::string ffname);
     int readcost(std::string ffname);
     int choosetime();
+    int readrad(std::string fname);
     
    
     void writeDAT(std::string name);

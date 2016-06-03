@@ -989,6 +989,48 @@ void Net::precise(ofstream &myfile, float f){
 
 
 
+int Net::readrad(string fname){
+    cout << "Loading file " << fname << endl;
+    ifstream file(fname.c_str());
+    if(!file.is_open()){
+        cout << "Could not open file\n";
+        return -1;
+    }
+    
+    
+    
+    if(file.peek()==EOF)
+    {cout << "File is empty" <<endl;
+        return 999;
+    }
+    
+    
+    string line;
+    string word;
+    
+    getline(file,line);                               //first line to ignore
+    int t=0;
+    int i=0;
+//    _radiation.push_back(0);
+    
+    //github weihao//
+    while(file.peek()!=EOF)
+    {
+        getline(file,line);                           //second line store in 'line'
+        
+        std::stringstream copy(line);                 //store the whole line into copy
+        getline(copy,word,',');                       //first column to ignore
+        
+        getline(copy,word,',');
+        _radiation.push_back(atof(word.c_str()));
+    }
+    
+}
+
+
+
+
+
 int Net::readpvmax(string fname){
     cout << "Loading file " << fname << endl;
     ifstream file(fname.c_str());
@@ -1124,11 +1166,6 @@ int Net::readload(string fname){
     
     getline(file,line);                               //first line to ignore
     getline(file,line);                               //second line to ignore
-
-    for (auto &n: nodes){
-        n->_cond[0]->_pl[t]=0;                        //erase data from anu.m by 0
-    }
-
     
     double av = 0;
     double tot = 0;
@@ -1245,15 +1282,15 @@ int Net::choosetime(){
     {
         n->_cond[0]->_pl[0]=n->_cond[0]->_pl[t];
 //        cout<<n->_cond[0]->_pl[0]<<endl;
-        n->_cond[0]->_pvmax[0]=n->_cond[0]->_pvmax[t];
-        cout<<n->_cond[0]->_pvmax[0]<<endl;
+//        n->_cond[0]->_pvmax[0]=n->_cond[0]->_pvmax[t];
+//        cout<<n->_cond[0]->_pvmax[0]<<endl;
     }
         
-    for (auto &n: gens){
-        n->_timecost->c0[0]=n->_timecost->c0[t];
-        n->_timecost->c1[0]=n->_timecost->c1[t];
-        n->_timecost->c2[0]=n->_timecost->c2[t];
-        }
+//    for (auto &n: gens){
+//        n->_timecost->c0[0]=n->_timecost->c0[t];
+//        n->_timecost->c1[0]=n->_timecost->c1[t];
+//        n->_timecost->c2[0]=n->_timecost->c2[t];
+//        }
 
     
     return 0;

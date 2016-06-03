@@ -43,6 +43,12 @@ double Bus::pl(){
     return _cond[0]->_pl[0];
 };
 
+/** @brief Returns the active power load at this bus at given time step*/
+double Bus::pl(int time){
+    return _cond[0]->_pl[time];
+};
+
+
 /** @brief Returns the reactive power load at this bus */
 double Bus::ql(){
     return _cond[0]->_ql;

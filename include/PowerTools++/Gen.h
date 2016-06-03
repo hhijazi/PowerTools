@@ -56,8 +56,13 @@ public:
     var<> pg;
     /** @brief Reactive power generation variable */
     var<> qg;
-    
-    
+
+    /** @brief Active power generation variable, time depedent version*/
+    vector<var<>> pg_t;
+
+    /** @brief Reactive power generation variable, time depedent version*/
+    vector<var<>> qg_t;
+
     /** @brief Initialiser with linked Bus and generator properties
      */
     Gen(Bus* b, std::string name, double p_min, double p_max, double q_min, double q_max);

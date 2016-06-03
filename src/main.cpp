@@ -75,8 +75,8 @@ int main (int argc, const char * argv[])
 //    PowerModelType pmt = SDP;
 //    setenv("GRB_LICENSE_FILE", "/home/kbestuzheva/gurobi.research.lic", 1);
     
-    PowerModelType pmt = ACPF_PV;
-
+//    PowerModelType pmt = ACPF;
+    PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 
@@ -91,8 +91,9 @@ int main (int argc, const char * argv[])
 //    SolverType st = gurobi;
         string filename = "../../data/anu.m";
         string loadfile = "../../data/loadfile.csv";
-        string pvfile = "../../data/pvmax.csv";
-        string costfile = "../../data/gencost.csv";
+//        string pvfile = "../../data/pvmax.csv";
+        string radiationfile="../../data/radiationfile.csv";
+//        string costfile = "../../data/gencost.csv";
 
     
 //    string filename = "/Users/hassan/Documents/Dropbox/Work/Dev/Private_PT/data/nesta_case30_ieee.m";
@@ -152,16 +153,19 @@ int main (int argc, const char * argv[])
         return -1;
     
     
-    if(net.readcost(costfile)==-1)
+//    if(net.readcost(costfile)==-1)
+//        return -1;
+    
+//    if(net.readpvmax(pvfile)==-1)
+//        return -1;
+//    
+   
+    if(net.readrad(radiationfile)==-1)
         return -1;
     
-    if(net.readpvmax(pvfile)==-1)
-        return -1;
-    
-    
-    if(net.choosetime()==-1)                 
-        return -1;
-  
+//    if(net.choosetime()==-1)                 
+//        return -1;
+//  
 
     
     
@@ -179,7 +183,8 @@ int main (int argc, const char * argv[])
     double wall0 = get_wall_time();
     double cpu0  = get_cpu_time();
     power_model.build();
-    power_model.min_cost();
+    power_model.min_cost_pv();
+//    power_model.min_cost();
     int status = power_model.solve();
     //  Stop timers
     double wall1 = get_wall_time();

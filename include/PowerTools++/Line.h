@@ -36,6 +36,12 @@ public:
     var<>   wi;
     var<>   pi;
     var<>   qi;
+    
+    vector<var<>>   pi_t;
+    vector<var<>>   qi_t;
+    vector<var<>>   pj_t;
+    vector<var<>>   qj_t;
+    
     var<>   pj;
     var<>   qj;
     var<>   vcs;    /** vi*vj*cs */
