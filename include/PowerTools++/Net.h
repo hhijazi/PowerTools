@@ -19,11 +19,19 @@
 #include <PowerTools++/Path.h>
 #include <assert.h>
 
+
 class Net{
 public:
     
 
     double bMVA;
+    
+
+    std::vector<double> c0;
+    std::vector<double> c1;
+    std::vector<double> c2;
+    
+    
     
     string _name;
     

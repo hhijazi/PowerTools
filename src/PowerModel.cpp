@@ -32,6 +32,11 @@ void PowerModel::build(int time_steps){
             add_AC_Rect_PV_vars_Time();
             post_AC_PF_PV_Time();
             break;
+            
+        case ACPF_BATT_T:
+            add_AC_Rect_Batt_vars_Time();
+            post_AC_PF_Batt_Time();
+            break;
 
         case ACPF_PV:
             add_AC_Rect_PV_vars();
@@ -101,6 +106,28 @@ void PowerModel::build(int time_steps){
 }
 
 
+void PowerModel::post_AC_PF_Batt_Time(){
+    
+    double tot_pl = 0;
+    for (auto n:_net->nodes) {
+        add_AC_KCL_Batt_Time(n);         //sdone
+        add_AC_Voltage_Bounds_Time(n);
+        
+        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
+        add_AC_link_Batt_Time(n);      //no curtailment
+        //        add_link_PV_Rate_Curt(n);       //with curtailment
+        tot_pl += n->pl();
+    }
+    cout << "Total pl = " << tot_pl << endl;
+    
+    for (auto a:_net->arcs) {
+        add_AC_Power_Flow_Time(a);     //done
+        add_AC_thermal_Time(a);        //done
+    }
+}
+
+
+
 void PowerModel::post_AC_PF_PV_Time(){
     
     double tot_pl = 0;
@@ -108,7 +135,7 @@ void PowerModel::post_AC_PF_PV_Time(){
         add_AC_KCL_PV_Time(n);         //sdone
         add_AC_Voltage_Bounds_Time(n);
 
-        add_link_PV_Rate_NoCurt(n);      //no curtailment
+        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
 //        add_link_PV_Rate_Curt(n);       //with curtailment
         tot_pl += n->pl();
     }
@@ -116,7 +143,7 @@ void PowerModel::post_AC_PF_PV_Time(){
     
     for (auto a:_net->arcs) {
         add_AC_Power_Flow_Time(a);     //done
-//        add_AC_thermal_Time(a);        //done
+        add_AC_thermal_Time(a);        //done
     }
 }
 
@@ -262,15 +289,43 @@ void PowerModel::min_cost_pv(){
 //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
     
-    for (auto n:_net->nodes) {
-        *obj += 2.5*1000000*0.01/(365*100)/(24*6)*_net->bMVA*n->pv_rate; // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
+        for (auto n:_net->nodes) {
+            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
+        }
     }
-    }
+    *obj = *obj/_timesteps;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
     obj->print(true);
     //    _solver->run();
 }
+
+
+/** Objective Functions */
+void PowerModel::min_cost_pv_batt(){
+    _objective = MinCostPvBatt;
+    Function* obj = new Function();
+    for (int t = 0; t < _timesteps; t++) {
+        for (auto g:_net->gens) {
+//            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
+            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+
+            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+        }
+        
+        for (auto n:_net->nodes) {
+            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
+            *obj += _net->bMVA*(n->batt_cap)*6*1000000/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
+
+        }
+    }
+    *obj = *obj/_timesteps;
+    _model->setObjective(obj);
+    _model->setObjectiveType(minimize); // currently for gurobi
+    obj->print(true);
+    //    _solver->run();
+}
+
 
 
 
@@ -343,6 +398,27 @@ void PowerModel::add_AC_Pol_vars(){
     }
 }
 
+void PowerModel::add_AC_Rect_Batt_vars_Time(){
+    add_AC_Rect_PV_vars_Time();
+    for (auto n:_net->nodes) {
+        n->pch_t.resize(_timesteps);
+        n->pdis_t.resize(_timesteps);
+        n->soc_t.resize(_timesteps);
+        n->batt_cap.init("battery capacity"+n->_name, 0, 1);
+        _model->addVar(n->batt_cap);
+    }
+    for (int t = 0; t < _timesteps; t++) {
+        for (auto n:_net->nodes) {
+            n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 1);
+            _model->addVar(n->pch_t[t]);
+            n->pdis_t[t].init("pdischarge"+n->_name+"_" + to_string(t), 0, 1);
+            _model->addVar(n->pdis_t[t]);
+            n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 1);
+            _model->addVar(n->soc_t[t]);
+        }
+    }
+    
+}
 
 void PowerModel::add_AC_Rect_PV_vars_Time(){
     for (auto a:_net->arcs) {
@@ -985,9 +1061,49 @@ void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
     
 }
 
-void PowerModel::add_link_PV_Rate_NoCurt(Node*n){
+void PowerModel::add_AC_link_Batt_Time(Node*n){
+    
+    Constraint SOC_Batt_init("Initial State of Charge");
+    SOC_Batt_init += n->soc_t[0];
+    SOC_Batt_init = 0;
+    _model->addConstraint(SOC_Batt_init);
+    
+    
+    for (int t = 0; t < _timesteps-1; t++) {
+        
+        
+        Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));                         //soc[t+1]=soc[t]+pch-pdis
+        Link_Batt += n->soc_t[t+1]-n->soc_t[t] - n->pch_t[t] + n->pdis_t[t];
+        Link_Batt = 0;
+        _model->addConstraint(Link_Batt);
+        
+        
+    }
+    
+    for (int t = 0; t < _timesteps; t++){
+     
+        Constraint Discharging_Batt("Disharging_Batt"+n->_name + "_" + to_string(t));               //pdis<=soc
+        Discharging_Batt += n->pdis_t[t] - n->soc_t[t];
+        Discharging_Batt <= 0;
+        _model->addConstraint(Discharging_Batt);
+       
+        Constraint Charging_Batt("Charging_Batt"+n->_name + "_" + to_string(t));                   //pch+soc<=batt_cap
+        Charging_Batt += n->soc_t[t] + n->pch_t[t] - n->batt_cap;
+        Charging_Batt <= 0;
+        _model->addConstraint(Charging_Batt);
+        
+        Constraint ChargingState_Batt("ChargingState_Batt"+n->_name + "_" + to_string(t));          //either pch or pdis must be zero at one timestep
+        ChargingState_Batt += (n->pdis_t[t])*(n->pch_t[t]);
+        ChargingState_Batt = 0;
+        _model->addConstraint(ChargingState_Batt);
+
+    }
+}
+
+void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate"+n->_name + "_" + to_string(t));
+//        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
         Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
         Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
@@ -995,12 +1111,45 @@ void PowerModel::add_link_PV_Rate_NoCurt(Node*n){
 
 }
 
-void PowerModel::add_link_PV_Rate_Curt(Node*n){
+void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate"+n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
         Link_PV_Rate <= 0;
         _model->addConstraint(Link_PV_Rate);
+    }
+    
+}
+
+void PowerModel::add_AC_KCL_Batt_Time(Node* n){
+    for (int t = 0; t < _timesteps; t++) {
+        
+        /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
+         subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
+         */
+        
+        
+        
+        Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
+        KCL_P += sum_Time(n->get_out(), "pi", t);
+        KCL_P += sum_Time(n->get_in(), "pj", t);
+        KCL_P -= sum_Time(n->_gen, "pg", t);
+        KCL_P -= n->pv_t[t];
+        KCL_P -= n->pdis_t[t];
+        KCL_P += n->pch_t[t];
+        KCL_P += n->gs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) + n->pl(t);
+        //        cout << n->_name << " pload = " << n->pl(t) << endl;
+        KCL_P = 0;
+        _model->addConstraint(KCL_P);
+        
+        Constraint KCL_Q("KCL_Q_"+ n->_name + "_" + to_string(t));
+        KCL_Q += sum_Time(n->get_out(), "qi", t);
+        KCL_Q += sum_Time(n->get_in(), "qj", t);
+        KCL_Q -= sum_Time(n->_gen, "qg", t);
+        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - n->ql();
+        //            cout << n->_name << " qload = " << n->ql() << endl;
+        KCL_Q = 0;
+        _model->addConstraint(KCL_Q);
     }
     
 }

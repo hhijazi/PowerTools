@@ -76,9 +76,23 @@ public:
     
      /** Active power from PV pannels (time dependent)*/
     vector<var<>> pv_t;
+
+    
+    /** State of charge */
+    vector<var<>> soc_t;
+
+    /** active power charging value */
+    vector<var<>> pch_t;
+
+    /** active power discharging value */
+    vector<var<>> pdis_t;
+
     
     /** Active power rating for PV pannels*/
     var<> pv_rate;
+
+    /** Active power capacity for battery. zero if no battery installed.*/
+    var<> batt_cap;
     
     /** Active Power Load violation */
     var<>  plv;

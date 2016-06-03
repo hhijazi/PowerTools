@@ -12,6 +12,8 @@
 #include "PowerTools++/Path.h"
 #include <algorithm>
 #include <map>
+#include "PowerTools++/PowerModel.h"
+
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <list>
@@ -1009,8 +1011,6 @@ int Net::readrad(string fname){
     string word;
     
     getline(file,line);                               //first line to ignore
-    int t=0;
-    int i=0;
 //    _radiation.push_back(0);
     
     //github weihao//
@@ -1031,58 +1031,58 @@ int Net::readrad(string fname){
 
 
 
-int Net::readpvmax(string fname){
-    cout << "Loading file " << fname << endl;
-    ifstream file(fname.c_str());
-    if(!file.is_open()){
-        cout << "Could not open file\n";
-        return -1;
-    }
-    
-    
-    
-    if(file.peek()==EOF)
-    {cout << "File is empty" <<endl;
-        return 999;
-    }
-    
-    
-    string line;
-    string word;
-    
-    getline(file,line);                               //first line to ignore
-    int t=0;
-    int i=0;
-    
-    for (auto &n: nodes){
-        n->_cond[0]->_pvmax.push_back(0);                        //pvmax[0]=0
-    }
-    
-    //github weihao//
-    while(file.peek()!=EOF)
-    {
-        t++;                                          //new time interval
-        getline(file,line);                           //second line store in 'line'
-        
-        i=0;                                          //initialize i, new line
-        std::stringstream copy(line);                 //store the whole line into copy
-        getline(copy,word,',');                       //first column to ignore
-        
-        while(getline(copy,word,','))                 //start with the second column
-        {
-            nodes[i]->_cond[0]->_pvmax.push_back(atof(word.c_str())/1000/bMVA);         //*MW
-            i++;
-        }
-    }
-    for (int j = i; j < nodes.size(); j++)
-    {
-        nodes[j]->_cond[0]->_pvmax.push_back(0);
-    }
-    
-}
-
-
-
+//int Net::readpvmax(string fname){
+//    cout << "Loading file " << fname << endl;
+//    ifstream file(fname.c_str());
+//    if(!file.is_open()){
+//        cout << "Could not open file\n";
+//        return -1;
+//    }
+//    
+//    
+//    
+//    if(file.peek()==EOF)
+//    {cout << "File is empty" <<endl;
+//        return 999;
+//    }
+//    
+//    
+//    string line;
+//    string word;
+//    
+//    getline(file,line);                               //first line to ignore
+//    int t=0;
+//    int i=0;
+//    
+//    for (auto &n: nodes){
+//        n->_cond[0]->_pvmax.push_back(0);                        //pvmax[0]=0
+//    }
+//    
+//    //github weihao//
+//    while(file.peek()!=EOF)
+//    {
+//        t++;                                          //new time interval
+//        getline(file,line);                           //second line store in 'line'
+//        
+//        i=0;                                          //initialize i, new line
+//        std::stringstream copy(line);                 //store the whole line into copy
+//        getline(copy,word,',');                       //first column to ignore
+//        
+//        while(getline(copy,word,','))                 //start with the second column
+//        {
+//            nodes[i]->_cond[0]->_pvmax.push_back(atof(word.c_str())/1000/bMVA);         //*MW
+//            i++;
+//        }
+//    }
+//    for (int j = i; j < nodes.size(); j++)
+//    {
+//        nodes[j]->_cond[0]->_pvmax.push_back(0);
+//    }
+//    
+//}
+//
+//
+//
 
 
 
@@ -1106,33 +1106,40 @@ int Net::readcost(string fname){
     string word;
     
     getline(file,line);                               //first line to ignore
-    int t=0;
-    
-
-    for (auto &n: gens){
-        n->_timecost->c0.push_back(0);                        //c0[0]=0
-        n->_timecost->c1.push_back(0);                        //c1[0]=0
-        n->_timecost->c2.push_back(0);                        //c2[0]=0
-    }
+//    int t=0;
+//    
+//
+//    for (auto &n: gens){
+//        n->_timecost->c0.push_back(0);                        //c0[0]=0
+//        n->_timecost->c1.push_back(0);                        //c1[0]=0
+//        n->_timecost->c2.push_back(0);                        //c2[0]=0
+//    }
 
     
     while(file.peek()!=EOF)
     {
-        t++;                                          //new time interval start from 1
+//        t++;                                          //new time interval start from 1
         getline(file,line);                           //second line store in 'line'
         
       
         std::stringstream copy(line);                 //store the whole line into copy
         getline(copy,word,',');                       //first column to ignore
-        getline(copy,word,',');                       //c0
-        gens[1]->_timecost->c0.push_back(atof(word.c_str())/1000/bMVA);
+        getline(copy,word,',');                       //c0 original unit:$/kWh
+        c0.push_back(atof(word.c_str()));
         
-        getline(copy,word,',');                       //c1
-        gens[1]->_timecost->c1.push_back(atof(word.c_str())/1000/bMVA);
+        getline(copy,word,',');                       //c1 original unit:$/kWh
+        c1.push_back(atof(word.c_str()));
         
-        getline(copy,word,',');                       //c2
-        gens[1]->_timecost->c2.push_back(atof(word.c_str())/1000/bMVA);
-        
+        getline(copy,word,',');                       //c2 original unit:$/kWh
+        c2.push_back(atof(word.c_str()));
+
+//        
+//        getline(copy,word,',');                       //c1
+//        gens[1]->_timecost->c1.push_back(atof(word.c_str())/1000/bMVA);
+//        
+//        getline(copy,word,',');                       //c2
+//        gens[1]->_timecost->c2.push_back(atof(word.c_str())/1000/bMVA);
+//        
 
 
 }
@@ -1155,10 +1162,10 @@ int Net::readload(string fname){
         return 999;
     }
     
-    for (auto n : nodes) {
-        n->_cond[0]->_pl.pop_back();
-        cout << "pl size = " << n->_cond[0]->_pl.size() << endl;
-    }
+//    for (auto n : nodes) {
+//        n->_cond[0]->_pl.pop_back();
+//        cout << "pl size = " << n->_cond[0]->_pl.size() << endl;
+//    }
     int i=0;                                         //number of bus
     
 //    int pos=0;
@@ -1211,8 +1218,8 @@ int Net::readload(string fname){
             tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];                                      //*MW
             i++;
         }
-        cout << "TOTAL Kw = " << tot_Kw << endl;
-        cout << "My TOTAL = " << tot << "__"<< nodes[i]->_cond[0]->_pl.size()-1 << endl;
+//        cout << "TOTAL Kw = " << tot_Kw << endl;
+//        cout << "My TOTAL = " << tot << "__"<< nodes[i]->_cond[0]->_pl.size()-1 << endl;
         remain = fmax(0, 0.1 - tot);                                                 //assumed limit=0.35MW...making sure no bus gets negative power
                                                   //*shouble be chenged again when the loadfile is accurate*
         
@@ -1224,7 +1231,7 @@ int Net::readload(string fname){
             nodes[j]->_cond[0]->_pl.push_back(av);
             tot2 += av;
         }
-        cout << "TOTAL2 = " << tot2 << endl;
+//        cout << "TOTAL2 = " << tot2 << endl;
 //        for (int j = 0; j< nodes.size(); j++)
 //        {cout<<j<<" "<<nodes[j]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1]<<endl;}
         
@@ -1277,38 +1284,38 @@ int Net::readload(string fname){
     
     
     
-    
-int Net::choosetime(){
-    string time;
-    cout<<"type in time interval number"<<endl;
-    cin>>time;
-    int t=atoi(time.c_str());
-//    cout<<t<<endl;
-    
-    if (t> (nodes[0]->_cond[0]->_pl.size()))
-    { cout<<"invalid time shot"<<endl;
-        return -1;}
-    else {
-    
-   
-    for (auto &n: nodes)
-    {
-        n->_cond[0]->_pl[0]=n->_cond[0]->_pl[t];
-//        cout<<n->_cond[0]->_pl[0]<<endl;
-//        n->_cond[0]->_pvmax[0]=n->_cond[0]->_pvmax[t];
-//        cout<<n->_cond[0]->_pvmax[0]<<endl;
-    }
-        
-//    for (auto &n: gens){
-//        n->_timecost->c0[0]=n->_timecost->c0[t];
-//        n->_timecost->c1[0]=n->_timecost->c1[t];
-//        n->_timecost->c2[0]=n->_timecost->c2[t];
-//        }
-
-    
-    return 0;
-}
-}
+//    
+//int Net::choosetime(){
+//    string time;
+//    cout<<"type in time interval number"<<endl;
+//    cin>>time;
+//    int t=atoi(time.c_str());
+////    cout<<t<<endl;
+//    
+//    if (t> (nodes[0]->_cond[0]->_pl.size()))
+//    { cout<<"invalid time shot"<<endl;
+//        return -1;}
+//    else {
+//    
+//   
+//    for (auto &n: nodes)
+//    {
+//        n->_cond[0]->_pl[0]=n->_cond[0]->_pl[t];
+////        cout<<n->_cond[0]->_pl[0]<<endl;
+////        n->_cond[0]->_pvmax[0]=n->_cond[0]->_pvmax[t];
+////        cout<<n->_cond[0]->_pvmax[0]<<endl;
+//    }
+//        
+////    for (auto &n: gens){
+////        n->_timecost->c0[0]=n->_timecost->c0[t];
+////        n->_timecost->c1[0]=n->_timecost->c1[t];
+////        n->_timecost->c2[0]=n->_timecost->c2[t];
+////        }
+//
+//    
+//    return 0;
+//}
+//}
 
 
 
