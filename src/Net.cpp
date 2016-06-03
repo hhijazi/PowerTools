@@ -1155,9 +1155,11 @@ int Net::readload(string fname){
         return 999;
     }
     
-
+    for (auto n : nodes) {
+        n->_cond[0]->_pl.pop_back();
+        cout << "pl size = " << n->_cond[0]->_pl.size() << endl;
+    }
     int i=0;                                         //number of bus
-    int t=0;                                         //time
     
 //    int pos=0;
     
@@ -1170,16 +1172,18 @@ int Net::readload(string fname){
     double av = 0;
     double tot = 0;
     double remain = 0;
+    double pl = 0;
+    double tot_Kw = 0;
     
     while(file.peek()!=EOF)
     {
-        t++;                                          //new time interval
         getline(file,line);                           //third line store in 'line'
 
         i=0;                                          //initialize i, new line
         std::stringstream copy(line);                 //store the whole line into copy
         getline(copy,word,',');                       //first column to ignore
         tot = 0;
+        tot_Kw = 0;
         while(getline(copy,word,','))                 //start with the second column
         {
 //            int length=word.length();
@@ -1190,18 +1194,27 @@ int Net::readload(string fname){
           
 //            double test = atof(c.c_str());            //simulate pl(i,t)
 //            cout << i << " ";
+            tot_Kw +=  atof(c.c_str());
+            pl = atof(c.c_str())/(1000*bMVA)/3;
             
-            nodes[i]->_cond[0]->_pl.push_back(atof(c.c_str())/1000/bMVA);         //*MW
             
-            if (nodes[i]->_cond[0]->_pl[t] > 10/bMVA)
-            {nodes[i]->_cond[0]->_pl[t]=nodes[i]->_cond[0]->_pl[t-1];}       //replace the wrong load data with previous time shot
             
-            tot += nodes[i]->_cond[0]->_pl[t];                                      //*MW
+            if (pl > 0.1) {
+                nodes[i]->_cond[0]->_pl.push_back(0);
+//                cerr << "\n\nCRAZY NUMBER!!\n\n";
+            }
+            else {
+                nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW
+            }
+
+            
+            tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];                                      //*MW
             i++;
         }
-//        cout << "TOTAL = " << tot << "__"<< t << endl;
-        remain = 0.35 - tot;                                                 //assumed limit=0.35MW...making sure no bus gets negative power
-                                                                             //*shouble be chenged again when the loadfile is accurate*
+        cout << "TOTAL Kw = " << tot_Kw << endl;
+        cout << "My TOTAL = " << tot << "__"<< nodes[i]->_cond[0]->_pl.size()-1 << endl;
+        remain = fmax(0, 0.1 - tot);                                                 //assumed limit=0.35MW...making sure no bus gets negative power
+                                                  //*shouble be chenged again when the loadfile is accurate*
         
         double tot2 = tot;
     
@@ -1211,9 +1224,9 @@ int Net::readload(string fname){
             nodes[j]->_cond[0]->_pl.push_back(av);
             tot2 += av;
         }
-//        cout << "TOTAL2 = " << tot2 << endl;
+        cout << "TOTAL2 = " << tot2 << endl;
 //        for (int j = 0; j< nodes.size(); j++)
-//        {cout<<j<<" "<<nodes[j]->_cond[0]->_pl[t]<<endl;}
+//        {cout<<j<<" "<<nodes[j]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1]<<endl;}
         
 //        t++;
      }

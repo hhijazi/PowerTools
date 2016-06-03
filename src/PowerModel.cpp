@@ -103,15 +103,16 @@ void PowerModel::build(int time_steps){
 
 void PowerModel::post_AC_PF_PV_Time(){
     
-//    double tot_pl = 0;
+    double tot_pl = 0;
     for (auto n:_net->nodes) {
         add_AC_KCL_PV_Time(n);         //sdone
         add_AC_Voltage_Bounds_Time(n);
-//        tot_pl += n->pl();
+
         add_link_PV_Rate_NoCurt(n);      //no curtailment
 //        add_link_PV_Rate_Curt(n);       //with curtailment
+        tot_pl += n->pl();
     }
-//    cout << "Total pl = " << tot_pl << endl;
+    cout << "Total pl = " << tot_pl << endl;
     
     for (auto a:_net->arcs) {
         add_AC_Power_Flow_Time(a);     //done
@@ -257,13 +258,14 @@ void PowerModel::min_cost_pv(){
     Function* obj = new Function();
     for (int t = 0; t < _timesteps; t++) {
         for (auto g:_net->gens) {
-//                *obj += _net->bMVA*0.050060*(g->pg_t[t]);
-        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+          *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
+//        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
+    
+    for (auto n:_net->nodes) {
+        *obj += 2.5*1000000*0.01/(365*100)/(24*6)*_net->bMVA*n->pv_rate; // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
     }
-//    for (auto n:_net->nodes) {
-//        *obj += 2.5*1000000/(365*100)*_net->bMVA*n->pv_rate; // 1% of investment cost of 2.5$/W, divided by the number of days in a year. (one day simulation)
-//    }
+    }
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
     obj->print(true);
