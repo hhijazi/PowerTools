@@ -113,9 +113,11 @@ void PowerModel::post_AC_PF_Batt_Time(){
         add_AC_KCL_Batt_Time(n);         //sdone
         add_AC_Voltage_Bounds_Time(n);
         
-        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
         add_AC_link_Batt_Time(n);      //no curtailment
-        //        add_link_PV_Rate_Curt(n);       //with curtailment
+
+//        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
+        add_link_PV_Rate_Curt_Time(n);       //with curtailment
+        
         tot_pl += n->pl();
     }
     cout << "Total pl = " << tot_pl << endl;
@@ -285,7 +287,8 @@ void PowerModel::min_cost_pv(){
     Function* obj = new Function();
     for (int t = 0; t < _timesteps; t++) {
         for (auto g:_net->gens) {
-          *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
+//          *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
+          *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
 //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
     
@@ -1087,15 +1090,17 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
         Discharging_Batt <= 0;
         _model->addConstraint(Discharging_Batt);
        
-        Constraint Charging_Batt("Charging_Batt"+n->_name + "_" + to_string(t));                   //pch+soc<=batt_cap
-        Charging_Batt += n->soc_t[t] + n->pch_t[t] - n->batt_cap;
-        Charging_Batt <= 0;
-        _model->addConstraint(Charging_Batt);
         
         Constraint ChargingState_Batt("ChargingState_Batt"+n->_name + "_" + to_string(t));          //either pch or pdis must be zero at one timestep
         ChargingState_Batt += (n->pdis_t[t])*(n->pch_t[t]);
         ChargingState_Batt = 0;
         _model->addConstraint(ChargingState_Batt);
+        
+        Constraint Charging_Batt("Charging_Batt"+n->_name + "_" + to_string(t));                   //pch+soc<=batt_cap
+        Charging_Batt += n->soc_t[t] + n->pch_t[t] - n->batt_cap;
+        Charging_Batt <= 0;
+        _model->addConstraint(Charging_Batt);
+
 
     }
 }
