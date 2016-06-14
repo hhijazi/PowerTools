@@ -1076,7 +1076,7 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
         
         
         Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));                         //soc[t+1]=soc[t]+pch-pdis
-        Link_Batt += n->soc_t[t+1]-n->soc_t[t] - n->pch_t[t] + n->pdis_t[t];
+        Link_Batt += n->soc_t[t+1]-n->soc_t[t] - 0.85 * n->pch_t[t] + n->pdis_t[t];                 //charge efficiency=85%
         Link_Batt = 0;
         _model->addConstraint(Link_Batt);
         
@@ -1085,8 +1085,8 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
     
     for (int t = 0; t < _timesteps; t++){
      
-        Constraint Discharging_Batt("Disharging_Batt"+n->_name + "_" + to_string(t));               //pdis<=soc
-        Discharging_Batt += n->pdis_t[t] - n->soc_t[t];
+        Constraint Discharging_Batt("Disharging_Batt"+n->_name + "_" + to_string(t));               //pdis<=80%soc   depth of discharge=80%
+        Discharging_Batt += n->pdis_t[t] - 0.8 * n->soc_t[t];
         Discharging_Batt <= 0;
         _model->addConstraint(Discharging_Batt);
        
@@ -1097,7 +1097,7 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
         _model->addConstraint(ChargingState_Batt);
         
         Constraint Charging_Batt("Charging_Batt"+n->_name + "_" + to_string(t));                   //pch+soc<=batt_cap
-        Charging_Batt += n->soc_t[t] + n->pch_t[t] - n->batt_cap;
+        Charging_Batt += n->soc_t[t] + 0.85 * n->pch_t[t] - n->batt_cap;
         Charging_Batt <= 0;
         _model->addConstraint(Charging_Batt);
 
@@ -1140,7 +1140,7 @@ void PowerModel::add_AC_KCL_Batt_Time(Node* n){
         KCL_P += sum_Time(n->get_in(), "pj", t);
         KCL_P -= sum_Time(n->_gen, "pg", t);
         KCL_P -= n->pv_t[t];
-        KCL_P -= n->pdis_t[t];
+        KCL_P -= 0.85 * n->pdis_t[t];                                               //discharge efficiency=85%
         KCL_P += n->pch_t[t];
         KCL_P += n->gs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) + n->pl(t);
         //        cout << n->_name << " pload = " << n->pl(t) << endl;

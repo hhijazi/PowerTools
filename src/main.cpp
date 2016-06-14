@@ -183,9 +183,9 @@ int main (int argc, const char * argv[])
     //power_model.propagate_bounds();
     double wall0 = get_wall_time();
     double cpu0  = get_cpu_time();
-    power_model.build(4);
-//    power_model.min_cost_pv_batt();
-    power_model.min_cost_pv();
+    power_model.build(144);
+    power_model.min_cost_pv_batt();
+//    power_model.min_cost_pv();
 //    power_model.min_cost();
     int status = power_model.solve();
     //  Stop timers
