@@ -91,10 +91,10 @@ int main (int argc, const char * argv[])
     SolverType st = ipopt;
 //    SolverType st = gurobi;
         string filename = "../../data/anu.m";
-        string loadfile = "../../data/loadfile.csv";
+        string loadfile = "../../data/loadfile-24.csv";
 //        string pvfile = "../../data/pvmax.csv";
-        string radiationfile="../../data/radiationfile.csv";
-        string costfile = "../../data/gencost.csv";
+        string radiationfile="../../data/radiationfile-24.csv";
+        string costfile = "../../data/gencost-24.csv";
 
     
 //    string filename = "/Users/hassan/Documents/Dropbox/Work/Dev/Private_PT/data/nesta_case30_ieee.m";
@@ -183,7 +183,7 @@ int main (int argc, const char * argv[])
     //power_model.propagate_bounds();
     double wall0 = get_wall_time();
     double cpu0  = get_cpu_time();
-    power_model.build(144);
+    power_model.build(24);
     power_model.min_cost_pv_batt();
 //    power_model.min_cost_pv();
 //    power_model.min_cost();

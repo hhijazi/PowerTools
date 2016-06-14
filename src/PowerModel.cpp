@@ -311,15 +311,17 @@ void PowerModel::min_cost_pv_batt(){
     for (int t = 0; t < _timesteps; t++) {
         for (auto g:_net->gens) {
 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
-            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+//            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+             *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t]);          //$c1/kwh*(1 hour)*pg=cost
 
             //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
         
         for (auto n:_net->nodes) {
-            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
-            *obj += _net->bMVA*(n->batt_cap)*6*1000000/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
-
+//            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
+            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 2.5*1000000*n->pv_rate*_net->bMVA/(20*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
+//            *obj += _net->bMVA*(n->batt_cap)*1000000/6/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
+            *obj += _net->bMVA*(n->batt_cap)*1000000/(10*365*24); // $1000000/MWh battery investment for 10 years.(1 hour simulation)
         }
     }
     *obj = *obj/_timesteps;
