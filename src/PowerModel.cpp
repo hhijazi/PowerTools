@@ -319,9 +319,9 @@ void PowerModel::min_cost_pv_batt(){
         
         for (auto n:_net->nodes) {
 //            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
-            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 2.5*1000000*n->pv_rate*_net->bMVA/(20*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
+            *obj += 1.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 1.5*1000000*n->pv_rate*_net->bMVA/(30*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
 //            *obj += _net->bMVA*(n->batt_cap)*1000000/6/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
-            *obj += _net->bMVA*(n->batt_cap)*1000000/(10*365*24); // $1000000/MWh battery investment for 10 years.(1 hour simulation)
+            *obj += _net->bMVA*(n->batt_cap)*1000000/(30*365*24); // $1000000/MWh battery investment for 10 years.(1 hour simulation)
         }
     }
     *obj = *obj/_timesteps;
@@ -1114,7 +1114,19 @@ void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
         Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
         Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
+        if (_net->_radiation[t]==0) {
+            Constraint All_zero("All_zero_pv_if_no_radiation_t" + to_string(t));
+            for (auto n: _net->nodes) {
+                
+                //        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
+                All_zero += n->pv_t[t];
+                All_zero = 0;
+                _model->addConstraint(All_zero);
+            }
+        }
     }
+    
+    
 
 }
 
@@ -1124,6 +1136,16 @@ void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
         Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
         Link_PV_Rate <= 0;
         _model->addConstraint(Link_PV_Rate);
+        if (_net->_radiation[t]==0) {
+            Constraint All_zero("All_zero_pv_if_no_radiation_t" + to_string(t));
+            for (auto n: _net->nodes) {
+                
+                //        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
+                All_zero += n->pv_t[t];
+                All_zero = 0;
+                _model->addConstraint(All_zero);
+            }
+        }
     }
     
 }
