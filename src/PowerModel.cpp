@@ -109,6 +109,20 @@ void PowerModel::build(int time_steps){
 void PowerModel::post_AC_PF_Batt_Time(){
     
     double tot_pl = 0;
+    for (int t = 0; t < _timesteps; t++) {
+        if (_net->_radiation[t]==0) {
+            Constraint All_zero("All_zero_pv_if_no_radiation_t" + to_string(t));
+            for (auto n: _net->nodes) {
+                
+                //        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
+                All_zero += n->pv_t[t];
+                All_zero = 0;
+                _model->addConstraint(All_zero);
+            }
+        }
+    }
+    
+    
     for (auto n:_net->nodes) {
         add_AC_KCL_Batt_Time(n);         //sdone
         add_AC_Voltage_Bounds_Time(n);
@@ -133,6 +147,18 @@ void PowerModel::post_AC_PF_Batt_Time(){
 void PowerModel::post_AC_PF_PV_Time(){
     
     double tot_pl = 0;
+    for (int t = 0; t < _timesteps; t++) {
+        if (_net->_radiation[t]==0) {
+            Constraint All_zero("All_zero_pv_if_no_radiation_t" + to_string(t));
+            for (auto n: _net->nodes) {
+                
+                //        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
+                All_zero += n->pv_t[t];
+                All_zero = 0;
+                _model->addConstraint(All_zero);
+            }
+        }
+    }
     for (auto n:_net->nodes) {
         add_AC_KCL_PV_Time(n);         //sdone
         add_AC_Voltage_Bounds_Time(n);
@@ -1114,16 +1140,6 @@ void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
         Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
         Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
-        if (_net->_radiation[t]==0) {
-            Constraint All_zero("All_zero_pv_if_no_radiation_t" + to_string(t));
-            for (auto n: _net->nodes) {
-                
-                //        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
-                All_zero += n->pv_t[t];
-                All_zero = 0;
-                _model->addConstraint(All_zero);
-            }
-        }
     }
     
     
@@ -1136,16 +1152,6 @@ void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
         Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
         Link_PV_Rate <= 0;
         _model->addConstraint(Link_PV_Rate);
-        if (_net->_radiation[t]==0) {
-            Constraint All_zero("All_zero_pv_if_no_radiation_t" + to_string(t));
-            for (auto n: _net->nodes) {
-                
-                //        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
-                All_zero += n->pv_t[t];
-                All_zero = 0;
-                _model->addConstraint(All_zero);
-            }
-        }
     }
     
 }

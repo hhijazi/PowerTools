@@ -1,5 +1,5 @@
 ##set(IPOPT_ROOT_DIR "$ENV{IPOPT_ROOT_DIR}" CACHE PATH "IPOPT root directory.")
-set(IPOPT_ROOT_DIR "/Users/jinweihao/Project/Ipopt-3.12.4/build" CACHE PATH "IPOPT root directory.")
+set(IPOPT_ROOT_DIR "~/Utils/Bonmin-1.8/build" CACHE PATH "IPOPT root directory.")
 message("Looking for Ipopt in ${IPOPT_ROOT_DIR}")
 
 #string(REGEX MATCH "[0-9]+" IPOPT_VERSION "${IPOPT_ROOT_DIR}")
