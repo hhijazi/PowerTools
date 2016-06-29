@@ -93,7 +93,7 @@ void IpoptProgram::finalize_solution(    Ipopt::SolverReturn               statu
     }
 //    model->check_feasible(x);
     model->_opt = model->_obj->eval(x);
-    cout << "\n************** Objective Function Value = " << model->_opt << " **************" << endl;
+    //cout << "\n************** Objective Function Value = " << model->_opt << " **************" << endl;
 }
 
 bool IpoptProgram::get_bounds_info(Index n, Number* x_l, Number* x_u,

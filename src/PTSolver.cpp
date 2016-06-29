@@ -90,6 +90,8 @@ int PTSolver::run(int output, bool relax, int print_lvl){
             //            iapp->Options()->SetStringValue("derivative_test", "second-order");
             //            iapp.Options()->SetNumericValue("bound_relax_factor", 0);
                         iapp.Options()->SetIntegerValue("print_level", print_lvl);
+                        if (print_lvl == 0) // stop printing of banner
+                            iapp.Options()->SetStringValue("sb", "yes");
             
             //            iapp.Options()->SetStringValue("derivative_test_print_all", "yes");
         status = iapp.OptimizeTNLP(tmp);

@@ -10,7 +10,7 @@ find_library(BLAS_LIBRARIES NAMES blas coinblas PATHS ENV LIBRARY_PATH)
 find_library(LAPACK_LIBRARIES NAMES lapack coinlapack PATHS ENV LIBRARY_PATH)
 find_library(MUMPS_LIBRARIES NAMES coinmumps PATHS ENV LIBRARY_PATH)
 add_library(PowerTools++ ${SOURCES} ${HEADERS})
-target_link_libraries(PowerTools++ ${GUROBI_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${IPOPT_LIBRARIES} dl coinhsl coinmetis ${MUMPS_LIBRARIES})
+target_link_libraries(PowerTools++ ${GUROBI_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${IPOPT_LIBRARIES} dl)
 
 
 add_executable(PowerTools main.cpp)
