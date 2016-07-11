@@ -66,6 +66,7 @@ public:
     double get_const() const;
     size_t get_nb_vars() const;
     double get_coeff(int vid) const;
+    double get_fcoeff(){return _coeff;};
     template<typename Number> var<Number>* get_var_(int idx) const;
     double get_q_coeff(int vid1, int vid2) const;
     double eval(const double* x) const;
@@ -73,6 +74,7 @@ public:
     double eval_dfdx(int vid, const double* x) const;
     shared_ptr<Function> getTree() const; /**< returns coeff*(_lparent _otype _rparent) */
     const Quadratic* get_quad() const;
+    OperatorType get_otype(){return _otype;};
     
     /* Boolean Requests */
     bool same(const double* x) const; /**< if the function variables changed their values */
