@@ -212,7 +212,7 @@ void Model::addConstraint(Constraint c_){
     }
     _nnz_g+=c->get_nb_vars();
 
-//    c->print();
+    c->print();
 };
 
 void Model::addConstraint(Constraint* c){
@@ -358,7 +358,7 @@ void Model::concretise(meta_Constraint& mc, int meta_link, string name){
     }
     c->_meta_constr = &mc;
     addConstraint(c);
-    //    c.Function::print(true);
+        c->print();
     mc._nb_concrete++;
 //    return *c;
 }

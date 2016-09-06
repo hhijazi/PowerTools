@@ -315,7 +315,7 @@ void PowerModel::min_cost_pv(){
         for (auto g:_net->gens) {
 //          *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
           *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
-//        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+        //*obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
     
         for (auto n:_net->nodes) {
@@ -338,7 +338,7 @@ void PowerModel::min_cost_pv_batt(){
         for (auto g:_net->gens) {
 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
 //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
-             *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t]);          //$c1/kwh*(1 hour)*pg=cost
+            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t]);          //$c1/kwh*(1 hour)*pg=cost
 
             //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
@@ -446,6 +446,7 @@ void PowerModel::add_AC_Rect_Batt_vars_Time(){
             _model->addVar(n->pdis_t[t]);
             n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 1);
             _model->addVar(n->soc_t[t]);
+
         }
     }
     
@@ -1092,7 +1093,7 @@ void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
     
 }
 
-void PowerModel::add_AC_link_Batt_Time(Node*n){
+void PowerModel::   add_AC_link_Batt_Time(Node*n){
     
     Constraint SOC_Batt_init("Initial State of Charge");
     SOC_Batt_init += n->soc_t[0];
@@ -1100,37 +1101,82 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
     _model->addConstraint(SOC_Batt_init);
     
     
-    for (int t = 0; t < _timesteps-1; t++) {
+    for (int t = 0; t < _timesteps; t++) {
         
-        
+/*
         Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));                         //soc[t+1]=soc[t]+pch-pdis
         Link_Batt += n->soc_t[t+1]-n->soc_t[t] - 0.85 * n->pch_t[t] + n->pdis_t[t];                 //charge efficiency=85%
         Link_Batt = 0;
-        _model->addConstraint(Link_Batt);
-        
-        
+        _model->addConstraint(Link_Batt);*/
+        //new addition
+        Constraint Limit_to_charging("Limit_to_charging"+n->_name+"_"+ to_string(t));
+        Limit_to_charging += n->soc_t[t];
+        Limit_to_charging -= n->batt_cap;
+        Limit_to_charging <=0;
+        _model->addConstraint(Limit_to_charging);
+        //end of new addition
+
+
+/*        Constraint Limit_to_charging("Limit_to_charging"+n->_name+"_"+ to_string(t));  //setting batt_cap=0 (Testing)
+        Limit_to_charging += n->soc_t[t];
+        Limit_to_charging += n->batt_cap;
+        Limit_to_charging =0;
+        _model->addConstraint(Limit_to_charging);*/
+
     }
     
-    for (int t = 0; t < _timesteps; t++){
-     
-        Constraint Discharging_Batt("Disharging_Batt"+n->_name + "_" + to_string(t));               //pdis<=80%soc   depth of discharge=80%
+    for (int t = 0; t < _timesteps-1; t++){ //change timestep back to _timesteps-1 with new addition
+
+        //new addition
+        Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));
+        Link_Batt += n->soc_t[t+1];
+        Link_Batt -= n->soc_t[t] ;
+        Link_Batt -= (0.85*n->pch_t[t+1] - 0.85*n->pch_t[t]);
+        Link_Batt += (0.80*n->pdis_t[t+1] - 0.8*n->pdis_t[t]);
+        Link_Batt = 0;
+        _model->addConstraint(Link_Batt);
+        //end of new addition
+/*        Constraint Discharging_Batt("Disharging_Batt"+n->_name + "_" + to_string(t));               //pdis<=80%soc   depth of discharge=80%
         Discharging_Batt += n->pdis_t[t] - 0.8 * n->soc_t[t];
         Discharging_Batt <= 0;
-        _model->addConstraint(Discharging_Batt);
-       
-        
-        Constraint ChargingState_Batt("ChargingState_Batt"+n->_name + "_" + to_string(t));          //either pch or pdis must be zero at one timestep
+        _model->addConstraint(Discharging_Batt);*/
+
+      /*  Constraint ChargingState_Batt("ChargingState_Batt"+n->_name + "_" + to_string(t));          //either pch or pdis must be zero at one timestep
         ChargingState_Batt += (n->pdis_t[t])*(n->pch_t[t]);
         ChargingState_Batt = 0;
-        _model->addConstraint(ChargingState_Batt);
-        
-        Constraint Charging_Batt("Charging_Batt"+n->_name + "_" + to_string(t));                   //pch+soc<=batt_cap
+        _model->addConstraint(ChargingState_Batt);*/
+
+        //new addition
+        Constraint Change_of_charge_limit("Maximum_Charging"+n->_name+"_"+to_string(t));
+        Change_of_charge_limit += n->pch_t[t+1] - n->pch_t[t]- 0.05*n->batt_cap;
+        Change_of_charge_limit <= 0;
+        _model->addConstraint(Change_of_charge_limit);
+
+        Constraint Change_of_discharge_limit("Maximum_Discharging"+n->_name+"_"+to_string(t));
+        Change_of_discharge_limit += n->pdis_t[t+1] - n->pdis_t[t]- 0.05*n->batt_cap; // limit of rate, assumed as 5% of battery cap
+        Change_of_discharge_limit <= 0;
+        _model->addConstraint(Change_of_discharge_limit);
+        //end of new addition
+
+      /*  Constraint Charging_Batt("Charging_Batt"+n->_name + "_" + to_string(t));                   //pch+soc<=batt_cap
         Charging_Batt += n->soc_t[t] + 0.85 * n->pch_t[t] - n->batt_cap;
         Charging_Batt <= 0;
-        _model->addConstraint(Charging_Batt);
+        _model->addConstraint(Charging_Batt);*/
+
 
 
     }
+    //new  addition
+        Constraint Last_step_ch("Last_step"+n->_name);                   //pch+soc<=batt_cap
+        Last_step_ch += n->pch_t[_timesteps-1];
+        Last_step_ch = 0;
+        _model->addConstraint(Last_step_ch);
+
+        Constraint Last_step_dis("Last_step"+n->_name);                   //pch+soc<=batt_cap
+        Last_step_dis += n->pdis_t[_timesteps-1];
+        Last_step_dis = 0;
+        _model->addConstraint(Last_step_dis);
+    //end of new addition
 }
 
 void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
@@ -1141,8 +1187,6 @@ void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
         Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
     }
-    
-    
 
 }
 

@@ -16,6 +16,7 @@
 #include "PowerTools++/PTSolver.h"
 #include "PowerTools++/Complex.h"
 #include "PowerTools++/PowerModel.h"
+#include "PowerTools++/json.hpp"
 
 using namespace std;
 
@@ -65,6 +66,7 @@ double get_cpu_time(){
 }
 #endif
 
+
 int main (int argc, const char * argv[])
 {
 //    if (argc != 4) {
@@ -90,11 +92,16 @@ int main (int argc, const char * argv[])
 //    PowerModelType pmt = ACRECT;
     SolverType st = ipopt;
 //    SolverType st = gurobi;
-        string filename = "../../data/anu.m";
-        string loadfile = "../../data/loadfile-24.csv";
-//        string pvfile = "../../data/pvmax.csv";
-        string radiationfile="../../data/radiationfile-24.csv";
-        string costfile = "../../data/gencost-24.csv";
+
+/*        string filename = "/home/angela/DEV/PowerTools/data/anu.m";
+        string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
+        string radiationfile="/home/angela/DEV/PowerTools/data/radiationfile-24.csv";
+        string costfile = "/home/angela/DEV/PowerTools/data/gencost-24.csv";*/
+        string filename = "../data/anu.m";
+        string loadfile = "../data/loadfile-24.csv";
+        string radiationfile="../data/radiationfile-24.csv";
+        string costfile = "../data/gencost-24.csv";
+    ////        string pvfile = "../../data/pvmax.csv";
 
     
 //    string filename = "/Users/hassan/Documents/Dropbox/Work/Dev/Private_PT/data/nesta_case30_ieee.m";
@@ -152,15 +159,15 @@ int main (int argc, const char * argv[])
     
     if(net.readload(loadfile)==-1)
         return -1;
-    
-    
+
+
     if(net.readcost(costfile)==-1)
         return -1;
-    
+
 //    if(net.readpvmax(pvfile)==-1)
 //        return -1;
-//    
-   
+//
+
     if(net.readrad(radiationfile)==-1)
         return -1;
     
@@ -178,12 +185,13 @@ int main (int argc, const char * argv[])
 //    net.readFile("../../data/nesta/nesta_case2383wp_mp.m");
 //    net.readFile("../data/nesta/" + filename);
 //    PowerModel power_model(pmt,&net);
+
     cout << "\nTo run PowerTools with a different input/power flow model, enter:\nPowerTools filename ACPOL/ACRECT/SOCP/QC/QC_SDP/SDPDC/OTS/SOCP_OTS ipopt/gurobi\n\n";
     PowerModel power_model(pmt,&net,st);
     //power_model.propagate_bounds();
     double wall0 = get_wall_time();
     double cpu0  = get_cpu_time();
-    power_model.build(24);
+    power_model.build(1);
     power_model.min_cost_pv_batt();
 //    power_model.min_cost_pv();
 //    power_model.min_cost();
@@ -191,8 +199,15 @@ int main (int argc, const char * argv[])
     //  Stop timers
     double wall1 = get_wall_time();
     double cpu1  = get_cpu_time();
+
+/*    using json = nlohmann::json;
+    json empty_array = ({});*/
+
     cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " << power_model._model->_opt<< ", " << status << ", " << wall1 - wall0<< ", -inf\n";
+
     power_model._model->print_solution();
+
+
     return 0;
 
 }
