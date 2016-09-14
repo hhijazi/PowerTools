@@ -991,7 +991,7 @@ void Net::precise(ofstream &myfile, float f){
 
 
 
-int Net::readrad(string fname){
+int Net::readrad(string fname, int _timesteps){
     cout << "Loading file " << fname << endl;
     ifstream file(fname.c_str());
     if(!file.is_open()){
@@ -1012,18 +1012,41 @@ int Net::readrad(string fname){
     
     getline(file,line);                               //first line to ignore
 //    _radiation.push_back(0);
-    
+    int _time_count = 0;
     //github weihao//
     while(file.peek()!=EOF)
     {
-        getline(file,line);                           //second line store in 'line'
-        
-        std::stringstream copy(line);                 //store the whole line into copy
-        getline(copy,word,',');                       //first column to ignore
-        
-        getline(copy,word,',');
-        _radiation.push_back(atof(word.c_str()));
+            getline(file,line);                          //second line store in 'line'
+
+            std::stringstream copy(line);                 //store the whole line into copy
+            getline(copy, word, ',');                       //first column to ignore
+
+            getline(copy, word, ',');
+            _radiation.push_back(atof(word.c_str()));
+
+            _time_count++;
+
     }
+    int sub_time_count = _time_count/_timesteps; //time count of each division
+    float sum_rad_;
+    float avg_sub_time_rad;
+    vector<double> av_rad;
+
+        for (int t = 1; t <= _timesteps; t++) {
+            sum_rad_ = 0;
+            for (int stc = (t - 1) * sub_time_count; stc < (t - 1) * sub_time_count + sub_time_count; stc++) {
+                sum_rad_ += _radiation[stc]; //sum for each division
+            }
+            avg_sub_time_rad = sum_rad_ / sub_time_count;
+            av_rad.push_back(avg_sub_time_rad);
+            cout << "average rad " << " ; " << avg_sub_time_rad;
+
+        }
+        cout << endl;
+        _radiation = av_rad;
+
+        av_rad.clear();
+
     return 0;
 }
 
@@ -1086,7 +1109,7 @@ int Net::readrad(string fname){
 
 
 
-int Net::readcost(string fname){
+int Net::readcost(string fname, int _timesteps){
     cout << "Loading file " << fname << endl;
     ifstream file(fname.c_str());
     if(!file.is_open()){
@@ -1115,7 +1138,7 @@ int Net::readcost(string fname){
 //        n->_timecost->c2.push_back(0);                        //c2[0]=0
 //    }
 
-    
+    int _time_count = 0;
     while(file.peek()!=EOF)
     {
 //        t++;                                          //new time interval start from 1
@@ -1133,16 +1156,54 @@ int Net::readcost(string fname){
         getline(copy,word,',');                       //c2 original unit:$/kWh
         c2.push_back(atof(word.c_str()));
 
+        _time_count++;
 //        
 //        getline(copy,word,',');                       //c1
 //        gens[1]->_timecost->c1.push_back(atof(word.c_str())/1000/bMVA);
 //        
 //        getline(copy,word,',');                       //c2
 //        gens[1]->_timecost->c2.push_back(atof(word.c_str())/1000/bMVA);
-//        
-
-
+//
 }
+    int sub_time_count = _time_count/_timesteps; //time count of each division
+    float sum_gen_0;
+    float sum_gen_1;
+    float sum_gen_2;
+    float avg_sub_time_gen_0;
+    float avg_sub_time_gen_1;
+    float avg_sub_time_gen_2;
+    vector<double> av_gen_0;
+    vector<double> av_gen_1;
+    vector<double> av_gen_2;
+
+    for (int t = 1; t <= _timesteps; t++) {
+        sum_gen_0 = 0;
+        sum_gen_1 = 0;
+        sum_gen_2 = 0;
+        for (int stc = (t - 1) * sub_time_count; stc < (t - 1) * sub_time_count + sub_time_count; stc++) {
+            sum_gen_0 += c0[stc]; //sum for each division
+            sum_gen_1 += c1[stc];
+            sum_gen_2 += c2[stc];
+        }
+        avg_sub_time_gen_0 = sum_gen_0 / sub_time_count;
+        avg_sub_time_gen_1 = sum_gen_1 / sub_time_count;
+        avg_sub_time_gen_2 = sum_gen_2 / sub_time_count;
+        av_gen_0.push_back(avg_sub_time_gen_0);
+        av_gen_1.push_back(avg_sub_time_gen_1);
+        av_gen_2.push_back(avg_sub_time_gen_2);
+        cout << "average cost c0" << " ; " << avg_sub_time_gen_0 << endl;
+        cout << "average cost c1" << " ; " << avg_sub_time_gen_1 << endl;
+        cout << "average cost c2 " << " ; " << avg_sub_time_gen_2 << endl;
+    }
+    cout << endl;
+    c0 = av_gen_0;
+    c1 = av_gen_1;
+    c2 = av_gen_2;
+
+    av_gen_0.clear();
+    av_gen_1.clear();
+    av_gen_2.clear();
+    return 0;
 
 }
 

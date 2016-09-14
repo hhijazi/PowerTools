@@ -1132,8 +1132,8 @@ void PowerModel::   add_AC_link_Batt_Time(Node*n){
         Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));
         Link_Batt += n->soc_t[t+1];
         Link_Batt -= n->soc_t[t] ;
-        Link_Batt -= (0.85*n->pch_t[t+1] - 0.85*n->pch_t[t]);
-        Link_Batt += (0.8*n->pdis_t[t+1] - 0.8*n->pdis_t[t]);
+        Link_Batt -= (0.85*n->pch_t[t]);
+        Link_Batt += (0.8*n->pdis_t[t]);
         Link_Batt = 0;
         _model->addConstraint(Link_Batt);
         //end of new addition
