@@ -51,6 +51,8 @@ public:
     
     /**radiation limit time dependent*/
     std::vector<double>      _radiation;
+
+
     
     /** Mapping the arcs to their source-destination */
     std::map<std::string, std::set<Arc*>*> lineID;
@@ -135,9 +137,9 @@ public:
     int readFile(std::string fname);
     int readload(std::string ffname, int _timesteps);
     int readpvmax(std::string ffname);
-    int readcost(std::string ffname);
+    int readcost(std::string ffname, int _timesteps);
     int choosetime();
-    int readrad(std::string fname);
+    int readrad(std::string fname, int _timesteps);
     
    
     void writeDAT(std::string name);
