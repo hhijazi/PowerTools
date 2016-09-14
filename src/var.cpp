@@ -169,20 +169,27 @@ template<typename Number>void var<Number>::set_val(Number val){
 
 
 /* Output */
+
+/*#include "PowerTools++/json.hpp"
+    using json = nlohmann::json;
+    json j;*/
 template<typename Number> void var<Number>::print () const{
     switch (_type) {
         case integ:
             cout << "Int ";
+            //j.push_back("Int");
             break;
         case binary:
             cout << "Binary ";
+            //j.push_back("Binary");
             break;
-            
         default:
             cout << "Real ";
+            //j.push_back("Real");
             break;
     }
     cout << _name;
+
     if (!_bounded_down && !_bounded_down) {
         cout << " (unbounded) = ";
         printf("%.10f;\n", (double)_val);

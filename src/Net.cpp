@@ -1149,7 +1149,7 @@ int Net::readcost(string fname){
 
 
 
-int Net::readload(string fname){
+int Net::readload(string fname, int _timesteps){
     cout << "Loading file " << fname << endl;
     ifstream file(fname.c_str());
     if(!file.is_open()){
@@ -1181,7 +1181,7 @@ int Net::readload(string fname){
     double remain = 0;
     double pl = 0;
     double tot_Kw = 0;
-    
+    int _time_count = 0; //counts all time instances
     while(file.peek()!=EOF)
     {
         getline(file,line);                           //third line store in 'line'
@@ -1236,45 +1236,32 @@ int Net::readload(string fname){
 //        {cout<<j<<" "<<nodes[j]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1]<<endl;}
         
 //        t++;
+        _time_count++;
      }
- 
 
-        
-        
-        
-        
-//    while (pos<=0)
-//    {
- //       getline(file, word,',');
-//        pos=word.find("Sydney");
-//        int length=sizeof(word.c_str());
-//    }
+    int sub_time_count = _time_count/_timesteps; //time count of each division
+    float sum_load_;
+    float avg_sub_time_load;
+    vector<double> av_loads;
+    for (int i = 1; i < nodes.size(); i++) {
 
-//    getline(file, word,',');
-//        int length=sizeof(word);
-//        if (word!="\"\"")
-//    {
-//        int length=word.length();
-//        int len=word.length()-2;
-        
-//    string c=word.substr(0,len);
-        
-        
-//        nodes[i]->_cond[0]->_pl.push_back(atof(c.c_str()));
-//    i++;
-//    if (word.find("\n")>>0) t++;
-        
-//    }
-//        else {
-//            nodes[i]->_cond[0]->_pl[t] = 0;
-//            i++;
-//            if (word.find("\n")>>0) t++;
-//        }
-//    }
+        for (int t = 1; t <= _timesteps; t++) {
+            sum_load_ = 0;
+                for (int stc = (t-1)*sub_time_count; stc < (t-1)*sub_time_count + sub_time_count; stc++) {
+                    sum_load_ += nodes[i]->_cond[0]->_pl[stc]; //sum for each division
+                }
+            avg_sub_time_load = sum_load_/sub_time_count;
+            av_loads.push_back(avg_sub_time_load);
+
+            }
+        nodes[i]->_cond[0]->_pl = av_loads;
+        av_loads.clear();
+
+
+        }
+    }
     
-    
-    
-}
+
 
 
 

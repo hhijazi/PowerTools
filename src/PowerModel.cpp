@@ -15,6 +15,7 @@ PowerModel::PowerModel(PowerModelType type, Net* net, SolverType stype):_type(ty
 };
 
 
+
 PowerModel::~PowerModel(){
     delete _model;
     delete _solver;
@@ -1132,7 +1133,7 @@ void PowerModel::   add_AC_link_Batt_Time(Node*n){
         Link_Batt += n->soc_t[t+1];
         Link_Batt -= n->soc_t[t] ;
         Link_Batt -= (0.85*n->pch_t[t+1] - 0.85*n->pch_t[t]);
-        Link_Batt += (0.80*n->pdis_t[t+1] - 0.8*n->pdis_t[t]);
+        Link_Batt += (0.8*n->pdis_t[t+1] - 0.8*n->pdis_t[t]);
         Link_Batt = 0;
         _model->addConstraint(Link_Batt);
         //end of new addition
@@ -1167,12 +1168,12 @@ void PowerModel::   add_AC_link_Batt_Time(Node*n){
 
     }
     //new  addition
-        Constraint Last_step_ch("Last_step"+n->_name);                   //pch+soc<=batt_cap
+        Constraint Last_step_ch("Last_step"+n->_name);
         Last_step_ch += n->pch_t[_timesteps-1];
         Last_step_ch = 0;
         _model->addConstraint(Last_step_ch);
 
-        Constraint Last_step_dis("Last_step"+n->_name);                   //pch+soc<=batt_cap
+        Constraint Last_step_dis("Last_step"+n->_name);
         Last_step_dis += n->pdis_t[_timesteps-1];
         Last_step_dis = 0;
         _model->addConstraint(Last_step_dis);
@@ -1214,7 +1215,7 @@ void PowerModel::add_AC_KCL_Batt_Time(Node* n){
         KCL_P += sum_Time(n->get_in(), "pj", t);
         KCL_P -= sum_Time(n->_gen, "pg", t);
         KCL_P -= n->pv_t[t];
-        KCL_P -= 0.85 * n->pdis_t[t];                                               //discharge efficiency=85%
+        KCL_P -= 0.85 * n->pdis_t[t];                                               //discharge efficiency=70%
         KCL_P += n->pch_t[t];
         KCL_P += n->gs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) + n->pl(t);
         //        cout << n->_name << " pload = " << n->pl(t) << endl;

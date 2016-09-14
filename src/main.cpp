@@ -7,6 +7,7 @@
 //
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <stdio.h>
 #include <cstring>
@@ -17,6 +18,7 @@
 #include "PowerTools++/Complex.h"
 #include "PowerTools++/PowerModel.h"
 #include "PowerTools++/json.hpp"
+
 
 using namespace std;
 
@@ -152,13 +154,16 @@ int main (int argc, const char * argv[])
     cout << "############################## POWERTOOLS ##############################\n\n";
     Net net;
 
+
+    int timesteps = 2;
     
     if(net.readFile(filename)==-1)
         return -1;
     
     
-    if(net.readload(loadfile)==-1)
+    if(net.readload(loadfile,timesteps)==-1) {
         return -1;
+    };
 
 
     if(net.readcost(costfile)==-1)
@@ -191,7 +196,7 @@ int main (int argc, const char * argv[])
     //power_model.propagate_bounds();
     double wall0 = get_wall_time();
     double cpu0  = get_cpu_time();
-    power_model.build(1);
+    power_model.build(timesteps);
     power_model.min_cost_pv_batt();
 //    power_model.min_cost_pv();
 //    power_model.min_cost();
@@ -200,11 +205,8 @@ int main (int argc, const char * argv[])
     double wall1 = get_wall_time();
     double cpu1  = get_cpu_time();
 
-/*    using json = nlohmann::json;
-    json empty_array = ({});*/
 
     cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " << power_model._model->_opt<< ", " << status << ", " << wall1 - wall0<< ", -inf\n";
-
     power_model._model->print_solution();
 
 
