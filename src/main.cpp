@@ -99,10 +99,10 @@ int main (int argc, const char * argv[])
         string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
         string radiationfile="/home/angela/DEV/PowerTools/data/radiationfile-24.csv";
         string costfile = "/home/angela/DEV/PowerTools/data/gencost-24.csv";*/
-        string filename = "../data/anu.m";
-        string loadfile = "../data/loadfile-24.csv";
-        string radiationfile="../data/radiationfile-24.csv";
-        string costfile = "../data/gencost-24.csv";
+        string filename = "../../data/anu.m";
+        string loadfile = "../../data/loadfile-24.csv";
+        string radiationfile="../../data/radiationfile-24.csv";
+        string costfile = "../../data/gencost-24.csv";
     ////        string pvfile = "../../data/pvmax.csv";
 
     

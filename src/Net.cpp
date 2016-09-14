@@ -1195,12 +1195,15 @@ int Net::readload(string fname, int _timesteps){
         {
 //            int length=word.length();
             int len=word.length()-2;                  //erase 'kW'
+            if (len !=2 ) {
+                continue;
+            }
             
             string c=word.substr(0,len);
             
           
 //            double test = atof(c.c_str());            //simulate pl(i,t)
-//            cout << i << " ";
+            cout << "bus" << i << " pl = ";
             tot_Kw +=  atof(c.c_str());
             pl = atof(c.c_str())/(1000*bMVA)/3;
             
@@ -1208,15 +1211,17 @@ int Net::readload(string fname, int _timesteps){
             
             if (pl > 0.1) {
                 nodes[i]->_cond[0]->_pl.push_back(0);
-//                cerr << "\n\nCRAZY NUMBER!!\n\n";
+                cerr << " 0; ";
             }
             else {
+                cout <<  " " << pl << " ;";
                 nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW
             }
 
             
             tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];                                      //*MW
             i++;
+            cout << endl;
         }
 //        cout << "TOTAL Kw = " << tot_Kw << endl;
 //        cout << "My TOTAL = " << tot << "__"<< nodes[i]->_cond[0]->_pl.size()-1 << endl;
@@ -1243,8 +1248,8 @@ int Net::readload(string fname, int _timesteps){
     float sum_load_;
     float avg_sub_time_load;
     vector<double> av_loads;
-    for (int i = 1; i < nodes.size(); i++) {
-
+    for (int i = 0; i < nodes.size(); i++) {
+        cout << "av load for bus " << i << " = ";
         for (int t = 1; t <= _timesteps; t++) {
             sum_load_ = 0;
                 for (int stc = (t-1)*sub_time_count; stc < (t-1)*sub_time_count + sub_time_count; stc++) {
@@ -1252,8 +1257,10 @@ int Net::readload(string fname, int _timesteps){
                 }
             avg_sub_time_load = sum_load_/sub_time_count;
             av_loads.push_back(avg_sub_time_load);
+            cout << " ; " << avg_sub_time_load;
 
             }
+        cout << endl;
         nodes[i]->_cond[0]->_pl = av_loads;
         av_loads.clear();
 
