@@ -1024,7 +1024,7 @@ int Net::readrad(string fname){
         getline(copy,word,',');
         _radiation.push_back(atof(word.c_str()));
     }
-    
+    return 0;
 }
 
 
@@ -1203,18 +1203,18 @@ int Net::readload(string fname, int _timesteps){
             
           
 //            double test = atof(c.c_str());            //simulate pl(i,t)
-            cout << "bus" << i << " pl = ";
+//            cout << "bus" << i << " pl = ";
             tot_Kw +=  atof(c.c_str());
-            pl = atof(c.c_str())/(1000*bMVA)/3;
+            pl = atof(c.c_str())/(1000*bMVA);
             
             
             
             if (pl > 0.1) {
                 nodes[i]->_cond[0]->_pl.push_back(0);
-                cerr << " 0; ";
+//                cerr << " 0; ";
             }
             else {
-                cout <<  " " << pl << " ;";
+//                cout <<  " " << pl << " ;";
                 nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW
             }
 
@@ -1266,6 +1266,7 @@ int Net::readload(string fname, int _timesteps){
 
 
         }
+    return 0;
     }
     
 
