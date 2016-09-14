@@ -17,12 +17,17 @@
 #include <vector>
 #include <PowerTools++/Node.h>
 #include <PowerTools++/Path.h>
+#include <PowerTools++/PowerModel.h>
 #include <assert.h>
 
 
 class Net{
 public:
-    
+    int i=0;
+    int j=0;
+    int _bus_count; // buses are i
+    int _time_count; //time instances are j
+
 
     double bMVA;
     
@@ -128,7 +133,7 @@ public:
     /* Input Output */
     
     int readFile(std::string fname);
-    int readload(std::string ffname);
+    int readload(std::string ffname, int _timesteps);
     int readpvmax(std::string ffname);
     int readcost(std::string ffname);
     int choosetime();

@@ -20,7 +20,7 @@ class Conductor {
 public:
     /** @brief Conductor active power load */
     std::vector<double> _pl;
-    
+
     /** @brief Conductor pv limit */
     std::vector<double> _pvmax;
     
