@@ -11,6 +11,7 @@
 #include <PowerTools++/Complex.h>
 #include <PowerTools++/Bound.h>
 
+
 class Line {
 public:
     int id;
@@ -32,6 +33,7 @@ public:
     Complex _Si_;
     Complex _Sj_;
     Complex _W_;
+
     var<>   wr;
     var<>   wi;
     var<>   pi;
@@ -41,7 +43,12 @@ public:
     vector<var<>>   qi_t;
     vector<var<>>   pj_t;
     vector<var<>>   qj_t;
-    
+    vector<var<>>   wr_t;
+    vector<var<>>   wi_t;
+    vector<var<>>   p_loss;
+
+
+
     var<>   pj;
     var<>   qj;
     var<>   vcs;    /** vi*vj*cs */
@@ -60,7 +67,7 @@ public:
     ~Line();
     
     void init_complex();
-    
+
     void print();
 
 };

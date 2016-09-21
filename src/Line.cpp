@@ -8,6 +8,7 @@
 
 #include "PowerTools++/Line.h"
 #include <iostream>
+#include "PowerTools++/PowerModel.h"
 
 using namespace std;
 
@@ -43,6 +44,9 @@ void Line::init_complex(){
     _Si_._name.append(_name);
     _Sj_._name.append(_name);
 }
+
+
+
 
 void Line::print(){
     std::cout << "limit = " << limit;

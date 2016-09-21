@@ -20,6 +20,7 @@
 #include "PowerTools++/json.hpp"
 
 
+
 using namespace std;
 
 //  Windows
@@ -69,8 +70,7 @@ double get_cpu_time(){
 #endif
 
 
-int main (int argc, const char * argv[])
-{
+int main (int argc, const char * argv[]) {
 //    if (argc != 4) {
 //        cerr << "Wrong number of arguments.\n";
 //        exit(1);
@@ -78,12 +78,13 @@ int main (int argc, const char * argv[])
 //    PowerModelType pmt = ACPOL;
 //    PowerModelType pmt = SDP;
 //    setenv("GRB_LICENSE_FILE", "/home/kbestuzheva/gurobi.research.lic", 1);
-    
+
 //    PowerModelType pmt = ACPF;
 //    PowerModelType pmt = ACPF_PV_T;
-    PowerModelType pmt = ACPF_BATT_T;
+//    PowerModelType pmt = ACPF_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
+    PowerModelType pmt = SOCP_PV_T;
 
     //  Start Timers
 
@@ -95,17 +96,17 @@ int main (int argc, const char * argv[])
     SolverType st = ipopt;
 //    SolverType st = gurobi;
 
-/*        string filename = "/home/angela/DEV/PowerTools/data/anu.m";
-        string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
-        string radiationfile="/home/angela/DEV/PowerTools/data/radiationfile-24.csv";
-        string costfile = "/home/angela/DEV/PowerTools/data/gencost-24.csv";*/
-        string filename = "../../data/anu.m";
-        string loadfile = "../../data/loadfile-24.csv";
-        string radiationfile="../../data/radiationfile-24.csv";
-        string costfile = "../../data/gencost-24.csv";
+    string filename = "/home/angela/DEV/PowerTools/data/anu.m";
+    string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
+    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24.csv";
+    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24.csv";
+    /*       string filename = "../data/anu.m";
+           string loadfile = "../data/loadfile-24.csv";
+           string radiationfile="../data/radiationfile-24.csv";
+           string costfile = "../data/gencost-24.csv";*/
     ////        string pvfile = "../../data/pvmax.csv";
 
-    
+
 //    string filename = "/Users/hassan/Documents/Dropbox/Work/Dev/Private_PT/data/nesta_case30_ieee.m";
 //    string filename = "../../data/nesta_case3_lmbd.m";
 //    string filename = "../data/nesta_case118_ieee__api.m";
@@ -120,31 +121,32 @@ int main (int argc, const char * argv[])
 //    string filename = "../../data/nesta_case14_ieee.m";
 //    string filename = "../../data/nesta_case162_ieee_dtc.m";
 //    string filename = "../../data/nesta_case5_pjm.m";
-    if (argc >=2) {
+    if (argc >= 2) {
         filename = argv[1];
-    
-        if(!strcmp(argv[2],"ACPOL")) pmt = ACPOL;
-        else if(!strcmp(argv[2],"ACRECT")) pmt = ACRECT;
-        else if(!strcmp(argv[2],"QC")) pmt = QC;
-        else if(!strcmp(argv[2],"QC_SDP")) pmt = QC_SDP;
-        else if(!strcmp(argv[2],"OTS")) pmt = OTS;
-        else if(!strcmp(argv[2],"SOCP")) pmt = SOCP;
-        else if(!strcmp(argv[2],"SDP")) pmt = SDP;
-        else if(!strcmp(argv[2],"DC")) pmt = DC;
-        else if(!strcmp(argv[2],"QC_OTS_O")) pmt = QC_OTS_O;
-        else if(!strcmp(argv[2],"QC_OTS_N")) pmt = QC_OTS_N;
-        else if(!strcmp(argv[2],"QC_OTS_L")) pmt = QC_OTS_L;
-        else if(!strcmp(argv[2],"SOCP_OTS")) pmt = SOCP_OTS;
-            else{
-                    cerr << "Unknown model type.\n";
-                    exit(1);
-            }
-        
-        if(!strcmp(argv[3],"ipopt")) st = ipopt;
-        
-        else if(!strcmp(argv[3],"gurobi")) st = gurobi;
-        else if(!strcmp(argv[3],"bonmin")) st = bonmin;
-        else{
+
+        if (!strcmp(argv[2], "ACPOL")) pmt = ACPOL;
+        else if (!strcmp(argv[2], "ACRECT")) pmt = ACRECT;
+        else if (!strcmp(argv[2], "QC")) pmt = QC;
+        else if (!strcmp(argv[2], "QC_SDP")) pmt = QC_SDP;
+        else if (!strcmp(argv[2], "OTS")) pmt = OTS;
+        else if (!strcmp(argv[2], "SOCP")) pmt = SOCP;
+        else if (!strcmp(argv[2], "SOCP_PV_T")) pmt = SOCP_PV_T;
+        else if (!strcmp(argv[2], "SDP")) pmt = SDP;
+        else if (!strcmp(argv[2], "DC")) pmt = DC;
+        else if (!strcmp(argv[2], "QC_OTS_O")) pmt = QC_OTS_O;
+        else if (!strcmp(argv[2], "QC_OTS_N")) pmt = QC_OTS_N;
+        else if (!strcmp(argv[2], "QC_OTS_L")) pmt = QC_OTS_L;
+        else if (!strcmp(argv[2], "SOCP_OTS")) pmt = SOCP_OTS;
+        else {
+            cerr << "Unknown model type.\n";
+            exit(1);
+        }
+
+        if (!strcmp(argv[3], "ipopt")) st = ipopt;
+
+        else if (!strcmp(argv[3], "gurobi")) st = gurobi;
+        else if (!strcmp(argv[3], "bonmin")) st = bonmin;
+        else {
             cerr << "Unknown solver type.\n";
             exit(1);
         }
@@ -156,34 +158,34 @@ int main (int argc, const char * argv[])
 
 
     int timesteps = 2;
-    
-    if(net.readFile(filename)==-1)
+
+    if (net.readFile(filename) == -1)
         return -1;
-    
-    
-    if(net.readload(loadfile,timesteps)==-1) {
+
+
+    if (net.readload(loadfile, timesteps) == -1) {
         return -1;
     };
 
 
-    if(net.readcost(costfile)==-1)
+    if (net.readcost(costfile, timesteps) == -1)
         return -1;
 
 //    if(net.readpvmax(pvfile)==-1)
 //        return -1;
 //
 
-    if(net.readrad(radiationfile)==-1)
+    if (net.readrad(radiationfile, timesteps) == -1)
         return -1;
-    
+
 //    if(net.choosetime()==-1)                 
 //        return -1;
 //  
 
-    
-    
-    
-    
+
+
+
+
 //    net.readFile("data/nesta/nesta_case2383wp_mp.m");
 //    net.readFile("data/nesta/nesta_case300_ieee.m");
 //    net.readFile("../../data/nesta/nesta_case9241_pegase.m");
@@ -191,25 +193,43 @@ int main (int argc, const char * argv[])
 //    net.readFile("../data/nesta/" + filename);
 //    PowerModel power_model(pmt,&net);
 
-    cout << "\nTo run PowerTools with a different input/power flow model, enter:\nPowerTools filename ACPOL/ACRECT/SOCP/QC/QC_SDP/SDPDC/OTS/SOCP_OTS ipopt/gurobi\n\n";
-    PowerModel power_model(pmt,&net,st);
+    cout <<
+    "\nTo run PowerTools with a different input/power flow model, enter:\nPowerTools filename ACPOL/ACRECT/SOCP/QC/QC_SDP/SDPDC/OTS/SOCP_OTS ipopt/gurobi\n\n";
+    PowerModel power_model(pmt, &net, st);
     //power_model.propagate_bounds();
     double wall0 = get_wall_time();
-    double cpu0  = get_cpu_time();
+    double cpu0 = get_cpu_time();
     power_model.build(timesteps);
-    power_model.min_cost_pv_batt();
-//    power_model.min_cost_pv();
+//    power_model.min_cost_pv_batt();
+    power_model.min_cost_pv();
 //    power_model.min_cost();
     int status = power_model.solve();
     //  Stop timers
     double wall1 = get_wall_time();
-    double cpu1  = get_cpu_time();
+    double cpu1 = get_cpu_time();
 
 
-    cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " << power_model._model->_opt<< ", " << status << ", " << wall1 - wall0<< ", -inf\n";
+    cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
+    power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
+
     power_model._model->print_solution();
 
+    float sum_power_loss = 0;
 
-    return 0;
+    for (int t = 0; t < power_model._timesteps; t++) {
 
+        for (auto a:net.arcs) {
+
+            cout << "Power loss" <<"_" <<a->_name <<"_"<<a->src->_name<< "_"<<a->dest->_name<<"_" <<to_string(t) << "="<< a->pi_t[t].get_value() + a->pj_t[t].get_value() << endl;
+
+
+            sum_power_loss += a->pi_t[t].get_value() + a->pj_t[t].get_value();
+
+        }
+
+        cout << "Total power loss =" << sum_power_loss;
+
+        return 0;
+
+    }
 }

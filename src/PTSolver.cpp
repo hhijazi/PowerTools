@@ -7,6 +7,8 @@
 //
 
 #include "PowerTools++/PTSolver.h"
+#include "PowerTools++/PowerModel.h"
+#include "PowerTools++/Net.h"
 
 namespace {
     void gurobiNotAvailable()
@@ -76,6 +78,8 @@ int PTSolver::run(int output, bool relax){
             if (status != Solve_Succeeded) {
                 std::cout << std::endl << std::endl << "*** Error during initialization!" << std::endl;
                 return (int) status;
+
+
             }
 
         if(prog.ipopt_prog->model->_objt==maximize){
@@ -102,6 +106,9 @@ int PTSolver::run(int output, bool relax){
                 //                printf("\n\nSolution of the primal variables:\n");
                 //                _model->print_solution();
 //                return status;
+
+
+
                 return 100;
             }
         if (status == Solved_To_Acceptable_Level) {

@@ -7,6 +7,7 @@
 //
 
 #include "PowerTools++/Model.h"
+#include "PowerTools++/PowerModel.h"
 
 using namespace std;
 
@@ -212,7 +213,7 @@ void Model::addConstraint(Constraint c_){
     }
     _nnz_g+=c->get_nb_vars();
 
-//    c->print();
+    c->print();
 };
 
 void Model::addConstraint(Constraint* c){
@@ -1655,38 +1656,53 @@ void Model::print_functions() const{
 //    cout << endl;
 }
 
-void Model::print_solution() const{
-    var<int>* int_var = NULL;
-    var<bool>* bin_var = NULL;
-    var<float>* real_var = NULL;
-    var<double>* long_real_var = NULL;
-    int idx=0;
+void Model::print_solution() const {
+    var<int> *int_var = NULL;
+    var<bool> *bin_var = NULL;
+    var<float> *real_var = NULL;
+    var<double> *long_real_var = NULL;
+    int idx = 0;
     int vid = 0;
-    for(auto& v: _vars ) {
+    for (auto &v: _vars) {
         vid = v->get_idx();
 //        assert(vid==idx);
         switch (v->get_type()) {
             case real:
-                real_var = (var<float>*)v;
+                real_var = (var<float> *) v;
                 real_var->print();
                 break;
             case longreal:
-                long_real_var = (var<double>*)v;
+                long_real_var = (var<double> *) v;
                 long_real_var->print();
                 break;
             case integ:
-                int_var = (var<int>*)v;
+                int_var = (var<int> *) v;
                 int_var->print();
                 break;
             case binary:
-                bin_var = (var<bool>*)v;
+                bin_var = (var<bool> *) v;
                 bin_var->print();
                 break;
             default:
                 break;
-        } ;
+        };
         idx++;
     }
-}
 
+/*    double sum_power_loss = 0;
+
+    for (int t = 0; t < _timesteps; t++) {
+        for (auto a:_net->arcs) {
+
+            cout << "Power loss =" << a->pi_t[t].get_value() + a->pj_t[t].get_value() << endl;
+
+            sum_power_loss += (a->pi_t[t].get_value()) + (a->pj_t[t].get_value());
+            cout << "Total power loss =" << sum_power_loss;
+
+        }
+
+
+        cout << "Total power loss =" << sum_power_loss;
+    }*/
+}
 

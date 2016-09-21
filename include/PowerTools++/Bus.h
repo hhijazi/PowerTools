@@ -29,7 +29,7 @@ public:
     
     /** @brief Indicates if bus has integrated generation */
     bool _has_gen;
-    
+
     /** @brief Indicates the number of generators installed on this bus */
     int _nb_gen;
     
@@ -70,6 +70,10 @@ public:
     vector<var<>>  vr_t;
     /** Imaginary Voltage (time dependent)*/
     vector<var<>>  vi_t;
+
+
+    /** Voltage magnitude squared (time dependent)*/
+    vector<var<>>   w_t;
 
     /** Active power from PV pannels*/
     var<> pv;

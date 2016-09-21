@@ -19,7 +19,7 @@
 #include <PowerTools++/meta_Constraint.h>
 #include <vector>
 
-typedef enum { ACPF_BATT_T, ACPF_PV_T, ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
+typedef enum { SOCP_PV_T, ACPF_BATT_T, ACPF_PV_T, ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
 typedef enum { MinCostPv_T, MinCostPv,MinCostPvBatt, MinCost, MinLoss, MinDelta, MaxDelta } Obj;
 
 class PowerModel {
@@ -55,7 +55,11 @@ public:
     void add_AC_Rect_PV_vars();
     void add_AC_Rect_PV_vars_Time();
     void add_AC_Rect_Batt_vars_Time();
-    
+
+    void add_SOCP_Rect_PV_vars_Time();
+
+
+
     void add_QC_vars();
     void add_AC_OTS_vars();
     void add_AC_SOCP_vars();
@@ -64,6 +68,7 @@ public:
     void add_SOCP_OTS_vars();
     /** Constraints */
     void add_Wr_Wi(Arc* a);
+    void add_Wr_Wi_time(Arc *a);
     void add_AC_thermal(Arc* a, bool switch_lines);
     
     void add_AC_thermal_Time(Arc* a);
@@ -72,7 +77,7 @@ public:
     void add_AC_Voltage_Bounds(Node* n);
 
     void add_AC_Voltage_Bounds_Time(Node* n);
-    
+    void add_SOCP_Voltage_Bounds_Time(Node* n);
     void add_AC_Power_Flow(Arc* a, bool polar);
     
     void add_AC_Power_Flow_Time(Arc* a);
@@ -80,6 +85,7 @@ public:
     void add_AC_KCL_PV_Time(Node* n);
     void add_AC_KCL_Batt_Time(Node* n);
     void add_AC_link_Batt_Time(Node* n);
+    void add_SOCP_KCL_PV_Time(Node* n);
     
     void add_link_PV_Rate_NoCurt_Time(Node* n);
     void add_link_PV_Rate_Curt_Time(Node* n);
@@ -113,6 +119,7 @@ public:
     void post_DC();
     void post_QC_OTS(bool lin_cos_cuts, bool quad_cos);
     void post_SOCP_OTS();
+    void post_SOCP_PF_PV_Time();
     /** Presolve */
     void propagate_bounds();
 
