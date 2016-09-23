@@ -19,8 +19,8 @@
 #include <PowerTools++/meta_Constraint.h>
 #include <vector>
 
-typedef enum { SOCP_PV_T, ACPF_BATT_T, ACPF_PV_T, ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
-typedef enum { MinCostPv_T, MinCostPv,MinCostPvBatt, MinCost, MinLoss, MinDelta, MaxDelta } Obj;
+typedef enum { SOCP_T, SOCP_PV_T, ACPF_BATT_T, ACPF_PV_T, ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
+typedef enum { MinCostPv_T, MinCostPv,MinCostPvBatt, MinCost, MinCostTime,  MinLoss, MinDelta, MaxDelta } Obj;
 
 class PowerModel {
 public:
@@ -66,6 +66,7 @@ public:
     void add_DC_vars();
     void add_QC_OTS_vars();
     void add_SOCP_OTS_vars();
+    void add_AC_SOCP_vars_Time();
     /** Constraints */
     void add_Wr_Wi(Arc* a);
     void add_Wr_Wi_time(Arc *a);
@@ -82,6 +83,7 @@ public:
     
     void add_AC_Power_Flow_Time(Arc* a);
 
+    void add_AC_KCL_Time(Node *n);
     void add_AC_KCL_PV_Time(Node* n);
     void add_AC_KCL_Batt_Time(Node* n);
     void add_AC_link_Batt_Time(Node* n);
@@ -115,6 +117,8 @@ public:
     void post_AC_Rect();
     void post_QC();
     void post_AC_SOCP();
+    void post_AC_SOCP_Time();
+
     void post_AC_OTS();
     void post_DC();
     void post_QC_OTS(bool lin_cos_cuts, bool quad_cos);
@@ -126,6 +130,7 @@ public:
     /** Solve */
     int solve(int output = 1,bool relax = false);
     void min_cost();
+    void min_cost_time();
     void min_cost_pv();
     void min_cost_pv_batt();
 

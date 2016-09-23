@@ -80,11 +80,13 @@ int main (int argc, const char * argv[]) {
 //    setenv("GRB_LICENSE_FILE", "/home/kbestuzheva/gurobi.research.lic", 1);
 
 //    PowerModelType pmt = ACPF;
+      PowerModelType pmt = SOCP;
+//      PowerModelType pmt = SOCP_T;
 //    PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
-    PowerModelType pmt = SOCP_PV_T;
+//    PowerModelType pmt = SOCP_PV_T;
 
     //  Start Timers
 
@@ -157,7 +159,7 @@ int main (int argc, const char * argv[]) {
     Net net;
 
 
-    int timesteps = 2;
+    int timesteps = 6;
 
     if (net.readFile(filename) == -1)
         return -1;
@@ -201,8 +203,9 @@ int main (int argc, const char * argv[]) {
     double cpu0 = get_cpu_time();
     power_model.build(timesteps);
 //    power_model.min_cost_pv_batt();
-    power_model.min_cost_pv();
-//    power_model.min_cost();
+//    power_model.min_cost_pv();
+    power_model.min_cost();
+//    power_model.min_cost_time();
     int status = power_model.solve();
     //  Stop timers
     double wall1 = get_wall_time();
@@ -213,14 +216,14 @@ int main (int argc, const char * argv[]) {
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
 
     power_model._model->print_solution();
-
+/*
     float sum_power_loss = 0;
 
     for (int t = 0; t < power_model._timesteps; t++) {
 
         for (auto a:net.arcs) {
 
-            cout << "Power loss" <<"_" <<a->_name <<"_"<<a->src->_name<< "_"<<a->dest->_name<<"_" <<to_string(t) << "="<< a->pi_t[t].get_value() + a->pj_t[t].get_value() << endl;
+            cout << "Power loss" <<"_" <<a->_name <<"_"<<a->src->_name<< "_"<<a->dest->_name<< "(bMVA)"<< "="<<" " <<a->pi_t[t].get_value() + a->pj_t[t].get_value() << endl;
 
 
             sum_power_loss += a->pi_t[t].get_value() + a->pj_t[t].get_value();
@@ -231,5 +234,5 @@ int main (int argc, const char * argv[]) {
 
         return 0;
 
-    }
+    }*/
 }
