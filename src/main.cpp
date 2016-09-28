@@ -80,13 +80,15 @@ int main (int argc, const char * argv[]) {
 //    setenv("GRB_LICENSE_FILE", "/home/kbestuzheva/gurobi.research.lic", 1);
 
 //    PowerModelType pmt = ACPF;
-      PowerModelType pmt = SOCP;
+//      PowerModelType pmt = ACPF_T;
+//      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
 //    PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
-//    PowerModelType pmt = SOCP_PV_T;
+    PowerModelType pmt = SOCP_PV_T;
+//      PowerModelType pmt = SOCP_BATT_T;
 
     //  Start Timers
 
@@ -203,8 +205,8 @@ int main (int argc, const char * argv[]) {
     double cpu0 = get_cpu_time();
     power_model.build(timesteps);
 //    power_model.min_cost_pv_batt();
-//    power_model.min_cost_pv();
-    power_model.min_cost();
+    power_model.min_cost_pv();
+//    power_model.min_cost();
 //    power_model.min_cost_time();
     int status = power_model.solve();
     //  Stop timers
