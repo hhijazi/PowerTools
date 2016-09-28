@@ -166,7 +166,7 @@ int main (int argc, const char * argv[]) {
     Net net;
 
 
-    int timesteps = 6;
+    int timesteps = 4;
 
     if (net.readFile(filename) == -1)
         return -1;

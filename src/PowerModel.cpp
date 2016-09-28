@@ -639,14 +639,14 @@ void PowerModel::min_cost_pv(){
 //          *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
          // *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
         //*obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
-            *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t]);          //$c1/kwh*(1 hour)*pg=cost  $/unit
+            *obj += _net->bMVA*1000*_net->c1[t]*g->pg_t[t];          //$c1/kwh*(1 hour)*pg=cost  $/unit
         }
         for (auto n:_net->nodes) {
             //*obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
-            *obj += 0.15*n->pv_rate/1000*_net->bMVA * 24/_timesteps; // $0.15/kWh -> $150/MWh paid over 1 year $/unit
+            *obj += 0.15*1000*n->pv_t[t]*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year $/unit
         }
     }
-    *obj = *obj/_timesteps;
+    *obj = (*obj/_timesteps);
 //    *obj = *obj/24;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
