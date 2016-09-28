@@ -71,6 +71,11 @@ double get_cpu_time(){
 
 
 int main (int argc, const char * argv[]) {
+    
+//    auto i = 3./10000;
+//    cout << "i = " << i << endl;
+//    return 0;
+//    
 //    if (argc != 4) {
 //        cerr << "Wrong number of arguments.\n";
 //        exit(1);
@@ -83,11 +88,11 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_T;
 //      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
-//    PowerModelType pmt = ACPF_PV_T;
+    PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
-    PowerModelType pmt = SOCP_PV_T;
+//    PowerModelType pmt = SOCP_PV_T;
 //      PowerModelType pmt = SOCP_BATT_T;
 
     //  Start Timers
@@ -100,14 +105,14 @@ int main (int argc, const char * argv[]) {
     SolverType st = ipopt;
 //    SolverType st = gurobi;
 
-    string filename = "/home/angela/DEV/PowerTools/data/anu.m";
-    string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
-    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24.csv";
-    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24.csv";
-    /*       string filename = "../data/anu.m";
-           string loadfile = "../data/loadfile-24.csv";
-           string radiationfile="../data/radiationfile-24.csv";
-           string costfile = "../data/gencost-24.csv";*/
+//    string filename = "/home/angela/DEV/PowerTools/data/anu.m";
+//    string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
+//    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24.csv";
+//    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24.csv";
+           string filename = "../../data/anu.m";
+           string loadfile = "../../data/loadfile-24.csv";
+           string radiationfile="../../data/radiationfile-24.csv";
+           string costfile = "../../data/gencost-24.csv";
     ////        string pvfile = "../../data/pvmax.csv";
 
 
