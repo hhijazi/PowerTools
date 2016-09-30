@@ -161,9 +161,9 @@ void PowerModel::post_AC_PF_Batt_Time(){
 
         Constraint Sum_PV_bound("Sum_PV_bound" + n->_name);
         Sum_PV_bound += n->pv_rate;
-        Sum_PV_bound <= (3/1000000)*(_net->bMVA);
+        Sum_PV_bound <= (3.*1000.)*(_net->bMVA);
         _model->addConstraint(Sum_PV_bound);
-        Sum_PV_bound.print();
+
 
         tot_pl += n->pl();
     }
@@ -221,14 +221,14 @@ void PowerModel::post_AC_PF_PV_Time(){
         add_AC_KCL_PV_Time(n);         //sdone
         add_AC_Voltage_Bounds_Time(n);
 
-//        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
-        add_link_PV_Rate_Curt_Time(n);       //with curtailment
+        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
+//        add_link_PV_Rate_Curt_Time(n);       //with curtailment
 
         Constraint Sum_PV_bound("Sum_PV_bound" + n->_name);
         Sum_PV_bound += n->pv_rate;
-        Sum_PV_bound <= (3/(1000))/(_net->bMVA);
+        Sum_PV_bound <= (3.*1000.)*(_net->bMVA);
         _model->addConstraint(Sum_PV_bound);
-        Sum_PV_bound.print();
+
 
         tot_pl += n->pl();
     }
@@ -285,14 +285,14 @@ void PowerModel::post_SOCP_PF_Batt_Time() {
 
         add_AC_link_Batt_Time(n);      //no curtailment
 
-        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
-        //add_link_PV_Rate_Curt_Time(n);       //with curtailment
+//        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
+        add_link_PV_Rate_Curt_Time(n);       //with curtailment
 
         Constraint Sum_PV_bound("Sum_PV_bound" + n->_name);
         Sum_PV_bound += n->pv_rate;
-        Sum_PV_bound <= (3 / 1000000) * (_net->bMVA);
+        Sum_PV_bound <= (3.*1000.) * (_net->bMVA);
         _model->addConstraint(Sum_PV_bound);
-        Sum_PV_bound.print();
+
 
         tot_pl += n->pl();
     }
@@ -403,8 +403,14 @@ void PowerModel::post_SOCP_PF_PV_Time() {
     }
     for (auto n:_net->nodes) {
         add_SOCP_KCL_PV_Time(n);         //sdone
-        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
-//        add_link_PV_Rate_Curt(n);       //with curtailment
+//        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
+        add_link_PV_Rate_Curt_Time(n);      //with curtailment
+
+        Constraint Sum_PV_bound("Sum_PV_bound" + n->_name);
+        Sum_PV_bound += n->pv_rate;
+        Sum_PV_bound <= (3./1000.)*(_net->bMVA); // 3MW limit on the total PV
+        _model->addConstraint(Sum_PV_bound);
+
         tot_pl += n->pl();
     }
 
@@ -415,8 +421,6 @@ void PowerModel::post_SOCP_PF_PV_Time() {
         Arc *ap = nullptr;
         if (a->status == 1) {
             for (int t = 0; t < _timesteps; t++) {
-
-
                 src = a->src;
                 dest = a->dest;
                 /** subject to Flow_P_From {(l,i,j) in arcs_from}:
@@ -491,6 +495,7 @@ void PowerModel::post_SOCP_PF_PV_Time() {
 
             add_AC_thermal_Time(a);
            // add_Wr_Wi_time(a);
+
         }
     }
 
@@ -613,16 +618,16 @@ void PowerModel::min_cost(){
 
 void PowerModel::min_cost_time() {
     _objective = MinCostTime;
-    Function *obj = new Function();
+    Function* obj = new Function();
     for (int t = 0; t < _timesteps; t++) {
         for (auto g:_net->gens) {
-            if (!g->_active)
-                continue;
-            *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t]);
+            /*if (!g->_active)
+                continue;*/
+            *obj += _net->bMVA*_net->c1[t]*1000*g->pg_t[t];
         }
 
     }
-    *obj = *obj/_timesteps;
+    *obj = (*obj/_timesteps);
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
     obj->print(true);
@@ -639,11 +644,11 @@ void PowerModel::min_cost_pv(){
 //          *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
          // *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
         //*obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
-            *obj += _net->bMVA*1000*_net->c1[t]*g->pg_t[t];          //$c1/kwh*(1 hour)*pg=cost  $/unit
+            *obj += _net->bMVA*1000*_net->c1[t]*g->pg_t[t];          //$c1/kwh*pg(Mw)*1000 =cost  $/h
         }
         for (auto n:_net->nodes) {
             //*obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
-            *obj += 0.15*1000*n->pv_t[t]*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year $/unit
+            *obj += 0.15*1000*n->pv_t[t]*_net->bMVA; // $0.15/kWh * pv_t(MW) * 1000 [multiply by 1000 to convert to kWh] = $/h
         }
     }
     *obj = (*obj/_timesteps);
@@ -663,17 +668,17 @@ void PowerModel::min_cost_pv_batt(){
         for (auto g:_net->gens) {
 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
 //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
-            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t]);          //$c1/kwh*(1 hour)*pg=cost
+            *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t])*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost
 
             //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
         for (auto n:_net->nodes) {
 //            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
 //            *obj += 1.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 1.5*1000000*n->pv_rate*_net->bMVA/(30*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
-            *obj += 0.15*100*n->pv_rate*_net->bMVA/(365*24); // $0.15/kWh -> $150/MWh paid over 1 year
+            *obj += 0.15*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
 //            *obj += _net->bMVA*(n->batt_cap)*1000000/6/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
 //            *obj += _net->bMVA*(n->batt_cap)*1000000/(30*365*24); // $1000000/MWh battery investment for 30 years.(1 hour simulation)
-            *obj += _net->bMVA*(n->batt_cap)*200/(365*24); //$0.20/kwh battery investment = $200/MWh paid over one year
+            *obj += _net->bMVA*(n->batt_cap)*1000*0.20; //$0.20/kwh battery investment = $200/MWh paid over one year
         }
 
     }
@@ -1774,7 +1779,7 @@ void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
 //        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
-        Link_PV_Rate += n->pv_t[t] - (_net->_radiation[t]) * (n->pv_rate);
+        Link_PV_Rate += n->pv_t[t]-((_net->_radiation[t])*(n->pv_rate));
         Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
 
@@ -1782,8 +1787,8 @@ void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
         Constraint PV_bound("PV_bound" + n->_name);
         PV_bound += n->pv_rate;
 //        PV_bound -= (100/1000)*(_net->bMVA); //10kW limit on each panels in each building.
-        PV_bound <= (100.)/(_net->bMVA); //10kW limit on each panels in each building.
-//        _model->addConstraint(PV_bound);
+        PV_bound <= (100.)*(_net->bMVA); //100kW limit on each panels in each building.
+        _model->addConstraint(PV_bound);
 }
 
 void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
@@ -1797,8 +1802,9 @@ void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
     }
         Constraint PV_bound("PV_bound" + n->_name);
        PV_bound += n->pv_rate;
-       PV_bound -= 10/((1000)*(_net->bMVA)); //10kW limit on each panels in each building.
+       PV_bound <= (100.0)*(_net->bMVA); //100kW limit on each panels in each building.
        _model->addConstraint(PV_bound);
+
 }
 
 void PowerModel::add_AC_KCL_Batt_Time(Node* n){
@@ -2482,94 +2488,94 @@ void PowerModel::post_AC_OTS(){
     }
 }
 
-void PowerModel::post_AC_SOCP_Time(){
+void PowerModel::post_AC_SOCP_Time() {
     Node *src = NULL;
     Node *dest = NULL;
-    for (int t=0; t<_timesteps; t++){
+
     for (auto n:_net->nodes) {
         add_AC_KCL_SOCP_Time(n);
     }
-    Arc *ap = nullptr;
+
 
     for (auto a:_net->arcs) {
-        if (a->status == 0) {
-            continue;
+        Arc *ap = nullptr;
+        if (a->status == 1) {
+            for (int t = 0; t < _timesteps; t++) {
+                src = a->src;
+                dest = a->dest;
+                /** subject to Flow_P_From {(l,i,j) in arcs_from}:
+                 p[l,i,j] = g[l]*(v[i]/tr[l])^2
+                 + -g[l]*v[i]/tr[l]*v[j]*cos(t[i]-t[j]-as[l])
+                 + -b[l]*v[i]/tr[l]*v[j]*sin(t[i]-t[j]-as[l]);
+                 */
+                Constraint Flow_P_From("Flow_P_From" + a->pi_t[t]._name);
+                Flow_P_From += a->pi_t[t];
+                //        if(!a->src->_name.compare("9006") && !a->dest->_name.compare("9003")){
+                //            cout << "ok";
+                //            cout << endl;
+                //        }
+
+                Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w_t[t];
+                ap = _net->get_arc(a->src, a->dest);
+                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_From = 0;
+                _model->addConstraint(Flow_P_From);
+
+                /* * subject to Flow_P_To {(l,i,j) in arcs_to}:
+                  p[l,i,j] = g[l]*v[i]^2
+                  + -g[l]*v[i]*v[j]/tr[l]*cos(t[i]-t[j]+as[l])
+                  + -b[l]*v[i]*v[j]/tr[l]*sin(t[i]-t[j]+as[l]);*/
+
+                Constraint Flow_P_To("Flow_P_To" + a->pj_t[t]._name);
+                Flow_P_To += a->pj_t[t];
+                Flow_P_To -= a->g * dest->w_t[t];
+                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_To = 0;
+                _model->addConstraint(Flow_P_To);
+
+                /*       * subject to Flow_Q_From {(l,i,j) in arcs_from}:
+                        q[l,i,j] = -(charge[l]/2+b[l])*(v[i]/tr[l])^2
+                        +  b[l]*v[i]/tr[l]*v[j]*cos(t[i]-t[j]-as[l])
+                        + -g[l]*v[i]/tr[l]*v[j]*sin(t[i]-t[j]-as[l]);*/
+
+                Constraint Flow_Q_From("Flow_Q_From" + a->qi_t[t]._name);
+                Flow_Q_From += a->qi_t[t];
+                Flow_Q_From += (a->ch / 2 + a->b) / (pow(a->cc, 2) + pow(a->dd, 2)) * src->w_t[t];
+                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_From = 0;
+                _model->addConstraint(Flow_Q_From);
+
+                /*        * subject to Flow_Q_To {(l,i,j) in arcs_to}:
+                         q[l,i,j] = -(charge[l]/2+b[l])*v[i]^2
+                         +  b[l]*v[i]*v[j]/tr[l]*cos(t[i]-t[j]+as[l])
+                         + -g[l]*v[i]*v[j]/tr[l]*sin(t[i]-t[j]+as[l]);*/
+
+                Constraint Flow_Q_To("Flow_Q_To" + a->qj._name);
+                Flow_Q_To += a->qj_t[t];
+                Flow_Q_To += (a->ch / 2 + a->b) * dest->w_t[t];
+                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_To = 0;
+                _model->addConstraint(Flow_Q_To);
+
+                /** subject to PSD {l in lines}: w[from_bus[l]]*w[to_bus[l]] >= wr[l]^2 + wi[l]^2;
+                 */
+                Constraint SOCP("SOCP");
+                SOCP += a->src->w_t[t] * a->dest->w_t[t];
+                SOCP -= ((ap->wr_t[t]) ^ 2);
+                SOCP -= ((ap->wi_t[t]) ^ 2);
+                SOCP >= 0;
+                _model->addConstraint(SOCP);  //
+
+
+            }
+            add_AC_thermal_Time(a);
+            //add_Wr_Wi_time(a);
         }
-        src = a->src;
-        dest = a->dest;
-        /** subject to Flow_P_From {(l,i,j) in arcs_from}:
-         p[l,i,j] = g[l]*(v[i]/tr[l])^2
-         + -g[l]*v[i]/tr[l]*v[j]*cos(t[i]-t[j]-as[l])
-         + -b[l]*v[i]/tr[l]*v[j]*sin(t[i]-t[j]-as[l]);
-         */
-        Constraint Flow_P_From("Flow_P_From" + a->pi_t[t]._name);
-        Flow_P_From += a->pi_t[t];
-//        if(!a->src->_name.compare("9006") && !a->dest->_name.compare("9003")){
-//            cout << "ok";
-//            cout << endl;
-//        }
 
-        Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w_t[t];
-        ap = _net->get_arc(a->src, a->dest);
-        Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-        Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
-        Flow_P_From = 0;
-        _model->addConstraint(Flow_P_From);
-
-       /* * subject to Flow_P_To {(l,i,j) in arcs_to}:
-         p[l,i,j] = g[l]*v[i]^2
-         + -g[l]*v[i]*v[j]/tr[l]*cos(t[i]-t[j]+as[l])
-         + -b[l]*v[i]*v[j]/tr[l]*sin(t[i]-t[j]+as[l]);*/
-
-        Constraint Flow_P_To("Flow_P_To" + a->pj_t[t]._name);
-        Flow_P_To += a->pj_t[t];
-        Flow_P_To -= a->g * dest->w_t[t];
-
-        Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-        Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
-        Flow_P_To = 0;
-        _model->addConstraint(Flow_P_To);
-
- /*       * subject to Flow_Q_From {(l,i,j) in arcs_from}:
-         q[l,i,j] = -(charge[l]/2+b[l])*(v[i]/tr[l])^2
-         +  b[l]*v[i]/tr[l]*v[j]*cos(t[i]-t[j]-as[l])
-         + -g[l]*v[i]/tr[l]*v[j]*sin(t[i]-t[j]-as[l]);*/
-
-        Constraint Flow_Q_From("Flow_Q_From" + a->qi_t[t]._name);
-        Flow_Q_From += a->qi_t[t];
-        Flow_Q_From += (a->ch / 2 + a->b) / (pow(a->cc, 2) + pow(a->dd, 2)) * src->w_t[t];
-
-        Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-        Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
-        Flow_Q_From = 0;
-        _model->addConstraint(Flow_Q_From);
-
-/*        * subject to Flow_Q_To {(l,i,j) in arcs_to}:
-         q[l,i,j] = -(charge[l]/2+b[l])*v[i]^2
-         +  b[l]*v[i]*v[j]/tr[l]*cos(t[i]-t[j]+as[l])
-         + -g[l]*v[i]*v[j]/tr[l]*sin(t[i]-t[j]+as[l]);*/
-
-        Constraint Flow_Q_To("Flow_Q_To" + a->qj._name);
-        Flow_Q_To += a->qj_t[t];
-        Flow_Q_To += (a->ch / 2 + a->b) * dest->w_t[t];
-
-        Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-        Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
-        Flow_Q_To = 0;
-        _model->addConstraint(Flow_Q_To);
-
-        /** subject to PSD {l in lines}: w[from_bus[l]]*w[to_bus[l]] >= wr[l]^2 + wi[l]^2;
-         */
-        Constraint SOCP("SOCP");
-        SOCP += a->src->w_t[t] * a->dest->w_t[t];
-        SOCP -= ((ap->wr_t[t]) ^ 2);
-        SOCP -= ((ap->wi_t[t]) ^ 2);
-        SOCP <= 0;
-        _model->addConstraint(SOCP);  //
-
-        add_AC_thermal_Time(a);
-        //add_Wr_Wi_time(a);
-    }
     }
 }
 

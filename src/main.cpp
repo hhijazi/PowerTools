@@ -88,8 +88,8 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_T;
 //      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
-    PowerModelType pmt = ACPF_PV_T;
-//    PowerModelType pmt = ACPF_BATT_T;
+//    PowerModelType pmt = ACPF_PV_T;
+    PowerModelType pmt = ACPF_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //    PowerModelType pmt = SOCP_PV_T;
@@ -105,14 +105,14 @@ int main (int argc, const char * argv[]) {
     SolverType st = ipopt;
 //    SolverType st = gurobi;
 
-//    string filename = "/home/angela/DEV/PowerTools/data/anu.m";
-//    string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
-//    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24.csv";
-//    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24.csv";
-           string filename = "../../data/anu.m";
+    string filename = "/home/angela/DEV/PowerTools/data/anu.m";
+    string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
+    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24.csv";
+    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24.csv";
+/*           string filename = "../../data/anu.m";
            string loadfile = "../../data/loadfile-24.csv";
            string radiationfile="../../data/radiationfile-24.csv";
-           string costfile = "../../data/gencost-24.csv";
+           string costfile = "../../data/gencost-24.csv";*/
     ////        string pvfile = "../../data/pvmax.csv";
 
 
@@ -166,7 +166,7 @@ int main (int argc, const char * argv[]) {
     Net net;
 
 
-    int timesteps = 4;
+    int timesteps = 6;
 
     if (net.readFile(filename) == -1)
         return -1;
@@ -209,8 +209,8 @@ int main (int argc, const char * argv[]) {
     double wall0 = get_wall_time();
     double cpu0 = get_cpu_time();
     power_model.build(timesteps);
-//    power_model.min_cost_pv_batt();
-    power_model.min_cost_pv();
+    power_model.min_cost_pv_batt();
+//    power_model.min_cost_pv();
 //    power_model.min_cost();
 //    power_model.min_cost_time();
     int status = power_model.solve();
