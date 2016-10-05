@@ -89,7 +89,9 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
 //    PowerModelType pmt = ACPF_PV_T;
-    PowerModelType pmt = ACPF_BATT_T;
+//    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
+      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
+//    PowerModelType pmt = ACPF_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //    PowerModelType pmt = SOCP_PV_T;
@@ -223,6 +225,7 @@ int main (int argc, const char * argv[]) {
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
 
     power_model._model->print_solution();
+   /// power_model._model->_obj->print(true); //obj->print(true);
 /*
     float sum_power_loss = 0;
 
@@ -242,4 +245,5 @@ int main (int argc, const char * argv[]) {
         return 0;
 
     }*/
+
 }
