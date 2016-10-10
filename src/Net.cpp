@@ -1286,7 +1286,7 @@ int Net::readload(string fname, int _timesteps){
         }
 //        cout << "TOTAL Kw = " << tot_Kw << endl;
 //        cout << "My TOTAL = " << tot << "__"<< nodes[i]->_cond[0]->_pl.size()-1 << endl;
-        remain = fmax(0, 0.1 - tot);                                                 //assumed limit=0.35MW...making sure no bus gets negative power
+        remain = fmax(0, 0.24 - tot);              //assumed limit=24MW (which is the average total consumption...making sure no bus gets negative power
                                                   //*shouble be chenged again when the loadfile is accurate*
         
         double tot2 = tot;

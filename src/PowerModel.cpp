@@ -144,7 +144,7 @@ void PowerModel::build(int time_steps){
 void PowerModel::post_AC_PF_Batt_Time(){
     
     double tot_pl = 0;
-
+/*
     for (int t = 0; t < _timesteps; t++) {
         if (_net->_radiation[t]==0) {
             Constraint All_zero("All_zero_pv_if_no_radiation_t" + to_string(t));
@@ -156,7 +156,7 @@ void PowerModel::post_AC_PF_Batt_Time(){
                 _model->addConstraint(All_zero);
             }
         }
-    }
+    }*/
 
 
     
@@ -446,8 +446,8 @@ void PowerModel::post_AC_PF_Time(){
     }
 };
 
-void PowerModel::post_AC_PF_PV_Time(){
-    
+void PowerModel::post_AC_PF_PV_Time() {
+
     double tot_pl = 0;
 //    for (int t = 0; t < _timesteps; t++) {
 //        if (_net->_radiation[t]==0) {
@@ -465,17 +465,23 @@ void PowerModel::post_AC_PF_PV_Time(){
         add_AC_KCL_PV_Time(n);         //sdone
         add_AC_Voltage_Bounds_Time(n);
 
-        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
-//        add_link_PV_Rate_Curt_Time(n);       //with curtailment
+//        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
+        add_link_PV_Rate_Curt_Time(n);       //with curtailment
+
 
         Constraint Sum_PV_bound("Sum_PV_bound" + n->_name);
         Sum_PV_bound += n->pv_rate;
-        Sum_PV_bound <= (3.*1000.)*(_net->bMVA);
+        Sum_PV_bound <= (3. * 1000.) * (_net->bMVA);
         _model->addConstraint(Sum_PV_bound);
 
 
         tot_pl += n->pl();
     }
+
+
+
+
+
     cout << "Total pl = " << tot_pl << endl;
     
     for (auto a:_net->arcs) {
@@ -485,6 +491,7 @@ void PowerModel::post_AC_PF_PV_Time(){
 
     }
 }
+
 
 
 void PowerModel::post_AC_PF_PV(){
@@ -533,10 +540,10 @@ void PowerModel::post_SOCP_PF_Batt_Time() {
 //        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
         add_link_PV_Rate_Curt_Time(n);       //with curtailment
 
-        /*Constraint Sum_PV_bound("Sum_PV_bound" + n->_name);
+        Constraint Sum_PV_bound("Sum_PV_bound" + n->_name);
         Sum_PV_bound += n->pv_rate;
         Sum_PV_bound <= (3.*1000.) * (_net->bMVA);
-        _model->addConstraint(Sum_PV_bound);*/
+        _model->addConstraint(Sum_PV_bound);
 
 
         tot_pl += n->pl();
@@ -634,7 +641,7 @@ void PowerModel::post_SOCP_PF_PV_Time() {
     Node *src = NULL;
     Node *dest = NULL;
     double tot_pl = 0;
-    for (int t = 0; t < _timesteps; t++) {
+/*    for (int t = 0; t < _timesteps; t++) {
         if (_net->_radiation[t] == 0) {
             Constraint All_zero("All_zero_pv_if_no_radiation_t" + to_string(t));
             for (auto n: _net->nodes) {
@@ -645,7 +652,7 @@ void PowerModel::post_SOCP_PF_PV_Time() {
                 _model->addConstraint(All_zero);
             }
         }
-    }
+    }*/
     for (auto n:_net->nodes) {
         add_SOCP_KCL_PV_Time(n);         //sdone
 //        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
@@ -910,13 +917,13 @@ void PowerModel::min_cost_pv_batt(){
     _objective = MinCostPvBatt;
     Function* obj = new Function();
     for (int t = 0; t < _timesteps; t++) {
-        /*for (auto g:_net->gens) {
+        for (auto g:_net->gens) {
 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
 //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
             *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t])*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
 
             //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
-        }*/
+        }
         for (auto n:_net->nodes) {
 //            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
 //            *obj += 1.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 1.5*1000000*n->pv_rate*_net->bMVA/(30*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
@@ -928,7 +935,9 @@ void PowerModel::min_cost_pv_batt(){
         }
 
     }
-
+        for (auto n:_net->nodes){
+            *obj += n->batt_cap;
+        }
     *obj = *obj/_timesteps;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
@@ -1940,11 +1949,11 @@ void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
 void PowerModel::   add_AC_link_Batt_Time(Node*n){
 
 
-/*    //with Gen
+    //with Gen
     Constraint SOC_Batt_init("Initial State of Charge");
     SOC_Batt_init += n->soc_t[0] - n->batt_cap;
     SOC_Batt_init = 0;
-    _model->addConstraint(SOC_Batt_init);*/
+    _model->addConstraint(SOC_Batt_init);
     
     
     for (int t = 0; t < _timesteps; t++) {
@@ -2029,7 +2038,7 @@ void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
 //        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
-        Link_PV_Rate += n->pv_t[t]-((_net->_radiation[t])*(n->pv_rate));
+        Link_PV_Rate += n->pv_t[t]-((_net->_radiation[t])*(n->pv_rate)*(945*0.82/1000));
         Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
 
@@ -2043,17 +2052,18 @@ void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
 
 void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
-        Constraint Link_PV_Rate("Link_PV_Rate"+n->_name + "_" + to_string(t));
-        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
+        Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
+        Link_PV_Rate += n->pv_t[t];
+        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945 * 0.82 / 1000);
         Link_PV_Rate <= 0;
         _model->addConstraint(Link_PV_Rate);
 
 
-    }
         Constraint PV_bound("PV_bound" + n->_name);
-       PV_bound += n->pv_rate;
-       PV_bound <= (100.0)*(_net->bMVA); //100kW limit on each panels in each building.
-       _model->addConstraint(PV_bound);
+        PV_bound += n->pv_rate;
+        PV_bound <= (100.0) * (_net->bMVA); //100kW limit on each panels in each building.
+        _model->addConstraint(PV_bound);
+    }
 
 }
 

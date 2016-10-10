@@ -52,6 +52,7 @@ double get_cpu_time(){
     }
 }
 
+
 //  Posix/Linux
 #else
 #include <time.h>
@@ -88,10 +89,10 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_T;
 //      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
-//    PowerModelType pmt = ACPF_PV_T;
+//      PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
-      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
-//    PowerModelType pmt = ACPF_BATT_T;
+//      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
+    PowerModelType pmt = ACPF_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //    PowerModelType pmt = SOCP_PV_T;
@@ -109,8 +110,8 @@ int main (int argc, const char * argv[]) {
 
     string filename = "/home/angela/DEV/PowerTools/data/anu.m";
     string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
-    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24.csv";
-    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24.csv";
+    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24-june.csv";
+    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
 /*           string filename = "../../data/anu.m";
            string loadfile = "../../data/loadfile-24.csv";
            string radiationfile="../../data/radiationfile-24.csv";
@@ -142,6 +143,11 @@ int main (int argc, const char * argv[]) {
         else if (!strcmp(argv[2], "OTS")) pmt = OTS;
         else if (!strcmp(argv[2], "SOCP")) pmt = SOCP;
         else if (!strcmp(argv[2], "SOCP_PV_T")) pmt = SOCP_PV_T;
+        else if (!strcmp(argv[2], "ACPF_PV_T")) pmt = ACPF_PV_T;
+        else if (!strcmp(argv[2], "SOCP_BATT_T")) pmt = SOCP_BATT_T;
+        else if (!strcmp(argv[2], "ACPF_BATT_T")) pmt = ACPF_BATT_T;
+        else if (!strcmp(argv[2], "SOCP_T")) pmt = SOCP_T;
+        else if (!strcmp(argv[2], "ACPF_T")) pmt = ACPF_T;
         else if (!strcmp(argv[2], "SDP")) pmt = SDP;
         else if (!strcmp(argv[2], "DC")) pmt = DC;
         else if (!strcmp(argv[2], "QC_OTS_O")) pmt = QC_OTS_O;
@@ -225,7 +231,7 @@ int main (int argc, const char * argv[]) {
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
 
     power_model._model->print_solution();
-   /// power_model._model->_obj->print(true); //obj->print(true);
+    //power_model._model->_obj->print(true); //obj->print(true);
 /*
     float sum_power_loss = 0;
 
