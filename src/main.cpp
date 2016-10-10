@@ -108,14 +108,14 @@ int main (int argc, const char * argv[]) {
     SolverType st = ipopt;
 //    SolverType st = gurobi;
 
-    string filename = "/home/angela/DEV/PowerTools/data/anu.m";
-    string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
-    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24-june.csv";
-    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
-/*           string filename = "../../data/anu.m";
+//    string filename = "/home/angela/DEV/PowerTools/data/anu.m";
+//    string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
+//    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24-june.csv";
+//    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
+           string filename = "../../data/anu.m";
            string loadfile = "../../data/loadfile-24.csv";
            string radiationfile="../../data/radiationfile-24.csv";
-           string costfile = "../../data/gencost-24.csv";*/
+           string costfile = "../../data/gencost-24.csv";
     ////        string pvfile = "../../data/pvmax.csv";
 
 

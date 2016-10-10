@@ -25,6 +25,8 @@ public:
     bool cycle;
     /* if node in cycle and power flows in the cycle through this node */
     bool cg;
+    /* if node is selected in */
+    bool _in;
     /* the number of edges needed to make the subgraph formed by adjacent nodes a clique */
     int fill_in;
     
@@ -41,6 +43,10 @@ public:
     
     /* number of incident lines */
     int degree();
+    
+    const bool in() {
+        return _in;
+    }
     
     /*
      @brief Adds a to the list of incident arcs

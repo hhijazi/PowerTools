@@ -927,7 +927,7 @@ void PowerModel::min_cost_pv_batt(){
         for (auto n:_net->nodes) {
 //            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
 //            *obj += 1.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 1.5*1000000*n->pv_rate*_net->bMVA/(30*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
-            *obj += 0.15*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
+            *obj += 0.13*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
 //            *obj += _net->bMVA*(n->batt_cap)*1000000/6/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
 //            *obj += _net->bMVA*(n->batt_cap)*1000000/(30*365*24); // $1000000/MWh battery investment for 30 years.(1 hour simulation)
             //*obj += _net->bMVA*(n->batt_cap)*1000*0.20; //$0.20/kwh battery investment = $200/MWh paid over one year
@@ -1056,20 +1056,24 @@ void PowerModel::add_SOCP_Rect_Batt_vars_Time(){
 void PowerModel::add_AC_Rect_Batt_vars_Time(){
     add_AC_Rect_PV_vars_Time();
     for (auto n:_net->nodes) {
-        n->pch_t.resize(_timesteps);
-        n->pdis_t.resize(_timesteps);
-        n->soc_t.resize(_timesteps);
-        n->batt_cap.init("battery capacity"+n->_name, 0, 1);
-        _model->addVar(n->batt_cap);
+        if(n->in()) {
+            n->pch_t.resize(_timesteps);
+            n->pdis_t.resize(_timesteps);
+            n->soc_t.resize(_timesteps);
+            n->batt_cap.init("battery capacity"+n->_name, 0, 1);
+            _model->addVar(n->batt_cap);
+        }
     }
     for (int t = 0; t < _timesteps; t++) {
         for (auto n:_net->nodes) {
-            n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 1);
-            _model->addVar(n->pch_t[t]);
-            n->pdis_t[t].init("pdischarge"+n->_name+"_" + to_string(t), 0, 1);
-            _model->addVar(n->pdis_t[t]);
-            n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 1);
-            _model->addVar(n->soc_t[t]);
+            if(n->in()) {
+                n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 1);
+                _model->addVar(n->pch_t[t]);
+                n->pdis_t[t].init("pdischarge"+n->_name+"_" + to_string(t), 0, 1);
+                _model->addVar(n->pdis_t[t]);
+                n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 1);
+                _model->addVar(n->soc_t[t]);
+            }
 
         }
     }
@@ -1158,9 +1162,11 @@ void PowerModel::add_AC_Rect_PV_vars_Time(){
     for (auto n:_net->nodes) {
         n->vr_t.resize(_timesteps);
         n->vi_t.resize(_timesteps);
-        n->pv_t.resize(_timesteps);
-        n->pv_rate.init("pv_rate_node_"+n->_name, 0, 1);
-        _model->addVar(n->pv_rate);
+        if (n->in()) {
+            n->pv_t.resize(_timesteps);
+            n->pv_rate.init("pv_rate_node_"+n->_name, 0, 1);
+            _model->addVar(n->pv_rate);
+        }
     }
     
     for (auto g:_net->gens) {
@@ -1193,9 +1199,10 @@ void PowerModel::add_AC_Rect_PV_vars_Time(){
             _model->addVar(n->vr_t[t]);
             n->vi_t[t].init("vi"+n->_name+"_" + to_string(t), -n->vbound.max, n->vbound.max);
             _model->addVar(n->vi_t[t]);
-            
-            n->pv_t[t].init("pv"+n->_name+"_" + to_string(t), 0, 1);
-            _model->addVar(n->pv_t[t]);
+            if (n->in()) {
+                n->pv_t[t].init("pv"+n->_name+"_" + to_string(t), 0, 1);
+                _model->addVar(n->pv_t[t]);
+            }
         }
         for (auto g:_net->gens) {
             g->pg_t[t].init("pg"+g->_name+":"+g->_bus->_name+")_" + to_string(t), 0, g->pbound.max);
