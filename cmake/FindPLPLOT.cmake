@@ -9,7 +9,8 @@
 
 
 find_path(PLPLOT_INCLUDE_DIR
-	NAMES plplot.h 
+	NAMES plplot.h
+	HINTS /opt/local/include/plplot 
 	HINTS /usr/include/plplot
 	HINTS ${PLPLOT_ROOT_DIR}/include/coin
 	HINTS ${PLPLOT_ROOT_DIR}/include
@@ -17,7 +18,8 @@ find_path(PLPLOT_INCLUDE_DIR
 
 if(APPLE)
 find_library(PLPLOT_LIBRARY 
-	libplplot.dylib
+	libplplotcxx.dylib
+	HINTS /opt/local/lib
 	HINTS /usr/local/lib
 	HINTS ${PLPLOT_ROOT_DIR}/lib
 )
