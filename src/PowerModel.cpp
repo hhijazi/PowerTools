@@ -922,7 +922,7 @@ void PowerModel::min_cost_pv_batt(){
 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
 //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
             *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t])*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-
+            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
             //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
         for (auto n:_net->nodes) {
