@@ -92,7 +92,7 @@ public:
     vector<var<>> pdis_t;
 
     
-    /** Active power rating for PV pannels*/
+    /** Size for PV pannels (sq.m)*/
     var<> pv_rate;
 
     /** Active power capacity for battery. zero if no battery installed.*/

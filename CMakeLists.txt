@@ -17,7 +17,10 @@ configure_file (
 
 # add the binary tree to the search path for include files
 # so that we will find PowerToolsConfig.h.
-include_directories("${PROJECT_BINARY_DIR}")
+include_directories("${PROJECT_BINARY_DIR}"
+        "/usr/include/plplot"
+        "/home/angela/DEV/plplot-plplot/examples/c++"
+        )
  
 set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER "g++")
@@ -31,6 +34,12 @@ if (ENABLE_GUROBI)
     include_directories(${GUROBI_INCLUDE_DIRS})
     set(LIBS ${LIBS} ${GUROBI_LIBRARIES})
 endif()
+
+# Find Plplot
+find_package(PLPLOT REQUIRED)
+include_directories(${PLPLOT_INCLUDE_DIRS}/..)
+set(LIBS ${LIBS} ${PLPLOT_LIBRARIES})
+
 
 # Find Ipopt.
 find_package(IPOPT REQUIRED)
