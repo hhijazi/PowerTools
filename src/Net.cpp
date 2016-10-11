@@ -1223,10 +1223,10 @@ int Net::readload(string fname, int _timesteps){
         return 999;
     }
     
-//    for (auto n : nodes) {
-//        n->_cond[0]->_pl.pop_back();
+    for (auto n : nodes) {
+        n->_cond[0]->_pl.pop_back();
 //        cout << "pl size = " << n->_cond[0]->_pl.size() << endl;
-//    }
+    }
     int i=0;                                         //number of bus
     
 //    int pos=0;
@@ -1235,7 +1235,7 @@ int Net::readload(string fname, int _timesteps){
     string word;
     
     getline(file,line);                               //first line to ignore
-    getline(file,line);                               //second line to ignore
+//    getline(file,line);                               //second line to ignore
     
     double av = 0;
     double tot = 0;
@@ -1256,9 +1256,9 @@ int Net::readload(string fname, int _timesteps){
         {
 //            int length=word.length();
             int len=word.length()-2;                  //erase 'kW'
-            if (len !=2 ) {
-                continue;
-            }
+//            if (len !=2 ) {
+//                continue;
+//            }
             
             string c=word.substr(0,len);
             
@@ -1284,7 +1284,9 @@ int Net::readload(string fname, int _timesteps){
             i++;
             cout << endl;
         }
-        cout << "TOTAL Kw = " << tot << endl;
+        cout << "Original TOTAL Kw = " << tot_Kw << endl;
+        cout << "TOTAL Kw = " << tot*1000*bMVA << endl;
+        
 //        cout << "My TOTAL = " << tot << "__"<< nodes[i]->_cond[0]->_pl.size()-1 << endl;
         remain = fmax(0, 0.1 - tot);              //assumed limit=10MW  (which is the average total consumption (power)...making sure no bus gets negative power
                                                   //*shouble be chenged again when the loadfile is accurate*
@@ -1297,7 +1299,7 @@ int Net::readload(string fname, int _timesteps){
             nodes[j]->_cond[0]->_pl.push_back(av);
             tot2 += av;
         }
-//        cout << "TOTAL2 = " << tot2 << endl;
+        cout << "TOTAL2 = " << tot2 << endl;
 //        for (int j = 0; j< nodes.size(); j++)
 //        {cout<<j<<" "<<nodes[j]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1]<<endl;}
         
@@ -1309,8 +1311,17 @@ int Net::readload(string fname, int _timesteps){
     float sum_load_;
     float avg_sub_time_load;
     vector<double> av_loads;
+    typedef std::pair<int, double> myPair_type;
+    
+    struct mypair_comp{
+        bool operator()(myPair_type const& lhs, myPair_type const& rhs){
+            return lhs.second > rhs.second;
+        }
+    };
+    vector<myPair_type> pairs;
+    double tot_aver = 0;
     for (int i = 0; i < nodes.size(); i++) {
-        nodes[i]->_in = true;
+        tot_aver = 0;
         cout << "av load for bus " << i << " = ";
         for (int t = 1; t <= _timesteps; t++) {
             sum_load_ = 0;
@@ -1320,17 +1331,23 @@ int Net::readload(string fname, int _timesteps){
             avg_sub_time_load = sum_load_/sub_time_count;
             av_loads.push_back(avg_sub_time_load);
             cout << " ; " << avg_sub_time_load;
-
-            }
+            tot_aver += avg_sub_time_load;
+        }
+        tot_aver /= _timesteps;
+        pairs.push_back(make_pair(i, tot_aver));
         cout << endl;
         nodes[i]->_cond[0]->_pl = av_loads;
         av_loads.clear();
-
-
-        }
-    return 0;
+    }
+    std::sort(pairs.begin(), pairs.end(), mypair_comp());
+    for (int i = 0; i < 20; i++) {
+//        cout << pairs[i].first << "  " << pairs[i].second << endl;
+        nodes[i]->_in = true;
     }
     
+    return 0;
+}
+
 
 
 

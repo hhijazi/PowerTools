@@ -113,9 +113,9 @@ int main (int argc, const char * argv[]) {
 //    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24-june.csv";
 //    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
            string filename = "../../data/anu.m";
-           string loadfile = "../../data/loadfile-24.csv";
-           string radiationfile="../../data/radiationfile-24.csv";
-           string costfile = "../../data/gencost-24.csv";
+           string loadfile = "../../data/Jan_16_1hr_24h.csv";
+           string radiationfile="../../data/radiationfile-24-january.csv";
+           string costfile = "../../data/gencost-24-recalculated.csv";
     ////        string pvfile = "../../data/pvmax.csv";
 
 
@@ -174,7 +174,7 @@ int main (int argc, const char * argv[]) {
     Net net;
 
 
-    int timesteps = 6;
+    int timesteps = 12;
 
     if (net.readFile(filename) == -1)
         return -1;

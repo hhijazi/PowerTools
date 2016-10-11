@@ -161,19 +161,20 @@ void PowerModel::post_AC_PF_Batt_Time(){
 
     
     for (auto n:_net->nodes) {
-        add_AC_KCL_Batt_Time(n);         //sdone
+        add_AC_KCL_Batt_Time(n);
+        if (n->in()) {
+            add_AC_link_Batt_Time(n);
+            add_link_PV_Rate_Curt_Time(n);       //with curtailment
+//            add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
+        }
         add_AC_Voltage_Bounds_Time(n);
         
-        add_AC_link_Batt_Time(n);      //no curtailment
+        
 
-//        add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
-        add_link_PV_Rate_Curt_Time(n);       //with curtailment
+        
 
-        Constraint Sum_PV_bound("Sum_PV_bound" + n->_name);
-        Sum_PV_bound += n->pv_rate;
-        Sum_PV_bound <= (3.*1000.)*(_net->bMVA);
-        _model->addConstraint(Sum_PV_bound);
 
+     
 
         tot_pl += n->pl();
     }
@@ -925,18 +926,22 @@ void PowerModel::min_cost_pv_batt(){
             //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
         for (auto n:_net->nodes) {
+            if (n->in()) {
 //            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
 //            *obj += 1.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 1.5*1000000*n->pv_rate*_net->bMVA/(30*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
-            *obj += 0.13*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
-//            *obj += _net->bMVA*(n->batt_cap)*1000000/6/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
+                *obj += 0.13*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
+                //            *obj += _net->bMVA*(n->batt_cap)*1000000/6/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
 //            *obj += _net->bMVA*(n->batt_cap)*1000000/(30*365*24); // $1000000/MWh battery investment for 30 years.(1 hour simulation)
             //*obj += _net->bMVA*(n->batt_cap)*1000*0.20; //$0.20/kwh battery investment = $200/MWh paid over one year
-            *obj += _net->bMVA*(n->pch_t[t] + n->pdis_t[t])*1000*0.20;
+                *obj += _net->bMVA*(n->pch_t[t] + n->pdis_t[t])*1000*0.02;
+            }
         }
 
     }
         for (auto n:_net->nodes){
-            *obj += n->batt_cap;
+            if (n->in()) {
+                *obj += n->batt_cap;
+            }
         }
     *obj = *obj/_timesteps;
     _model->setObjective(obj);
@@ -1164,7 +1169,7 @@ void PowerModel::add_AC_Rect_PV_vars_Time(){
         n->vi_t.resize(_timesteps);
         if (n->in()) {
             n->pv_t.resize(_timesteps);
-            n->pv_rate.init("pv_rate_node_"+n->_name, 0, 1);
+            n->pv_rate.init("pv_rate_node_"+n->_name, 0, 100);
             _model->addVar(n->pv_rate);
         }
     }
@@ -1958,7 +1963,8 @@ void PowerModel::   add_AC_link_Batt_Time(Node*n){
 
     //with Gen
     Constraint SOC_Batt_init("Initial State of Charge");
-    SOC_Batt_init += n->soc_t[0] - n->batt_cap;
+//    SOC_Batt_init += n->soc_t[0] - n->batt_cap;
+    SOC_Batt_init += n->soc_t[0];
     SOC_Batt_init = 0;
     _model->addConstraint(SOC_Batt_init);
     
@@ -2041,21 +2047,40 @@ void PowerModel::   add_AC_link_Batt_Time(Node*n){
     //end of new addition
 }
 
+
 void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
-//        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
-        Link_PV_Rate += n->pv_t[t]-((_net->_radiation[t])*(n->pv_rate)*(945*0.82/1000));
+        Link_PV_Rate += n->pv_t[t];
+        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945 * 0.82 / 1000);
         Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
-
+        
+        
+//        Constraint PV_bound("PV_bound" + n->_name);
+//        PV_bound += n->pv_rate;
+//        PV_bound <= (100.0) * (_net->bMVA); //100kW limit on each panels in each building.
+//        _model->addConstraint(PV_bound);
     }
-        Constraint PV_bound("PV_bound" + n->_name);
-        PV_bound += n->pv_rate;
-//        PV_bound -= (100/1000)*(_net->bMVA); //10kW limit on each panels in each building.
-        PV_bound <= (100.)*(_net->bMVA); //100kW limit on each panels in each building.
-        _model->addConstraint(PV_bound);
+    
 }
+
+
+//void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
+//    for (int t = 0; t < _timesteps; t++) {
+//        Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
+////        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
+//        Link_PV_Rate += n->pv_t[t]-((_net->_radiation[t])*(n->pv_rate)*(945*0.82/1000));
+//        Link_PV_Rate = 0;
+//        _model->addConstraint(Link_PV_Rate);
+//
+//    }
+//        Constraint PV_bound("PV_bound" + n->_name);
+//        PV_bound += n->pv_rate;
+////        PV_bound -= (100/1000)*(_net->bMVA); //10kW limit on each panels in each building.
+//        PV_bound <= (100.)*(_net->bMVA); //100kW limit on each panels in each building.
+//        _model->addConstraint(PV_bound);
+//}
 
 void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
@@ -2066,10 +2091,10 @@ void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
         _model->addConstraint(Link_PV_Rate);
 
 
-        Constraint PV_bound("PV_bound" + n->_name);
-        PV_bound += n->pv_rate;
-        PV_bound <= (100.0) * (_net->bMVA); //100kW limit on each panels in each building.
-        _model->addConstraint(PV_bound);
+//        Constraint PV_bound("PV_bound" + n->_name);
+//        PV_bound += n->pv_rate;
+//        PV_bound <= 100.0; //100 m^2 limit.
+//        _model->addConstraint(PV_bound);
     }
 
 }
@@ -2087,9 +2112,11 @@ void PowerModel::add_AC_KCL_Batt_Time(Node* n){
         KCL_P += sum_Time(n->get_out(), "pi", t);
         KCL_P += sum_Time(n->get_in(), "pj", t);
         KCL_P -= sum_Time(n->_gen, "pg", t); //remember to add to models with gen
-        KCL_P -= n->pv_t[t];
-        KCL_P -= n->pdis_t[t];                                               //discharge efficiency=70%
-        KCL_P += n->pch_t[t];
+        if (n->in()) {
+            KCL_P -= n->pv_t[t];
+            KCL_P -= n->pdis_t[t];                                               //discharge efficiency=70%
+            KCL_P += n->pch_t[t];
+        }
         KCL_P += n->gs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) + n->pl(t);
         //        cout << n->_name << " pload = " << n->pl(t) << endl;
         KCL_P = 0;
