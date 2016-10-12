@@ -92,7 +92,8 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
-    PowerModelType pmt = ACPF_BATT_T;
+//    PowerModelType pmt = ACPF_BATT_T;
+    PowerModelType pmt = ACPF_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //    PowerModelType pmt = SOCP_PV_T;
@@ -115,7 +116,7 @@ int main (int argc, const char * argv[]) {
            string filename = "../../data/anu.m";
            string loadfile = "../../data/Jan_16_1hr_24h.csv";
            string radiationfile="../../data/radiationfile-24-january.csv";
-           string costfile = "../../data/gencost-24-recalculated.csv";
+           string costfile = "../../data/gencost-24.csv";
     ////        string pvfile = "../../data/pvmax.csv";
 
 
@@ -217,10 +218,6 @@ int main (int argc, const char * argv[]) {
     double wall0 = get_wall_time();
     double cpu0 = get_cpu_time();
     power_model.build(timesteps);
-    power_model.min_cost_pv_batt();
-//    power_model.min_cost_pv();
-//    power_model.min_cost();
-//    power_model.min_cost_time();
     int status = power_model.solve();
     //  Stop timers
     double wall1 = get_wall_time();
@@ -231,6 +228,7 @@ int main (int argc, const char * argv[]) {
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
 
     power_model._model->print_solution();
+    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
     //power_model._model->_obj->print(true); //obj->print(true);
 /*
     float sum_power_loss = 0;

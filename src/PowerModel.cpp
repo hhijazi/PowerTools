@@ -36,100 +36,122 @@ void PowerModel::build(int time_steps){
         case ACPF_T:
             add_AC_Rect_vars_Time();
             post_AC_PF_Time();
+            min_cost_time();
             break;
 
         case ACPF_PV_T:
             add_AC_Rect_PV_vars_Time();
             post_AC_PF_PV_Time();
+            min_cost_pv();
             break;
 
         case ACPF_BATT_T_NO_GEN:
             add_AC_Rect_Batt_vars_Time();
             post_AC_PF_Batt_Time_No_Gen();
+            min_cost_pv_batt();
             break;
 
         case ACPF_BATT_T:
             add_AC_Rect_Batt_vars_Time();
             post_AC_PF_Batt_Time();
+            min_cost_pv_batt();
             break;
 
         case SOCP_T:
             add_AC_SOCP_vars_Time();
             post_AC_SOCP_Time();
+            min_cost_time();
             break;
 
         case SOCP_PV_T:
             add_SOCP_Rect_PV_vars_Time();
             post_SOCP_PF_PV_Time();
+            min_cost_pv();
             break;
 
         case SOCP_BATT_T_NO_GEN:
             add_SOCP_Rect_Batt_vars_Time();
             post_SOCP_PF_Batt_Time_No_Gen();
+            min_cost_pv_batt();
             break;
 
         case SOCP_BATT_T:
             add_SOCP_Rect_Batt_vars_Time();
             post_SOCP_PF_Batt_Time();
+            min_cost_pv_batt();
             break;
 
         case ACPF_PV:
             add_AC_Rect_PV_vars();
             post_AC_PF_PV();
+            min_cost();
             break;
         case ACPF:
             add_AC_Rect_vars();
             post_AC_PF();
+            min_cost();
             break;
         case ACPOL:
             add_AC_Pol_vars();
             post_AC_Polar();
+            min_cost();
             break;
         case ACRECT:
             add_AC_Rect_vars();
             post_AC_Rect();
+            min_cost();
             break;
         case QC:
             add_QC_vars();
             post_QC();
+            min_cost();
             break;
         case QC_SDP:
             add_QC_vars();
             post_QC();
             add_SDP_cuts(3);
+            min_cost();
             break;
         case OTS:
             add_AC_OTS_vars();
             post_AC_OTS();
+            min_cost();
             break;
         case SOCP:
             add_AC_SOCP_vars();
             post_AC_SOCP();
+            min_cost();
             break;
         case SDP:
             add_AC_SOCP_vars();
             post_AC_SOCP();
             add_SDP_cuts(3);
+            min_cost();
             break;
         case DC:
             add_DC_vars();
             post_DC();
+            min_cost();
             break;
         case QC_OTS_L:
             add_QC_OTS_vars();
             post_QC_OTS(true,false);
+            min_cost();
             break;
         case QC_OTS_N:
             add_QC_OTS_vars();
             post_QC_OTS(true,true);
+            min_cost();
             break;
         case QC_OTS_O:
             add_QC_OTS_vars();
             post_QC_OTS(false,true);
+            min_cost();
             break;
         case SOCP_OTS:
             add_SOCP_OTS_vars();
             post_SOCP_OTS();
+            min_cost();
             break;
         case GRB_TEST:
             //run_grb_lin_test();
@@ -929,11 +951,11 @@ void PowerModel::min_cost_pv_batt(){
             if (n->in()) {
 //            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
 //            *obj += 1.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 1.5*1000000*n->pv_rate*_net->bMVA/(30*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
-                *obj += 0.14*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
+                *obj += 0.15*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
                 //            *obj += _net->bMVA*(n->batt_cap)*1000000/6/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
 //            *obj += _net->bMVA*(n->batt_cap)*1000000/(30*365*24); // $1000000/MWh battery investment for 30 years.(1 hour simulation)
             //*obj += _net->bMVA*(n->batt_cap)*1000*0.20; //$0.20/kwh battery investment = $200/MWh paid over one year
-                *obj += _net->bMVA*(n->pch_t[t] + n->pdis_t[t])*1000*0.14;
+                *obj += _net->bMVA*(n->pdis_t[t])*1000*0.20;
             }
         }
 
@@ -1710,11 +1732,13 @@ void PowerModel::add_Wr_Wi_time(Arc *a){
 void PowerModel::add_AC_thermal_Time(Arc* a){
     for (int t = 0; t < _timesteps; t++) {
         /** subject to Thermal_Limit {(l,i,j) in arcs}: p[l,i,j]^2 + q[l,i,j]^2 <= s[l]^2;*/
-        if (a->status==1) {
+        
+        if (a->status==1 && !a->dest->_has_gen && !a->src->_has_gen) {
             Constraint Thermal_Limit_from("Thermal_Limit_from_T_" + to_string(t));
             Thermal_Limit_from += ((a->pi_t[t])^2) + ((a->qi_t[t])^2);
             if(pow(a->limit,2.)>0.004){
                 Thermal_Limit_from <= pow(a->limit,2.);
+//                Thermal_Limit_from.print();
             }
             else{
                 Thermal_Limit_from <= 0.03;
@@ -2605,7 +2629,7 @@ void PowerModel::post_QC(){
 
             //            Sn_LBound -= sin(a->delta);
         }
-        delete x;
+        delete[] x;
         Sn_UBound <= 0;
         _model->addConstraint(Sn_UBound);
         Sn_LBound >= 0;

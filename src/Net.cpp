@@ -1031,21 +1031,21 @@ int Net::readrad(string fname, int _timesteps){
     float sum_rad_;
     float avg_sub_time_rad;
     vector<double> av_rad;
-
-        for (int t = 1; t <= _timesteps; t++) {
-            sum_rad_ = 0;
-            for (int stc = (t - 1) * sub_time_count; stc < (t - 1) * sub_time_count + sub_time_count; stc++) {
-                sum_rad_ += _radiation[stc]; //sum for each division
-            }
-            avg_sub_time_rad = sum_rad_ / sub_time_count;
-            av_rad.push_back(avg_sub_time_rad);
-            cout << "average rad " << " ; " << avg_sub_time_rad;
-
+    
+    for (int t = 1; t <= _timesteps; t++) {
+        sum_rad_ = 0;
+        for (int stc = (t - 1) * sub_time_count; stc < (t - 1) * sub_time_count + sub_time_count; stc++) {
+            sum_rad_ += _radiation[stc]; //sum for each division
         }
-        cout << endl;
-        _radiation = av_rad;
-
-        av_rad.clear();
+        avg_sub_time_rad = sum_rad_ / sub_time_count;
+        av_rad.push_back(avg_sub_time_rad);
+        cout << "average rad " << " ; " << avg_sub_time_rad << endl;
+        
+    }
+    cout << endl;
+    _radiation = av_rad;
+    
+    av_rad.clear();
 
     return 0;
 }
@@ -1191,9 +1191,9 @@ int Net::readcost(string fname, int _timesteps){
         av_gen_0.push_back(avg_sub_time_gen_0);
         av_gen_1.push_back(avg_sub_time_gen_1);
         av_gen_2.push_back(avg_sub_time_gen_2);
-        cout << "average cost c0" << " ; " << avg_sub_time_gen_0 << endl;
+//        cout << "average cost c0" << " ; " << avg_sub_time_gen_0 << endl;
         cout << "average cost c1" << " ; " << avg_sub_time_gen_1 << endl;
-        cout << "average cost c2 " << " ; " << avg_sub_time_gen_2 << endl;
+//        cout << "average cost c2 " << " ; " << avg_sub_time_gen_2 << endl;
     }
     cout << endl;
     c0 = av_gen_0;
@@ -1282,7 +1282,7 @@ int Net::readload(string fname, int _timesteps){
             
             tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];                                      //*MW
             i++;
-            cout << endl;
+//            cout << endl;
         }
         cout << "Original TOTAL Kw = " << tot_Kw << endl;
         cout << "TOTAL Kw = " << tot*1000*bMVA << endl;
@@ -1299,7 +1299,7 @@ int Net::readload(string fname, int _timesteps){
             nodes[j]->_cond[0]->_pl.push_back(av);
             tot2 += av;
         }
-        cout << "TOTAL2 = " << tot2 << endl;
+//        cout << "TOTAL2 = " << tot2 << endl;
 //        for (int j = 0; j< nodes.size(); j++)
 //        {cout<<j<<" "<<nodes[j]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1]<<endl;}
         
@@ -1486,6 +1486,7 @@ int Net::readFile(string fname){
         getline(file, word,'\n');
         if(status==1){
             node->_has_gen = true;
+//            node->_nb_gen++;
             Gen* g = new Gen(node, to_string(node->_gen.size()), pmin, pmax, qmin, qmax);
             g->ps = ps;
             g->qs = qs;
