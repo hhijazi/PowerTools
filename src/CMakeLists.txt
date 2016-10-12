@@ -9,7 +9,7 @@ endif()
 
 find_library(BLAS_LIBRARIES NAMES blas coinblas PATHS ENV LIBRARY_PATH)
 find_library(LAPACK_LIBRARIES NAMES lapack coinlapack PATHS ENV LIBRARY_PATH)
-add_library(PowerTools++ ${SOURCES} ${HEADERS})
+add_library(PowerTools++ ${SOURCES} ${HEADERS} plot.cpp plot.h plot.cpp plot.h)
 
 
 

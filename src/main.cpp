@@ -18,8 +18,7 @@
 #include "PowerTools++/Complex.h"
 #include "PowerTools++/PowerModel.h"
 #include "PowerTools++/json.hpp"
-
-
+#include "plot.h"
 
 using namespace std;
 
@@ -249,5 +248,10 @@ int main (int argc, const char * argv[]) {
         return 0;
 
     }*/
+
+    plot *x = new plot (argc, argv, power_model);
+    delete x;
+    system("evince out");
+    return 0;
 
 }

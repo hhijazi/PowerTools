@@ -45,6 +45,9 @@ set(LIBS ${LIBS} ${PLPLOT_LIBRARIES})
 find_package(IPOPT REQUIRED)
 include_directories(${IPOPT_INCLUDE_DIRS}/..)
 set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
+#set(LIBS ${LIBS} ${IPOPT_LIBRARIES} "/usr/lib/plplot5.10.0/driversd/*")
+
+
 
 # Compiler options
 
