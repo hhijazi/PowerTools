@@ -12,13 +12,8 @@
 #include <stdio.h>
 #include <cstring>
 #include <fstream>
-#include "PowerTools++/Net.h"
-#include "PowerTools++/IpoptProgram.h"
-#include "PowerTools++/PTSolver.h"
-#include "PowerTools++/Complex.h"
 #include "PowerTools++/PowerModel.h"
-#include "PowerTools++/json.hpp"
-#include "plot.h"
+#include "PowerTools++/Plot.h"
 
 using namespace std;
 
@@ -91,8 +86,8 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
-//    PowerModelType pmt = ACPF_BATT_T;
-    PowerModelType pmt = ACPF_T;
+    PowerModelType pmt = ACPF_BATT_T;
+//    PowerModelType pmt = ACPF_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //    PowerModelType pmt = SOCP_PV_T;
@@ -174,7 +169,7 @@ int main (int argc, const char * argv[]) {
     Net net;
 
 
-    int timesteps = 12;
+    int timesteps = 6;
 
     if (net.readFile(filename) == -1)
         return -1;
@@ -251,7 +246,8 @@ int main (int argc, const char * argv[]) {
 
     plot *x = new plot (argc, argv, power_model);
     delete x;
-    system("evince out");
+//    system("evince out");
+    system("open out.ps");
     return 0;
 
 }

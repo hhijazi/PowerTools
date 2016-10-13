@@ -17,11 +17,8 @@ configure_file (
 
 # add the binary tree to the search path for include files
 # so that we will find PowerToolsConfig.h.
-include_directories("${PROJECT_BINARY_DIR}"
-        "/usr/include/plplot"
-        "/home/angela/DEV/plplot-plplot/examples/c++"
-        )
- 
+include_directories("${PROJECT_BINARY_DIR}")
+
 set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER "g++")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -45,7 +42,7 @@ set(LIBS ${LIBS} ${PLPLOT_LIBRARIES})
 find_package(IPOPT REQUIRED)
 include_directories(${IPOPT_INCLUDE_DIRS}/..)
 set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
-#set(LIBS ${LIBS} ${IPOPT_LIBRARIES} "/usr/lib/plplot5.10.0/driversd/*")
+#set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
 
 
 
