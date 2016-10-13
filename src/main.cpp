@@ -216,17 +216,17 @@ int main (int argc, const char * argv[]) {
     double wall0 = get_wall_time();
     double cpu0 = get_cpu_time();
     power_model.build(timesteps);
-    int status = power_model.solve();
+//    int status = power_model.solve();
     //  Stop timers
     double wall1 = get_wall_time();
     double cpu1 = get_cpu_time();
 
 
-    cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
-    power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
+//    cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
+//    power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
 
-    power_model._model->print_solution();
-    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
+//    power_model._model->print_solution();
+//    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
     //power_model._model->_obj->print(true); //obj->print(true);
 /*
     float sum_power_loss = 0;
