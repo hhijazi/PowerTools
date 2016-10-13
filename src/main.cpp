@@ -169,7 +169,7 @@ int main (int argc, const char * argv[]) {
     Net net;
 
 
-    int timesteps = 6;
+    int timesteps = 12;
 
     if (net.readFile(filename) == -1)
         return -1;
@@ -247,7 +247,7 @@ int main (int argc, const char * argv[]) {
     plot *x = new plot (argc, argv, power_model);
     delete x;
 //    system("evince out");
-    system("open out.ps");
+    system("open out.pdf");
     return 0;
 
 }
