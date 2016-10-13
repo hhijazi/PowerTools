@@ -15,6 +15,10 @@
 #include "PowerTools++/PowerModel.h"
 #include "PowerTools++/Plot.h"
 
+
+
+
+
 using namespace std;
 
 //  Windows
@@ -246,8 +250,17 @@ int main (int argc, const char * argv[]) {
 
     plot *x = new plot (argc, argv, power_model);
     delete x;
-//    system("evince out");
+    
+#ifdef _WIN32
+#elif __APPLE__
     system("open out.pdf");
+#elif __linux__
+    system("evince out");
+#else
+#   error "Unknown compiler"
+#endif
+//
+    
     return 0;
 
 }

@@ -90,7 +90,7 @@ plot::plot( int argc, const char **argv , PowerModel& power_model)
     
     // Parse and process command line arguments.
     pls->sfnam("out.pdf");
-    pls->sdev("pdfcairo");
+    pls->sdev("pdf");
     
 //    pls->parseopts( &argc, argv, PL_PARSE_FULL );
     
