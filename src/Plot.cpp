@@ -106,7 +106,7 @@ plot::plot( int argc, const char **argv , PowerModel& power_model)
     pls->wind( 1, power_model._timesteps+1, 0.0, 150.0 );
     pls->box( "bc", 1.0, 0, "bcnv", power_model._timesteps+1, 0 );
     pls->col0( 2 );
-    pls->lab( "Time Step", "kWh", "#frPV Generation" );
+    pls->lab( "#frTime Step", "#frkWh", "#frPV Generation" );
     
     pls->scmap1l( true, 5, pos, red, green, blue, NULL );
     for (auto n:power_model._net->nodes) {
