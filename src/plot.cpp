@@ -120,8 +120,13 @@ plot::plot( int argc, const char **argv , PowerModel& power_model)
                 pls->col1( (y0[i]) / 150. );
                 pls->psty( 0 );
                 plfbox( ( i ), y0[i] );
-                if(y0[i]!=0) {
-                    sprintf( string, "%.0f", y0[i] );
+                if(y0[i] >= 0.1) {
+                    if(y0[i] >= 1) {
+                        sprintf( string, "%.00f", y0[i] );
+                    }
+                    else {
+                        sprintf( string, "%.01f", y0[i] );
+                    }
                     pls->ptex( ( i + .5 ), ( y0[i] + 5. ), 1.0, 0.0, .5, string );
                 }
                 

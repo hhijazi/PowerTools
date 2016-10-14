@@ -113,7 +113,8 @@ int main (int argc, const char * argv[]) {
 //    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
            string filename = "../../data/anu.m";
            string loadfile = "../../data/Jan_16_1hr_24h.csv";
-           string radiationfile="../../data/radiationfile-24-january.csv";
+//           string radiationfile="../../data/radiationfile-24-january.csv";
+        string radiationfile="../../data/radiationfile-24-june.csv";
            string costfile = "../../data/gencost-24.csv";
     ////        string pvfile = "../../data/pvmax.csv";
 
@@ -225,7 +226,7 @@ int main (int argc, const char * argv[]) {
     cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
 
-    power_model._model->print_solution();
+//    power_model._model->print_solution();
     cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
     //power_model._model->_obj->print(true); //obj->print(true);
 /*
