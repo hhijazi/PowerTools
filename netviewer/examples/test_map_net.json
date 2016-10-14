@@ -1,0 +1,12 @@
+{
+	"map": {"lat": 51.505, "lon": -0.09, "map_zoom": 15, "net_zoom": 16},
+	"node": [
+		{"name": "node1", "id": 0, "lat": 51.505, "lon": -0.09},
+		{"name": "node2", "id": 1, "lat": 51.515, "lon": -0.10}
+	],
+	"edge": [
+		{"name": "edge1", "id": 0, "n0": 0, "n1": 1}
+	],
+	"chum": [],
+	"deco": []
+}

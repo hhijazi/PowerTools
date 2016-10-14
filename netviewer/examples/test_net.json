@@ -1,0 +1,32 @@
+{
+"node": [
+	{"id": 0, "type": "bus", "x": 0, "y": 0, "name": "bus0", "cprop": {"v": 0.0}},
+	{"id": 1, "type": "bus", "x": 100, "y": 100, "name": "bus1", "cprop": {"v": 3.0}},
+	{"id": 2, "type": "bus", "x": 200, "y": 100, "name": "bus2", "cprop": {"v": 9.0}}
+],
+"edge": [
+	{"id": 0, "type": "line", "n0": 0, "n1": 1, "m1": "closed", "name": "line0", "cprop": {"phase": 6, "i": 0.5}},
+	{"id": 1, "type": "line", "n0": 1, "n1": 2, "m0": "open", "name": "line1", "cprop": {"phase": 7, "i": 0.7}}
+],
+"chum": [
+	{"id": 0, "type": "load", "n0": 0, "name": "load0", "cprop": {"phase": 5}},
+	{"id": 1, "type": "load", "n0": 0, "name": "load1", "cprop": {"phase": 4}},
+	{"id": 2, "type": "load", "n0": 1, "name": "load2", "cprop": {"phase": 7}},
+	{"id": 3, "type": "load", "n0": 2, "name": "load3", "cprop": {"phase": 6}},
+	{"id": 4, "type": "load", "n0": 2, "name": "load4", "cprop": {"phase": 7}},
+	{"id": 5, "type": "load", "n0": 2, "name": "load5", "cprop": {"phase": 4}}
+],
+"deco": [
+	{"kind": "chum", "type": "load", "prop": "cprop", "pname": "phase", "feat": "colour",
+		"map": {"4": "#FF0F57", "5": "#0F7BFF", "6": "#93FF0F", "7": "black"}},
+	{"kind": "edge", "type": "line", "prop": "cprop", "pname": "i", "feat": "colour"},
+	{"kind": "node", "type": "bus", "prop": "cprop", "pname": "v", "feat": "colour",
+		"domain": [0, 10], "range": [0, 50]},
+	{"kind": "node", "type": "bus", "prop": "cprop", "pname": "v", "feat": "size",
+		"domain": [0, 10], "range": [6, 14]},
+	{"kind": "chum", "type": "load", "prop": "vprop", "pname": "p", "feat": "size",
+		"domain": [0, 5], "range": [3, 7]},
+	{"kind": "edge", "type": "line", "prop": "vprop", "pname": "p", "feat": "size",
+		"domain": [0, 5], "range": [3, 8]}
+]
+}

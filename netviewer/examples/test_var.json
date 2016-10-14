@@ -1,0 +1,22 @@
+[
+	[
+		{"kind": "chum", "id": 0, "vprop": {"p": 0.0}},
+		{"kind": "chum", "id": 1, "vprop": {"p": 2.0}},
+		{"kind": "chum", "id": 2, "vprop": {"p": 3.0}},
+		{"kind": "chum", "id": 3, "vprop": {"p": 4.0}},
+		{"kind": "chum", "id": 4, "vprop": {"p": 2.0}},
+		{"kind": "chum", "id": 5, "vprop": {"p": 5.0}},
+		{"kind": "edge", "id": 0, "vprop": {"p": 2.0}},
+		{"kind": "edge", "id": 1, "vprop": {"p": 5.0}}
+	],
+	[
+		{"kind": "chum", "id": 0, "vprop": {"p": 2.0}},
+		{"kind": "chum", "id": 1, "vprop": {"p": 1.0}},
+		{"kind": "chum", "id": 2, "vprop": {"p": 3.0}},
+		{"kind": "chum", "id": 3, "vprop": {"p": 5.0}},
+		{"kind": "chum", "id": 4, "vprop": {"p": 1.0}},
+		{"kind": "chum", "id": 5, "vprop": {"p": 0.0}},
+		{"kind": "edge", "id": 0, "vprop": {"p": 1.0}},
+		{"kind": "edge", "id": 1, "vprop": {"p": 2.0}}
+	]
+]

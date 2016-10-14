@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Network Viewer</title>
+<link id="stylesheet" rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://npmcdn.com/leaflet@1.0.0-rc.2/dist/leaflet.css" />
+<script src="https://npmcdn.com/leaflet@1.0.0-rc.2/dist/leaflet.js"></script>
+
+</head>
+<body>
+<div id="wrapper">
+	<div id="network"></div>
+	<div id="properties">
+		<input type="file" id="net-file" name="file"/>
+		<input type="file" id="dat-file" name="file"/>
+		<input type="button" id="save-network" value="Save Network" name="save"/>
+		<input type="button" id="executable" value="executable"/>
+		<p class="prop-head" id=dataindex></p>
+		<p class="prop-head">Properties</p>
+		<div id="tprop"></div>
+		<p class="prop-head">Constant Properties</p>
+		<div id="cprop"></div>
+		<p class="prop-head">Variable Properties</p>
+		<div id="vprop"></div>
+
+
+	</div>
+	<div id="cleared"></div>
+</div>
+</body>
+<script src="bundle.js"></script>
+
+</html>

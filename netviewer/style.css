@@ -1,0 +1,183 @@
+#body {
+	margin: 0px;
+	overflow: hidden;
+}
+#wrapper {
+	margin-right: 200px;
+}
+
+#network {
+	float: left;
+	width: 100%;
+	height: 100vh;
+}
+
+#properties {
+	float: right;
+	width: 200px;
+	margin-right: -200px;
+	background-color: #EEF;
+	height: 100vh;
+	overflow-y: auto;
+}
+
+#tprop {
+	width:100%;
+	background-color: #FFB;
+}
+
+#cprop {
+	width:100%;
+	background-color: #FBF;
+}
+
+#vprop {
+	width:100%;
+	background-color: #BFF;
+}
+
+#cleared {
+	clear: both;
+}
+
+p.prop-head {
+	font-weight: bold;
+	margin-top: 0.1em;
+	margin-bottom: 0.2em;
+}
+
+p.prop-line {
+	font-size: 80%;
+	margin-top: 0.1em;
+	margin-bottom: 0.2em;
+}
+
+line {
+	fill: none;
+	stroke: black;
+	stroke-width: 8;
+	shape-rendering: auto;
+}
+
+line.line {
+	fill: none;
+	stroke: black;
+}
+
+line.tran,
+line.transformer {
+	fill: none;
+	stroke: black;
+	stroke-dasharray: 5,5;
+	stroke-width: 12;
+	shape-rendering: auto;
+}
+
+circle {
+	fill: black;
+	shape-rendering: auto;
+}
+
+circle.bus {
+	fill: black;
+	stroke: white;
+	stroke-width: 2;
+	shape-rendering: auto;
+}
+
+circle.load {
+	fill: black;
+	stroke: white;
+	stroke-width: 1;
+	shape-rendering: auto;
+}
+
+circle.feed {
+	fill: purple;
+	stroke: #AA4499;
+	stroke-width: 2;
+	shape-rendering: auto;
+}
+
+circle.gen {
+	fill: #995544;
+	stroke: #555555;
+	stroke-width: 2;
+	shape-rendering: auto;
+}
+
+marker#sta_closed rect {
+	fill: none;
+	stroke: black;
+	stroke-width: 2;
+}
+
+marker#end_closed rect {
+	fill: none;
+	stroke: black;
+	stroke-width: 2;
+}
+
+marker#sta_open {
+	fill: white;
+	stroke: black;
+	stroke-width: 2;
+}
+
+marker#end_open {
+	fill: white;
+	stroke: black;
+	stroke-width: 2;
+}
+
+path.bus_arc_p {
+	fill: white;
+	stroke: none;
+}
+
+path.gen_arc_p {
+	fill: white;
+	stroke: none;
+}
+
+path.gen_arc_q {
+	fill: black;
+	fill-opacity: 0.5;
+	stroke: none;
+}
+
+text {
+	font-size: 8pt;
+}
+
+text.bus_text_lu {
+	fill: red;
+}
+
+text.bus_text_lw {
+	fill: blue;
+}
+
+text.bus_text_lk {
+	fill: purple;
+}
+
+text.bus_text_ll {
+	fill: green;
+}
+
+.ui-tooltip {
+	white-space: pre-wrap;
+}
+
+path.axis,
+line.axis  {
+	fill: none;
+	stroke: black;
+	shape-rendering: crispEdges;
+}
+
+text.axis {
+	font-family: sans-serif;
+	font-size: 11px;
+}
