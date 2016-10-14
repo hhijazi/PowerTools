@@ -57,10 +57,10 @@ public:
     /** @brief Reactive power generation variable */
     var<> qg;
 
-    /** @brief Active power generation variable, time depedent version*/
+    /** @brief Active power generation variable, time dependent version*/
     vector<var<>> pg_t;
 
-    /** @brief Reactive power generation variable, time depedent version*/
+    /** @brief Reactive power generation variable, time dependent version*/
     vector<var<>> qg_t;
 
     /** @brief Initialiser with linked Bus and generator properties

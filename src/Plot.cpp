@@ -89,9 +89,13 @@ plot::plot( int argc, const char **argv , PowerModel& power_model)
     pls = new plstream();
     
     // Parse and process command line arguments.
+#ifdef __APPLE__
     pls->sfnam("out.pdf");
     pls->sdev("pdf");
-    
+#elif __linux__
+    pls->sfnam("out.psc");
+    pls->sdev("psc");
+#endif
     pls->spal0( "cmap0_black_on_white.pal" );
     pls->spal1( "cmap1_gray.pal", true );
 

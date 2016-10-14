@@ -273,7 +273,7 @@ int main (int argc, const char * argv[]) {
 #elif __APPLE__
     system("open out.pdf");
 #elif __linux__
-    system("evince out");
+    system("gv out.psc");
 #else
 #   error "Unknown compiler"
 #endif
