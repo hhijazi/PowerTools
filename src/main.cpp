@@ -14,7 +14,7 @@
 #include <fstream>
 #include "PowerTools++/PowerModel.h"
 #include "PowerTools++/Plot.h"
-#include "cpptk.h"
+//#include "cpptk.h"
 
 
 
@@ -69,17 +69,17 @@ double get_cpu_time(){
 #endif
 
 
-using namespace Tk;
+//using namespace Tk;
 
-void hello() {
-    puts("Hello C++/Tk!");
-}
+//void hello() {
+//    puts("Hello C++/Tk!");
+//}
 
 int main (int argc, const char * argv[]) {
-    button(".b") -text("Say Hello") -command(hello);
-    pack(".b") -padx(20) -pady(6);
-    
-    runEventLoop();
+//    button(".b") -text("Say Hello") -command(hello);
+//    pack(".b") -padx(20) -pady(6);
+//    
+//    runEventLoop();
     
 //    auto i = 3./10000;
 //    cout << "i = " << i << endl;
@@ -121,11 +121,18 @@ int main (int argc, const char * argv[]) {
 //    string loadfile = "/home/angela/DEV/PowerTools/data/loadfile-24.csv";
 //    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24-june.csv";
 //    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
-           string filename = "../../data/anu.m";
-           string loadfile = "../../data/Jan_16_1hr_24h.csv";
+           string filename = "../data/anu.m";
+           string loadfile = "../data/Jan_16_1hr_24h.csv";
 //           string radiationfile="../../data/radiationfile-24-january.csv";
-        string radiationfile="../../data/radiationfile-24-june.csv";
-           string costfile = "../../data/gencost-24.csv";
+        string radiationfile="../data/radiationfile-24-june.csv";
+           string costfile = "../data/gencost-24.csv";
+#ifdef __APPLE__
+    filename = "../" + filename;
+    loadfile  = "../" + loadfile;
+    radiationfile = "../" + radiationfile;
+    costfile = "../" + costfile;
+#endif
+
     ////        string pvfile = "../../data/pvmax.csv";
 
 
