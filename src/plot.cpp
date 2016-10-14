@@ -34,7 +34,7 @@ PLFLT       plot::pos[] = { 0.0, 0.25, 0.5, 0.75, 1.0 };
 PLFLT       plot::red[] = { 1.0, 1.0, 1.0, 1.0, 1.0};
 PLFLT       plot::green[] = {  0.0, 0.25, 0.5, 0.75, 1.0 };
 PLFLT       plot::blue[] = { 0.0, 0.0, 0.0, 0.0, 0.0  };
-double      test[] = {0., 0., 10., 20., 50., 70., 85., 75., 50., 30., 0., 0.};
+//double      test[] = {0., 0., 10., 20., 50., 70., 85., 75., 50., 30., 0., 0.};
 
 plot::plot( int argc, const char **argv , PowerModel& power_model)
 {
@@ -92,8 +92,6 @@ plot::plot( int argc, const char **argv , PowerModel& power_model)
     pls->sfnam("out.pdf");
     pls->sdev("pdf");
     
-//    pls->parseopts( &argc, argv, PL_PARSE_FULL );
-    
     pls->spal0( "cmap0_black_on_white.pal" );
     pls->spal1( "cmap1_gray.pal", true );
 
@@ -105,7 +103,7 @@ plot::plot( int argc, const char **argv , PowerModel& power_model)
     
     pls->adv( 0 );
     pls->vsta();
-    pls->wind( 1, power_model._timesteps+1, 0.0, 100.0 );
+    pls->wind( 1, power_model._timesteps+1, 0.0, 150.0 );
     pls->box( "bc", 1.0, 0, "bcnv", power_model._timesteps+1, 0 );
     pls->col0( 2 );
     pls->lab( "Time Step", "kWh", "#frPV Generation" );
@@ -113,11 +111,13 @@ plot::plot( int argc, const char **argv , PowerModel& power_model)
     pls->scmap1l( true, 5, pos, red, green, blue, NULL );
     for (auto n:power_model._net->nodes) {
         if (n->in()) {
+            n->print();
+            cout << "Panel size = " << n->pv_rate.get_value() << endl;
             for (int t = 0; t < power_model._timesteps; t++) {
-//                y0[i] = power_model._net->bMVA*100*n->pv_t[t].get_value();
-                y0[i] = test[i-1];
+                y0[i] = power_model._net->bMVA*1000*n->pv_t[t].get_value();
+//                y0[i] = test[i-1];
                 cout << y0[i] << ", ";
-                pls->col1( (y0[i]) / 100. );
+                pls->col1( (y0[i]) / 150. );
                 pls->psty( 0 );
                 plfbox( ( i ), y0[i] );
                 if(y0[i]!=0) {
@@ -127,14 +127,12 @@ plot::plot( int argc, const char **argv , PowerModel& power_model)
                 
                 sprintf( string, "%d", i );
                 pls->mtex( "b", 1.0, ( i/(1.*power_model._timesteps)  - .5/power_model._timesteps ), 0.5, string );
-//                pls->mtex( ( i + .5 ), 1., 1.0, 0.0, .5, string );
                 i++;
             }
             break;
         }
 
     }
-    //pls->end();
     
 
     delete pls;

@@ -905,7 +905,7 @@ void PowerModel::min_cost_time() {
     *obj = (*obj/_timesteps);
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-    obj->print(true);
+//    obj->print(true);
     //    _solver->run();
 }
 
@@ -930,7 +930,7 @@ void PowerModel::min_cost_pv(){
 //    *obj = *obj/24;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-    obj->print(true);
+//    obj->print(true);
     //    _solver->run();
 }
 
@@ -951,11 +951,11 @@ void PowerModel::min_cost_pv_batt(){
             if (n->in()) {
 //            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
 //            *obj += 1.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 1.5*1000000*n->pv_rate*_net->bMVA/(30*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
-                *obj += 0.15*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
+                *obj += 1.15*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
                 //            *obj += _net->bMVA*(n->batt_cap)*1000000/6/(10*365*24*6); // $1000000/MWh battery investment for 10 years.(10min simulation)
 //            *obj += _net->bMVA*(n->batt_cap)*1000000/(30*365*24); // $1000000/MWh battery investment for 30 years.(1 hour simulation)
             //*obj += _net->bMVA*(n->batt_cap)*1000*0.20; //$0.20/kwh battery investment = $200/MWh paid over one year
-                *obj += _net->bMVA*(n->pdis_t[t])*1000*0.20;
+                *obj += _net->bMVA*(n->pdis_t[t])*1000*0.2;
             }
         }
 
@@ -963,13 +963,13 @@ void PowerModel::min_cost_pv_batt(){
         for (auto n:_net->nodes){
             if (n->in()) {
                 *obj += n->batt_cap;
-                *obj += n->pv_rate;
+                *obj += 0.0000001 * n->pv_rate;
             }
         }
     *obj = *obj/_timesteps;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-    obj->print(true);
+//    obj->print(true);
     //    _solver->run();
 }
 
@@ -1192,7 +1192,7 @@ void PowerModel::add_AC_Rect_PV_vars_Time(){
         n->vi_t.resize(_timesteps);
         if (n->in()) {
             n->pv_t.resize(_timesteps);
-            n->pv_rate.init("pv_rate_node_"+n->_name, 0, 100);
+            n->pv_rate.init("pv_rate_node_"+n->_name, 0, 150);
             _model->addVar(n->pv_rate);
         }
     }
@@ -1259,7 +1259,7 @@ void PowerModel::add_SOCP_Rect_PV_vars_Time(){
         for (auto n:_net->nodes) {
 
             n->pv_t.resize(_timesteps);
-            n->pv_rate.init("pv_rate"+n->_name, 0, 1);
+            n->pv_rate.init("pv_rate"+n->_name, 0, 100);
             _model->addVar(n->pv_rate);
             n-> w_t.resize(_timesteps);
         }
@@ -2077,7 +2077,7 @@ void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t];
-        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945 * 0.82 / 1000);
+        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945 * 0.82 / (_net->bMVA*1000000));
         Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
         
@@ -2111,7 +2111,7 @@ void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t];
-        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945 * 0.82 / 1000);
+        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945 * 0.82 / (1000000 * _net->bMVA));
         Link_PV_Rate <= 0;
         _model->addConstraint(Link_PV_Rate);
 
