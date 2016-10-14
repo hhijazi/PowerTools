@@ -14,7 +14,6 @@
 #include <fstream>
 #include "PowerTools++/PowerModel.h"
 #include "PowerTools++/Plot.h"
-//#include "cpptk.h"
 
 
 
@@ -69,17 +68,8 @@ double get_cpu_time(){
 #endif
 
 
-//using namespace Tk;
-
-//void hello() {
-//    puts("Hello C++/Tk!");
-//}
 
 int main (int argc, const char * argv[]) {
-//    button(".b") -text("Say Hello") -command(hello);
-//    pack(".b") -padx(20) -pady(6);
-//    
-//    runEventLoop();
     
 //    auto i = 3./10000;
 //    cout << "i = " << i << endl;
