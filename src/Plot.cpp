@@ -138,7 +138,7 @@ plot::plot( int argc, const char **argv , PowerModel& power_model)
                 pls->mtex( "b", 1.0, ( i/(1.*power_model._timesteps)  - .5/power_model._timesteps ), 0.5, string );
                 i++;
             }
-            break;
+            //break;
         }
 
     }
