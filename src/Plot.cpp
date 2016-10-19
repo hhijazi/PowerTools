@@ -155,7 +155,7 @@ void plot::plot_PV( int argc, const char **argv , PowerModel& power_model) {
     system("open out.pdf");
 #elif __linux__
 
-    i = 0;
+    i = 1;
     for (auto n:power_model._net->nodes) {
         if (n->in()) {
             std::string name("gv out" + to_string(i) + ".psc");
@@ -234,6 +234,7 @@ void plot::plot_V( int argc, const char **argv , PowerModel& power_model) {
             //                pls->sfnam("out.pdf");
 //        pls->sdev("pdf");
 #elif __linux__
+
             std::string name("out"+to_string(i)+".psc");
             pls[i-1]->sfnam(name.c_str());
             pls[i-1]->sdev("psc");
@@ -290,7 +291,7 @@ void plot::plot_V( int argc, const char **argv , PowerModel& power_model) {
 #elif __APPLE__
     system("open out.pdf");
 #elif __linux__
-    i = 0;
+    i = 1;
     for (auto n:power_model._net->nodes) {
         if (n->in()) {
             std::string name("gv out" + to_string(i) + ".psc");
@@ -439,7 +440,7 @@ void plot::plot_flow( int argc, const char **argv , PowerModel& power_model) {
 #elif __APPLE__
     system("open out.pdf");
 #elif __linux__
-    i = 0;
+    i = 1;
     for (auto a:power_model._net->arcs) {
         if (a->status=1) {
             std::string name("gv out" + to_string(i) + ".psc");
