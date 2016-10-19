@@ -256,18 +256,15 @@ int main (int argc, const char * argv[]) {
 
     }*/
 
-    plot *x = new plot (argc, argv, power_model);
-    delete x;
+
+    plot p;
+  //  p.plot_V( argc, argv, power_model);
+  //  p.plot_PV( argc, argv, power_model);
+    p.plot_flow( argc, argv, power_model);
+  //plot *x = new plot(argc, argv, power_model);
+
     
-#ifdef _WIN32
-#elif __APPLE__
-    system("open out.pdf");
-#elif __linux__
-    system("gv out.psc");
-#else
-#   error "Unknown compiler"
-#endif
-//
+
     
     return 0;
 

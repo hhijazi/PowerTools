@@ -14,12 +14,21 @@ using namespace std;
 
 class plot {
 public:
-    plot( int, const char ** , PowerModel& power_model);
-    void plfbox( PLFLT, double );
+    //plot( int, const char ** , PowerModel& power_model);
+    //plot_PV( int, const char ** , PowerModel& power_model);
+
+    void plot_V( int, const char ** , PowerModel& power_model);
+    void plot_PV( int, const char ** , PowerModel& power_model);
+    void plot_flow( int, const char ** , PowerModel& power_model);
+    void plfbox( PLFLT, double, int);
+
+    vector<plstream*>         pls;
+    //plstream                    *pls;
 private:
     // Class data
-    plstream         *pls;
-    
+
+
+
     static PLFLT       pos[], red[], green[], blue[];
 };
 
