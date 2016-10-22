@@ -176,21 +176,27 @@ template<typename Number>void var<Number>::set_val(Number val){
 template<typename Number> void var<Number>::print () const{
     switch (_type) {
         case integ:
+
             cout << "Int ";
             //j.push_back("Int");
             break;
         case binary:
+
             cout << "Binary ";
             //j.push_back("Binary");
             break;
         default:
+
             cout << "Real ";
             //j.push_back("Real");
             break;
     }
+
     cout << _name;
 
     if (!_bounded_down && !_bounded_down) {
+
+
         cout << " (unbounded) = ";
         printf("%.10f;\n", (double)_val);
 //        cout << "in constraints: ";
@@ -199,18 +205,23 @@ template<typename Number> void var<Number>::print () const{
 //        }
         return;
     }
-    cout << " in ";
+
+    cout << "in";
+    // cout << " in ";
     switch (_type) {
         case integ:
             cout << "{" << get_lb() << "," << get_ub() << "}";
             cout << " = " << _val;
+
             break;
         case binary:
             cout << "{" << 0 << "," << 1 << "}";
             cout << " = " << _val;
+
             break;
         default:
             cout << "[" << get_lb() << "," << get_ub() << "]";
+
             printf(" = %.10f", (double)_val);
             break;
     }

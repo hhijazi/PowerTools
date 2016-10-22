@@ -175,6 +175,6 @@ void Constraint::print(){
             break;
     }
 //    printf("%f;\n", _rhs);
-    cout << _rhs << ";\n";
+    cout <<_rhs << ";\n";
 
 };

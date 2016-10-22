@@ -213,7 +213,7 @@ void Model::addConstraint(Constraint c_){
     }
     _nnz_g+=c->get_nb_vars();
 
-    //c->print();
+    c->print();
 };
 
 void Model::addConstraint(Constraint* c){
@@ -254,7 +254,7 @@ void Model::addConstraint(Constraint* c){
     }
     _nnz_g+=c->get_nb_vars();
     
-//        c->print();
+        c->print();
 };
 
 
@@ -600,6 +600,7 @@ void Model::check_feasible(const double* x){
         if ((x[vid] - var->get_ub())>1e-6) {
             cerr << "violated upper bound constraint: ";
             var->print();
+            //var->print();
         }
         if ((x[vid] - var->get_lb())<-1e-6) {
             cerr << "violated lower bound constraint: ";
@@ -1663,6 +1664,7 @@ void Model::print_solution() const {
     var<double> *long_real_var = NULL;
     int idx = 0;
     int vid = 0;
+
     for (auto &v: _vars) {
         vid = v->get_idx();
 //        assert(vid==idx);

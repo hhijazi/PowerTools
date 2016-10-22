@@ -19,8 +19,8 @@
 #include <PowerTools++/meta_Constraint.h>
 #include <vector>
 
-typedef enum { SOCP_BATT_T_NO_GEN, ACPF_BATT_T_NO_GEN, SOCP_BATT_T,ACPF_T, SOCP_T, SOCP_PV_T, ACPF_BATT_T, ACPF_PV_T, ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
-typedef enum { MinCostPv_T, MinCostPv,MinCostPvBatt, MinCost, MinCostTime,  MinLoss, MinDelta, MaxDelta } Obj;
+typedef enum { SOCP_BATT_T_NO_GEN, ACPF_BATT_T_NO_GEN, SOCP_PV_BATT_T, SOCP_BATT_T, ACPF_T, SOCP_T, SOCP_PV_T, ACPF_BATT_T, ACPF_PV_BATT_T, ACPF_PV_T, ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
+typedef enum { MinCostBatt_t, MinCostPv_T, MinCostPv,MinCostPvBatt, MinCost, MinCostTime,  MinLoss, MinDelta, MaxDelta } Obj;
 
 class PowerModel {
 public:
@@ -55,8 +55,9 @@ public:
     void add_AC_Rect_PV_vars();
     void add_AC_Rect_PV_vars_Time();
     void add_AC_Rect_Batt_vars_Time();
+    void add_AC_Rect_PV_Batt_vars_Time();
+    void add_SOCP_Rect_PV_Batt_vars_Time();
     void add_SOCP_Rect_Batt_vars_Time();
-
     void add_SOCP_Rect_PV_vars_Time();
 
 
@@ -88,9 +89,11 @@ public:
     void add_AC_KCL_SOCP_Time(Node *n);
     void add_AC_KCL_PV_Time(Node* n);
     void add_AC_KCL_Batt_Time(Node* n);
+    void add_AC_KCL_PV_Batt_Time(Node* n);
     void add_AC_link_Batt_Time(Node* n);
     void add_SOCP_KCL_PV_Time(Node* n);
     void add_SOCP_KCL_Batt_Time(Node* n);
+    void add_SOCP_KCL_PV_Batt_Time(Node* n);
     
     void add_link_PV_Rate_NoCurt_Time(Node* n);
     void add_link_PV_Rate_Curt_Time(Node* n);
@@ -117,10 +120,12 @@ public:
     void post_AC_PF_Time();
     void post_AC_PF_PV();
     void post_AC_PF_PV_Time();
-    void post_AC_PF_Batt_Time();
+    void post_AC_PF_PV_Batt_Time();
     void post_AC_PF_Batt_Time_No_Gen();
+    void post_AC_PF_Batt_Time();
     void post_SOCP_PF_Batt_Time_No_Gen();
     void post_SOCP_PF_Batt_Time();
+    void post_SOCP_PF_PV_Batt_Time();
     void post_AC_Rect();
     void post_QC();
     void post_AC_SOCP();
@@ -139,6 +144,7 @@ public:
     void min_cost();
     void min_cost_time();
     void min_cost_pv();
+    void min_cost_batt();
     void min_cost_pv_batt();
 
     void min_var(var<>& v);

@@ -90,12 +90,14 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
-    PowerModelType pmt = ACPF_BATT_T;
+//    PowerModelType pmt = ACPF_BATT_T;
+//    PowerModelType pmt = ACPF_PV_BATT_T;
 //    PowerModelType pmt = ACPF_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
-//    PowerModelType pmt = SOCP_PV_T;
+   PowerModelType pmt = SOCP_PV_T;
 //      PowerModelType pmt = SOCP_BATT_T;
+//    PowerModelType pmt = SOCP_PV_BATT_T;
 
     //  Start Timers
 
@@ -113,8 +115,11 @@ int main (int argc, const char * argv[]) {
 //    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
            string filename = "../data/anu.m";
            string loadfile = "../data/Jan_16_1hr_24h.csv";
-//           string radiationfile="../../data/radiationfile-24-january.csv";
-        string radiationfile="../data/radiationfile-24-june.csv";
+//           string loadfile = "../data/June_16_1hr_24h.csv";
+//           string loadfile = "../data/September_16_1hr_24h.csv";
+           string radiationfile="../data/radiationfile-24-january.csv";
+//        string radiationfile="../data/radiationfile-24-june.csv";
+//        string radiationfile="../data/radiationfile-24-september.csv"
            string costfile = "../data/gencost-24.csv";
 #ifdef __APPLE__
     filename = "../" + filename;
@@ -151,8 +156,11 @@ int main (int argc, const char * argv[]) {
         else if (!strcmp(argv[2], "SOCP")) pmt = SOCP;
         else if (!strcmp(argv[2], "SOCP_PV_T")) pmt = SOCP_PV_T;
         else if (!strcmp(argv[2], "ACPF_PV_T")) pmt = ACPF_PV_T;
-        else if (!strcmp(argv[2], "SOCP_BATT_T")) pmt = SOCP_BATT_T;
+        else if (!strcmp(argv[2], "SOCP_BATT_T")) pmt = SOCP_PV_BATT_T;
+        else if (!strcmp(argv[2], "ACPF_PV_BATT_T")) pmt = ACPF_PV_BATT_T;
         else if (!strcmp(argv[2], "ACPF_BATT_T")) pmt = ACPF_BATT_T;
+        else if (!strcmp(argv[2], "SOCP_BATT_T")) pmt = SOCP_BATT_T;
+        else if (!strcmp(argv[2], "SOCP_PV_BATT_T")) pmt = SOCP_PV_BATT_T;
         else if (!strcmp(argv[2], "SOCP_T")) pmt = SOCP_T;
         else if (!strcmp(argv[2], "ACPF_T")) pmt = ACPF_T;
         else if (!strcmp(argv[2], "SDP")) pmt = SDP;
@@ -181,7 +189,7 @@ int main (int argc, const char * argv[]) {
     Net net;
 
 
-    int timesteps = 12;
+    int timesteps = 24;
 
     if (net.readFile(filename) == -1)
         return -1;
@@ -225,17 +233,32 @@ int main (int argc, const char * argv[]) {
     double cpu0 = get_cpu_time();
     power_model.build(timesteps);
     int status = power_model.solve();
+
     //  Stop timers
     double wall1 = get_wall_time();
     double cpu1 = get_cpu_time();
 
 
+    /*cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
+    power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";*/
+
+    ofstream fw;
+    fw.open("text.txt");
+    std::streambuf *oldbuf = std::cout.rdbuf();
+    std::cout.rdbuf(fw.rdbuf());
+    ///
+    power_model._model->print_solution();
+    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
+    power_model._model->_obj->print(true); //obj->print(true);
     cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
+    ///
+    std::cout.rdbuf(oldbuf);
+    cout << "\n";
+    /*std::ofstream fileout("out.txt");
+    fileout << power_model._model->print_solution();*/
 
-//    power_model._model->print_solution();
-    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
-    //power_model._model->_obj->print(true); //obj->print(true);
+
 /*
     float sum_power_loss = 0;
 
@@ -256,14 +279,16 @@ int main (int argc, const char * argv[]) {
 
     }*/
 
-
-    plot p;
+/* Plotting functions */
+//    plot p;
   //  p.plot_V( argc, argv, power_model);
-  //  p.plot_PV( argc, argv, power_model);
-    p.plot_flow( argc, argv, power_model);
+//    p.plot_PV( argc, argv, power_model);
+  //  p.plot_flow( argc, argv, power_model);
+  //  p.plot_soc(argc, argv, power_model);
   //plot *x = new plot(argc, argv, power_model);
 
-    
+
+    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
 
     
     return 0;

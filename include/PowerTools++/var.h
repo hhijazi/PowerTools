@@ -85,8 +85,8 @@ public:
     
     
     /* Output */
-    void print() const;
 
+    void print() const;
     
 };
 
