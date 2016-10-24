@@ -87,7 +87,7 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_T;
 //      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
-      PowerModelType pmt = ACPF_PV_T;
+//      PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
 //    PowerModelType pmt = ACPF_BATT_T;
@@ -97,7 +97,7 @@ int main (int argc, const char * argv[]) {
 //    PowerModelType pmt = GRB_TEST;
 //   PowerModelType pmt = SOCP_PV_T;
 //      PowerModelType pmt = SOCP_BATT_T;
-//    PowerModelType pmt = SOCP_PV_BATT_T;
+    PowerModelType pmt = SOCP_PV_BATT_T;
 
     //  Start Timers
 

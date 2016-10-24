@@ -127,6 +127,7 @@ void plot::plot_PV( int argc, const char **argv , PowerModel& power_model) {
 //                y0[i] = test[i-1];
                 cout << y0[t] << ", ";
                 pls[i - 1]->col1((y0[t]) / 150.);
+                pls[i-1]->schr(0.0, 0.75);
                 pls[i - 1]->psty(0);
                 plfbox(t, y0[t], i-1);
                 if (y0[t] >= 0.1) {
@@ -558,7 +559,7 @@ void plot::plot_flow( int argc, const char **argv , PowerModel& power_model) {
         for (int t = 0; t < power_model._timesteps; t++) {
 
             if (y0[t] < 0) {
-                pls[i - 1]->col1(0);
+                pls[i - 1]->col1(0.7);
                 y0[t] *= -1;
             }
             else {
