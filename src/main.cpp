@@ -87,7 +87,7 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_T;
 //      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
-//      PowerModelType pmt = ACPF_PV_T;
+      PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
 //    PowerModelType pmt = ACPF_BATT_T;
@@ -95,7 +95,7 @@ int main (int argc, const char * argv[]) {
 //    PowerModelType pmt = ACPF_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
-   PowerModelType pmt = SOCP_PV_T;
+//   PowerModelType pmt = SOCP_PV_T;
 //      PowerModelType pmt = SOCP_BATT_T;
 //    PowerModelType pmt = SOCP_PV_BATT_T;
 
@@ -242,18 +242,18 @@ int main (int argc, const char * argv[]) {
     /*cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";*/
 
-    ofstream fw;
-    fw.open("text.txt");
-    std::streambuf *oldbuf = std::cout.rdbuf();
-    std::cout.rdbuf(fw.rdbuf());
-    ///
-    power_model._model->print_solution();
+//    ofstream fw;
+//    fw.open("text.txt");
+//    std::streambuf *oldbuf = std::cout.rdbuf();
+//    std::cout.rdbuf(fw.rdbuf());
+//    ///
+//    power_model._model->print_solution();
     cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
     power_model._model->_obj->print(true); //obj->print(true);
     cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
     ///
-    std::cout.rdbuf(oldbuf);
+//    std::cout.rdbuf(oldbuf);
     cout << "\n";
     /*std::ofstream fileout("out.txt");
     fileout << power_model._model->print_solution();*/

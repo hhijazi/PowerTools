@@ -213,7 +213,7 @@ void Model::addConstraint(Constraint c_){
     }
     _nnz_g+=c->get_nb_vars();
 
-    c->print();
+//    c->print();
 };
 
 void Model::addConstraint(Constraint* c){
@@ -254,7 +254,7 @@ void Model::addConstraint(Constraint* c){
     }
     _nnz_g+=c->get_nb_vars();
     
-        c->print();
+//        c->print();
 };
 
 

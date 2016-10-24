@@ -23,13 +23,13 @@
 
 class Net{
 public:
-    int i=0;
-    int j=0;
+
     int _bus_count; // buses are i
     int _time_count; //time instances are j
 
 
     double bMVA;
+    int max_pv_size = 150; /* Max size of pv panels per building, default = 150 square meters. */
     
 
     std::vector<double> c0;

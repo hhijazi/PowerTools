@@ -354,10 +354,10 @@ void PowerModel::post_SOCP_PF_Batt_Time_No_Gen(){
                 //            cout << endl;
                 //        }
 
-                Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w_t[t];
+                Flow_P_From -= (a->g / (powf(a->cc, 2) + powf(a->dd, 2))) * src->w_t[t];
                 ap = _net->get_arc(a->src, a->dest);
-                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_From = 0;
                 _model->addConstraint(Flow_P_From);
 
@@ -369,8 +369,8 @@ void PowerModel::post_SOCP_PF_Batt_Time_No_Gen(){
                 Constraint Flow_P_To("Flow_P_To" + a->pj._name);
                 Flow_P_To += a->pj_t[t];
                 Flow_P_To -= a->g * dest->w_t[t];
-                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_To = 0;
                 _model->addConstraint(Flow_P_To);
 
@@ -381,9 +381,9 @@ void PowerModel::post_SOCP_PF_Batt_Time_No_Gen(){
                  */
                 Constraint Flow_Q_From("Flow_Q_From" + a->qi._name);
                 Flow_Q_From += a->qi_t[t];
-                Flow_Q_From += (a->ch / 2 + a->b) / (pow(a->cc, 2) + pow(a->dd, 2)) * src->w_t[t];
-                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_From += (a->ch / 2 + a->b) / (powf(a->cc, 2) + powf(a->dd, 2)) * src->w_t[t];
+                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_From = 0;
                 _model->addConstraint(Flow_Q_From);
 
@@ -395,8 +395,8 @@ void PowerModel::post_SOCP_PF_Batt_Time_No_Gen(){
                 Constraint Flow_Q_To("Flow_Q_To" + a->qj._name);
                 Flow_Q_To += a->qj_t[t];
                 Flow_Q_To += (a->ch / 2 + a->b) * dest->w_t[t];
-                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_To = 0;
                 _model->addConstraint(Flow_Q_To);
 
@@ -645,10 +645,10 @@ void PowerModel::post_SOCP_PF_Batt_Time() {
                 //            cout << endl;
                 //        }
 
-                Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w_t[t];
+                Flow_P_From -= (a->g / (powf(a->cc, 2) + powf(a->dd, 2))) * src->w_t[t];
                 ap = _net->get_arc(a->src, a->dest);
-                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_From = 0;
                 _model->addConstraint(Flow_P_From);
 
@@ -660,8 +660,8 @@ void PowerModel::post_SOCP_PF_Batt_Time() {
                 Constraint Flow_P_To("Flow_P_To" + a->pj._name);
                 Flow_P_To += a->pj_t[t];
                 Flow_P_To -= a->g * dest->w_t[t];
-                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_To = 0;
                 _model->addConstraint(Flow_P_To);
 
@@ -672,9 +672,9 @@ void PowerModel::post_SOCP_PF_Batt_Time() {
                  */
                 Constraint Flow_Q_From("Flow_Q_From" + a->qi._name);
                 Flow_Q_From += a->qi_t[t];
-                Flow_Q_From += (a->ch / 2 + a->b) / (pow(a->cc, 2) + pow(a->dd, 2)) * src->w_t[t];
-                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_From += (a->ch / 2 + a->b) / (powf(a->cc, 2) + powf(a->dd, 2)) * src->w_t[t];
+                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_From = 0;
                 _model->addConstraint(Flow_Q_From);
 
@@ -686,8 +686,8 @@ void PowerModel::post_SOCP_PF_Batt_Time() {
                 Constraint Flow_Q_To("Flow_Q_To" + a->qj._name);
                 Flow_Q_To += a->qj_t[t];
                 Flow_Q_To += (a->ch / 2 + a->b) * dest->w_t[t];
-                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_To = 0;
                 _model->addConstraint(Flow_Q_To);
 
@@ -774,10 +774,10 @@ void PowerModel::post_SOCP_PF_PV_Batt_Time() {
                 //            cout << endl;
                 //        }
 
-                Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w_t[t];
+                Flow_P_From -= (a->g / (powf(a->cc, 2) + powf(a->dd, 2))) * src->w_t[t];
                 ap = _net->get_arc(a->src, a->dest);
-                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_From = 0;
                 _model->addConstraint(Flow_P_From);
 
@@ -789,8 +789,8 @@ void PowerModel::post_SOCP_PF_PV_Batt_Time() {
                 Constraint Flow_P_To("Flow_P_To" + a->pj._name);
                 Flow_P_To += a->pj_t[t];
                 Flow_P_To -= a->g * dest->w_t[t];
-                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_To = 0;
                 _model->addConstraint(Flow_P_To);
 
@@ -801,9 +801,9 @@ void PowerModel::post_SOCP_PF_PV_Batt_Time() {
                  */
                 Constraint Flow_Q_From("Flow_Q_From" + a->qi._name);
                 Flow_Q_From += a->qi_t[t];
-                Flow_Q_From += (a->ch / 2 + a->b) / (pow(a->cc, 2) + pow(a->dd, 2)) * src->w_t[t];
-                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_From += (a->ch / 2 + a->b) / (powf(a->cc, 2) + powf(a->dd, 2)) * src->w_t[t];
+                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_From = 0;
                 _model->addConstraint(Flow_Q_From);
 
@@ -815,8 +815,8 @@ void PowerModel::post_SOCP_PF_PV_Batt_Time() {
                 Constraint Flow_Q_To("Flow_Q_To" + a->qj._name);
                 Flow_Q_To += a->qj_t[t];
                 Flow_Q_To += (a->ch / 2 + a->b) * dest->w_t[t];
-                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_To = 0;
                 _model->addConstraint(Flow_Q_To);
 
@@ -890,10 +890,10 @@ void PowerModel::post_SOCP_PF_PV_Time() {
                 //            cout << endl;
                 //        }
 
-                Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w_t[t];
+                Flow_P_From -= (a->g / (powf(a->cc, 2) + powf(a->dd, 2))) * src->w_t[t];
                 ap = _net->get_arc(a->src, a->dest);
-                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_From = 0;
                 _model->addConstraint(Flow_P_From);
 
@@ -905,8 +905,8 @@ void PowerModel::post_SOCP_PF_PV_Time() {
                 Constraint Flow_P_To("Flow_P_To" + a->pj._name);
                 Flow_P_To += a->pj_t[t];
                 Flow_P_To -= a->g * dest->w_t[t];
-                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_To = 0;
                 _model->addConstraint(Flow_P_To);
 
@@ -917,9 +917,9 @@ void PowerModel::post_SOCP_PF_PV_Time() {
                  */
                 Constraint Flow_Q_From("Flow_Q_From" + a->qi._name);
                 Flow_Q_From += a->qi_t[t];
-                Flow_Q_From += (a->ch / 2 + a->b) / (pow(a->cc, 2) + pow(a->dd, 2)) * src->w_t[t];
-                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_From += (a->ch / 2 + a->b) / (powf(a->cc, 2) + powf(a->dd, 2)) * src->w_t[t];
+                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_From = 0;
                 _model->addConstraint(Flow_Q_From);
 
@@ -931,8 +931,8 @@ void PowerModel::post_SOCP_PF_PV_Time() {
                 Constraint Flow_Q_To("Flow_Q_To" + a->qj._name);
                 Flow_Q_To += a->qj_t[t];
                 Flow_Q_To += (a->ch / 2 + a->b) * dest->w_t[t];
-                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_To = 0;
                 _model->addConstraint(Flow_Q_To);
 
@@ -977,7 +977,7 @@ void PowerModel::post_AC_PF(){
 void PowerModel::add_fixed_V(Gen* g){
     Constraint Fixed_v("Fixed_v"+g->_name);
     Fixed_v += g->_bus->_V_.square_magnitude();
-    Fixed_v = pow(g->_bus->vs,2);
+    Fixed_v = powf(g->_bus->vs,2);
     _model->addConstraint(Fixed_v);
 }
 
@@ -1063,7 +1063,7 @@ void PowerModel::min_cost(){
     for (auto g:_net->gens) {
         if (!g->_active)
             continue;
-        *obj += _net->bMVA*g->_cost->c1*(g->pg) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg^2) + g->_cost->c0;
+        *obj += _net->bMVA*g->_cost->c1*(g->pg) + powf(_net->bMVA,2)*g->_cost->c2*(g->pg^2) + g->_cost->c0;
     }
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
@@ -1097,7 +1097,7 @@ void PowerModel::min_cost_pv(){
         for (auto g:_net->gens) {
 //          *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
          // *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
-        //*obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+        //*obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + powf(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
             *obj += _net->bMVA*1000*_net->c1[t]*g->pg_t[t];          //$c1/kwh*pg(Mw)*1000 =cost  $/h
         }
 
@@ -1127,7 +1127,7 @@ void PowerModel::min_cost_batt(){
 //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
             *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t])*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
 //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + powf(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
         for (auto n:_net->nodes) {
             if (n->in()) {
@@ -1165,7 +1165,7 @@ void PowerModel::min_cost_pv_batt(){
 //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
             *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t])*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
 //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + powf(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
         for (auto n:_net->nodes) {
             if (n->in()) {
@@ -1328,8 +1328,8 @@ void PowerModel::add_SOCP_Rect_Batt_vars_Time(){
 
         for (auto n:_net->nodes) {
 
-            n->w_t[t].init("w" + n->_name + "_" + to_string(t), pow(n->vbound.min, 2), pow(n->vbound.max, 2));
-            n->w_t[t] = pow(n->vs, 2);
+            n->w_t[t].init("w" + n->_name + "_" + to_string(t), powf(n->vbound.min, 2), powf(n->vbound.max, 2));
+            n->w_t[t] = powf(n->vs, 2);
             _model->addVar(n->w_t[t]);
 
             n->init_lifted_complex();
@@ -1576,7 +1576,7 @@ void PowerModel::add_AC_Rect_PV_vars_Time(){
         n->vi_t.resize(_timesteps);
         if (n->in()) {
             n->pv_t.resize(_timesteps);
-            n->pv_rate.init("pv_rate_node_"+n->_name, 0, 150);
+            n->pv_rate.init("pv_rate_node_"+n->_name, 0, _net->max_pv_size);
             _model->addVar(n->pv_rate);
         }
     }
@@ -1641,10 +1641,11 @@ void PowerModel::add_SOCP_Rect_PV_vars_Time(){
         }
 
         for (auto n:_net->nodes) {
-
-            n->pv_t.resize(_timesteps);
-            n->pv_rate.init("pv_rate"+n->_name, 0, 100);
-            _model->addVar(n->pv_rate);
+            if(n->in()){
+                n->pv_t.resize(_timesteps);
+                n->pv_rate.init("pv_rate"+n->_name, 0, _net->max_pv_size);
+                _model->addVar(n->pv_rate);
+            }
             n-> w_t.resize(_timesteps);
         }
 
@@ -1677,12 +1678,13 @@ void PowerModel::add_SOCP_Rect_PV_vars_Time(){
 
             for (auto n:_net->nodes) {
 
+                if(n->in()){
+                    n->pv_t[t].init("pv" + n->_name + "_" + to_string(t), 0, 1);
+                    _model->addVar(n->pv_t[t]);
+                }
 
-                n->pv_t[t].init("pv" + n->_name + "_" + to_string(t), 0, 1);
-                _model->addVar(n->pv_t[t]);
-
-                n->w_t[t].init("w" + n->_name + "_" + to_string(t), pow(n->vbound.min, 2), pow(n->vbound.max, 2));
-                n->w_t[t] = pow(n->vs, 2);
+                n->w_t[t].init("w" + n->_name + "_" + to_string(t), powf(n->vbound.min, 2), powf(n->vbound.max, 2));
+                n->w_t[t] = powf(n->vs, 2);
                 _model->addVar(n->w_t[t]);
 
                 n->init_lifted_complex();
@@ -1766,7 +1768,7 @@ void PowerModel::add_QC_vars(){
         n->theta.init("t"+n->_name);
         n->v.init("v"+n->_name, n->vbound.min, n->vbound.max);
         n->v = n->vs;
-        n->w.init("w"+n->_name,pow(n->vbound.min,2), pow(n->vbound.max,2));
+        n->w.init("w"+n->_name,powf(n->vbound.min,2), powf(n->vbound.max,2));
         n->w = n->vs*n->vs;
         //        n->v = 1;
         _model->addVar(n->v);
@@ -1894,8 +1896,8 @@ void PowerModel::add_AC_SOCP_vars_Time() {
 
         }
         for (auto n:_net->nodes) {
-            n->w_t[t].init("w" + n->_name, pow(n->vbound.min, 2), pow(n->vbound.max, 2));
-            n->w_t[t] = pow(n->vs, 2);
+            n->w_t[t].init("w" + n->_name, powf(n->vbound.min, 2), powf(n->vbound.max, 2));
+            n->w_t[t] = powf(n->vs, 2);
             _model->addVar(n->w_t[t]);
             n->init_lifted_complex();
         }
@@ -1930,8 +1932,8 @@ void PowerModel::add_AC_SOCP_vars(){
 
     }
     for (auto n:_net->nodes) {
-        n->w.init("w"+n->_name, pow(n->vbound.min,2), pow(n->vbound.max,2));
-        n->w = pow(n->vs,2);
+        n->w.init("w"+n->_name, powf(n->vbound.min,2), powf(n->vbound.max,2));
+        n->w = powf(n->vs,2);
         _model->addVar(n->w);
         n->init_lifted_complex();
     }
@@ -1973,9 +1975,9 @@ void PowerModel::add_QC_OTS_vars() {
         n->v.init("v"+n->_name, n->vbound.min, n->vbound.max);
         n->v = 1;
         n->theta.init("t"+n->_name);
-        n->w.init("w"+n->_name, pow(n->vbound.min,2), pow(n->vbound.max,2));
+        n->w.init("w"+n->_name, powf(n->vbound.min,2), powf(n->vbound.max,2));
         _model->addVar(n->v);
-        //n->w = pow(n->vs,2);
+        //n->w = powf(n->vs,2);
         n->w = 1.001;
         _model->addVar(n->w);
         n->theta = 0;
@@ -2006,8 +2008,8 @@ void PowerModel::add_QC_OTS_vars() {
             a->wi.init("wi"+a->_name, a->vv.get_lb()*sin(l), a->vv.get_ub()*sin(u),0,0);
         if (u <= 0)
             a->wi.init("wi"+a->_name, a->vv.get_ub()*sin(l), a->vv.get_lb()*sin(u),0,0);
-        a->w_line_ij.init("w_line("+a->_name+","+a->src->_name+","+a->dest->_name+")", pow(a->src->vbound.min,2), pow(a->src->vbound.max,2),0,0);
-        a->w_line_ji.init("w_line("+a->_name+","+a->dest->_name+","+a->src->_name+")", pow(a->dest->vbound.min,2), pow(a->dest->vbound.max,2),0,0);
+        a->w_line_ij.init("w_line("+a->_name+","+a->src->_name+","+a->dest->_name+")", powf(a->src->vbound.min,2), powf(a->src->vbound.max,2),0,0);
+        a->w_line_ji.init("w_line("+a->_name+","+a->dest->_name+","+a->src->_name+")", powf(a->dest->vbound.min,2), powf(a->dest->vbound.max,2),0,0);
 
         a->sn.init("sn("+a->_name+","+a->src->_name+","+a->dest->_name+")",sin(l), sin(u),0,0);
         a->ci.init("ci("+a->_name+","+a->src->_name+","+a->dest->_name+")", 0, INFINITY);
@@ -2058,8 +2060,8 @@ void PowerModel::add_SOCP_OTS_vars() {
         a->init_complex();
     }
     for (auto n:_net->nodes) {
-        n->w.init("w"+n->_name, pow(n->vbound.min,2), pow(n->vbound.max,2));
-        n->w = pow(n->vs,2);
+        n->w.init("w"+n->_name, powf(n->vbound.min,2), powf(n->vbound.max,2));
+        n->w = powf(n->vs,2);
         _model->addVar(n->w);
         n->init_lifted_complex();
     }
@@ -2120,8 +2122,8 @@ void PowerModel::add_AC_thermal_Time(Arc* a){
         if (a->status==1 && !a->dest->_has_gen && !a->src->_has_gen) {
             Constraint Thermal_Limit_from("Thermal_Limit_from_T_" + to_string(t));
             Thermal_Limit_from += ((a->pi_t[t])^2) + ((a->qi_t[t])^2);
-            if(pow(a->limit,2.)>0.004){
-                Thermal_Limit_from <= pow(a->limit,2.);
+            if(powf(a->limit,2.)>0.004){
+                Thermal_Limit_from <= powf(a->limit,2.);
 //                Thermal_Limit_from.print();
             }
             else{
@@ -2131,8 +2133,8 @@ void PowerModel::add_AC_thermal_Time(Arc* a){
             
             Constraint Thermal_Limit_to("Thermal_Limit_to_T_" + to_string(t));
             Thermal_Limit_to += ((a->pj_t[t])^2) + ((a->qj_t[t])^2);
-            if(pow(a->limit,2.)>0.004){
-                Thermal_Limit_to <= pow(a->limit,2.);
+            if(powf(a->limit,2.)>0.004){
+                Thermal_Limit_to <= powf(a->limit,2.);
             }
             else{
                 Thermal_Limit_to <= 0.03;
@@ -2149,23 +2151,23 @@ void PowerModel::add_AC_thermal(Arc* a, bool switch_lines){
         Constraint Thermal_Limit_from("Thermal_Limit_from");
         Thermal_Limit_from += a->_Si_.square_magnitude();
         if (!switch_lines){
-            if(pow(a->limit,2.)>0.004){
-                Thermal_Limit_from <= pow(a->limit,2.);
+            if(powf(a->limit,2.)>0.004){
+                Thermal_Limit_from <= powf(a->limit,2.);
             }
             else{
                 Thermal_Limit_from <= 0.03;
             }
         }
         else{
-            Thermal_Limit_from -= pow(a->limit,2.)*a->on + (1-a->on)*a->smax;
+            Thermal_Limit_from -= powf(a->limit,2.)*a->on + (1-a->on)*a->smax;
             Thermal_Limit_from <= 0;
         }
         _model->addConstraint(Thermal_Limit_from);
         Constraint Thermal_Limit_to("Thermal_Limit_to");
         Thermal_Limit_to += a->_Sj_.square_magnitude();
         if (!switch_lines){
-            if(pow(a->limit,2.)>0.004){
-                Thermal_Limit_to <= pow(a->limit,2.);
+            if(powf(a->limit,2.)>0.004){
+                Thermal_Limit_to <= powf(a->limit,2.);
             }
             else{
                 Thermal_Limit_to <= 0.03;
@@ -2173,7 +2175,7 @@ void PowerModel::add_AC_thermal(Arc* a, bool switch_lines){
 
         }
         else{
-            Thermal_Limit_to -= pow(a->limit,2.)*a->on + (1-a->on)*a->smax;
+            Thermal_Limit_to -= powf(a->limit,2.)*a->on + (1-a->on)*a->smax;
             Thermal_Limit_to <= 0;
         }
         _model->addConstraint(Thermal_Limit_to);
@@ -2225,9 +2227,9 @@ void PowerModel::add_AC_Power_Flow_Time(Arc *a){
             Node* dest = a->dest;
             Constraint Flow_P_From("Flow_P_From"+a->pi._name + "_" + to_string(t));
             Flow_P_From += a->pi_t[t];
-            Flow_P_From -= a->g*((((src->vi_t[t])^2) + ((src->vr_t[t])^2)))/pow(a->tr,2.);
-            Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(src->vr_t[t]*dest->vr_t[t] + src->vi_t[t]*dest->vi_t[t]);
-            Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(src->vi_t[t]*dest->vr_t[t] - src->vr_t[t]*dest->vi_t[t]);
+            Flow_P_From -= a->g*((((src->vi_t[t])^2) + ((src->vr_t[t])^2)))/powf(a->tr,2.);
+            Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(src->vr_t[t]*dest->vr_t[t] + src->vi_t[t]*dest->vi_t[t]);
+            Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(src->vi_t[t]*dest->vr_t[t] - src->vr_t[t]*dest->vi_t[t]);
             Flow_P_From = 0;
             _model->addConstraint(Flow_P_From);
             /** subject to Flow_P_To {(l,i,j) in arcs_to}:
@@ -2238,8 +2240,8 @@ void PowerModel::add_AC_Power_Flow_Time(Arc *a){
             Constraint Flow_P_To("Flow_P_To"+a->pj._name + "_" + to_string(t));
             Flow_P_To += a->pj_t[t];
             Flow_P_To -= a->g*((((dest->vi_t[t])^2) + ((dest->vr_t[t])^2)));
-            Flow_P_To -= (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vr_t[t]*src->vr_t[t] + dest->vi_t[t]*src->vi_t[t]);
-            Flow_P_To -= (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vi_t[t]*src->vr_t[t] - dest->vr_t[t]*src->vi_t[t]);
+            Flow_P_To -= (-a->g*a->cc - a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vr_t[t]*src->vr_t[t] + dest->vi_t[t]*src->vi_t[t]);
+            Flow_P_To -= (-a->b*a->cc + a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vi_t[t]*src->vr_t[t] - dest->vr_t[t]*src->vi_t[t]);
             Flow_P_To = 0;
             _model->addConstraint(Flow_P_To);
             /** subject to Flow_Q_From {(l,i,j) in arcs_from}:
@@ -2249,9 +2251,9 @@ void PowerModel::add_AC_Power_Flow_Time(Arc *a){
              */
             Constraint Flow_Q_From("Flow_Q_From"+a->qi._name+ "_" + to_string(t));
             Flow_Q_From += a->qi_t[t];
-            Flow_Q_From += (a->ch/2+a->b)*((((src->vi_t[t])^2) + ((src->vr_t[t])^2)))/pow(a->tr,2.);
-            Flow_Q_From += (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vr_t[t]*src->vr_t[t] + dest->vi_t[t]*src->vi_t[t]);
-            Flow_Q_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(src->vi_t[t]*dest->vr_t[t] - src->vr_t[t]*dest->vi_t[t]);
+            Flow_Q_From += (a->ch/2+a->b)*((((src->vi_t[t])^2) + ((src->vr_t[t])^2)))/powf(a->tr,2.);
+            Flow_Q_From += (-a->b*a->cc - a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vr_t[t]*src->vr_t[t] + dest->vi_t[t]*src->vi_t[t]);
+            Flow_Q_From -= (-a->g*a->cc + a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(src->vi_t[t]*dest->vr_t[t] - src->vr_t[t]*dest->vi_t[t]);
             Flow_Q_From = 0;
             _model->addConstraint(Flow_Q_From);
             /** subject to Flow_Q_To {(l,i,j) in arcs_to}:
@@ -2267,8 +2269,8 @@ void PowerModel::add_AC_Power_Flow_Time(Arc *a){
 
             Flow_Q_To += a->qj_t[t];
             Flow_Q_To += (a->ch/2+a->b)*(((dest->vi_t[t])^2) + ((dest->vr_t[t])^2));
-            Flow_Q_To += (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vr_t[t]*src->vr_t[t] + dest->vi_t[t]*src->vi_t[t]);
-            Flow_Q_To -= (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vi_t[t]*src->vr_t[t] - dest->vr_t[t]*src->vi_t[t]);
+            Flow_Q_To += (-a->b*a->cc + a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vr_t[t]*src->vr_t[t] + dest->vi_t[t]*src->vi_t[t]);
+            Flow_Q_To -= (-a->g*a->cc - a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vi_t[t]*src->vr_t[t] - dest->vr_t[t]*src->vi_t[t]);
             Flow_Q_To = 0;
             _model->addConstraint(Flow_Q_To);
 
@@ -2283,7 +2285,7 @@ void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
     
     
     //    Flow_P_From += a->pi;
-    //    Flow_P_From -= constant(a->g/pow(a->tr,2.))*(src->_V_.square_magnitude());
+    //    Flow_P_From -= constant(a->g/powf(a->tr,2.))*(src->_V_.square_magnitude());
     //    Flow_P_From += constant(a->g/a->tr)*((src->v)*(dest->v)*cos(src->theta - dest->theta - a->as));
     //    Flow_P_From += a->b/a->tr*((src->v)*(dest->v)*sin(src->theta - dest->theta - a->as));
     //    Flow_P_From = 0;
@@ -2298,14 +2300,14 @@ void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
         Node* dest = a->dest;
         Constraint Flow_P_From("Flow_P_From"+a->pi._name);
         Flow_P_From += a->pi;
-        Flow_P_From -= a->g*(src->_V_.square_magnitude())/pow(a->tr,2.);
+        Flow_P_From -= a->g*(src->_V_.square_magnitude())/powf(a->tr,2.);
         if (polar) {
             Flow_P_From += a->g/a->tr*((src->v)*(dest->v)*cos(src->theta - dest->theta - a->as)); /** TODO write the constraints in Complex form */
             Flow_P_From += a->b/a->tr*((src->v)*(dest->v)*sin(src->theta - dest->theta - a->as));
         }
         else{
-            Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(src->vr*dest->vr + src->vi*dest->vi);
-            Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(src->vi*dest->vr - src->vr*dest->vi);
+            Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(src->vr*dest->vr + src->vi*dest->vi);
+            Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(src->vi*dest->vr - src->vr*dest->vi);
         }
         Flow_P_From = 0;
         _model->addConstraint(Flow_P_From);
@@ -2322,8 +2324,8 @@ void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
             Flow_P_To += a->b/a->tr*(dest->v*src->v*sin(dest->theta - src->theta + a->as));
         }
         else {
-            Flow_P_To -= (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vr*src->vr + dest->vi*src->vi);
-            Flow_P_To -= (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vi*src->vr - dest->vr*src->vi);
+            Flow_P_To -= (-a->g*a->cc - a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vr*src->vr + dest->vi*src->vi);
+            Flow_P_To -= (-a->b*a->cc + a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vi*src->vr - dest->vr*src->vi);
         }
         Flow_P_To = 0;
         _model->addConstraint(Flow_P_To);
@@ -2334,14 +2336,14 @@ void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
          */
         Constraint Flow_Q_From("Flow_Q_From"+a->qi._name);
         Flow_Q_From += a->qi;
-        Flow_Q_From += (a->ch/2+a->b)*(src->_V_.square_magnitude())/pow(a->tr,2.);
+        Flow_Q_From += (a->ch/2+a->b)*(src->_V_.square_magnitude())/powf(a->tr,2.);
         if (polar) {
             Flow_Q_From -= a->b/a->tr*(src->v*dest->v*cos(src->theta - dest->theta - a->as));
             Flow_Q_From += a->g/a->tr*(src->v*dest->v*sin(src->theta - dest->theta - a->as));
         }
         else {
-            Flow_Q_From += (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vr*src->vr + dest->vi*src->vi);
-            Flow_Q_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(src->vi*dest->vr - src->vr*dest->vi);
+            Flow_Q_From += (-a->b*a->cc - a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vr*src->vr + dest->vi*src->vi);
+            Flow_Q_From -= (-a->g*a->cc + a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(src->vi*dest->vr - src->vr*dest->vi);
         }
         Flow_Q_From = 0;
         _model->addConstraint(Flow_Q_From);
@@ -2358,8 +2360,8 @@ void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
             Flow_Q_To += a->g/a->tr*(dest->v*src->v*sin(dest->theta - src->theta + a->as));
         }
         else{
-            Flow_Q_To += (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vr*src->vr + dest->vi*src->vi);
-            Flow_Q_To -= (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vi*src->vr - dest->vr*src->vi);
+            Flow_Q_To += (-a->b*a->cc + a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vr*src->vr + dest->vi*src->vi);
+            Flow_Q_To -= (-a->g*a->cc - a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*(dest->vi*src->vr - dest->vr*src->vi);
         }
         Flow_Q_To = 0;
         _model->addConstraint(Flow_Q_To);
@@ -2972,11 +2974,11 @@ void PowerModel::post_QC(){
         Constraint Flow_P_From("Flow_P_From"+a->pi._name);
         Flow_P_From += a->pi;
 
-        Flow_P_From -= a->g*src->w/(pow(a->cc,2)+pow(a->dd,2));
-        Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->vcs;
-        Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->vsn;
+        Flow_P_From -= a->g*src->w/(powf(a->cc,2)+powf(a->dd,2));
+        Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->vcs;
+        Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->vsn;
 
-        //         Flow_P_From -= a->g*(src->w)/pow(a->tr,2.);
+        //         Flow_P_From -= a->g*(src->w)/powf(a->tr,2.);
         //         Flow_P_From += a->g/a->tr*a->vcs;
         //         Flow_P_From += a->b/a->tr*a->vsn;
 
@@ -2987,8 +2989,8 @@ void PowerModel::post_QC(){
         Flow_P_To += a->pj;
         Flow_P_To -= a->g*(dest->w);
 
-        Flow_P_To -= (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->vcs;
-        Flow_P_To += (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->vsn;
+        Flow_P_To -= (-a->g*a->cc - a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->vcs;
+        Flow_P_To += (-a->b*a->cc + a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->vsn;
 
         //         Flow_P_To += a->g/a->tr*a->vcs;
         //         Flow_P_To -= a->b/a->tr*a->vsn;
@@ -2999,11 +3001,11 @@ void PowerModel::post_QC(){
         Constraint Flow_Q_From("Flow_Q_From"+a->qi._name);
         Flow_Q_From += a->qi;
 
-        Flow_Q_From += (a->ch/2+a->b)*src->w/(pow(a->cc,2)+pow(a->dd,2));
-        Flow_Q_From += (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->vcs;
-        Flow_Q_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->vsn;
+        Flow_Q_From += (a->ch/2+a->b)*src->w/(powf(a->cc,2)+powf(a->dd,2));
+        Flow_Q_From += (-a->b*a->cc - a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->vcs;
+        Flow_Q_From -= (-a->g*a->cc + a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->vsn;
 
-        //         Flow_Q_From += (a->ch/2+a->b)*(src->w)/pow(a->tr,2.);
+        //         Flow_Q_From += (a->ch/2+a->b)*(src->w)/powf(a->tr,2.);
         //         Flow_Q_From -= a->b/a->tr*a->vcs;
         //         Flow_Q_From += a->g/a->tr*a->vsn;
         Flow_Q_From = 0;
@@ -3014,8 +3016,8 @@ void PowerModel::post_QC(){
         Flow_Q_To += a->qj;
         Flow_Q_To += (a->ch/2+a->b)*(dest->w);
 
-        Flow_Q_To += (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->vcs;
-        Flow_Q_To += (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->vsn;
+        Flow_Q_To += (-a->b*a->cc + a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->vcs;
+        Flow_Q_To += (-a->g*a->cc - a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->vsn;
 
         //         Flow_Q_To -= a->b/a->tr*a->vcs;
         //         Flow_Q_To -= a->g/a->tr*a->vsn;
@@ -3035,7 +3037,7 @@ void PowerModel::post_QC(){
 
         Constraint Cs_UBound("Cs_UBound"+a->_name);
         Cs_UBound += a->cs;
-//        Cs_UBound -= 1 - (1 - cos(theta_u))/pow(theta_u,2)*a->delta*a->delta;
+//        Cs_UBound -= 1 - (1 - cos(theta_u))/powf(theta_u,2)*a->delta*a->delta;
         Cs_UBound -= (cos(tm) - cos(tu) - delta*(tm - tu))/(tm*tm - tm*(tu+tl) + tu*tl)*(a->delta*a->delta - (tu+tl)*a->delta + tu*tl);
         Cs_UBound -= delta*(-tu + a->delta) + cos(tu);
         //Cs_UBound -= cos(a->delta);
@@ -3110,20 +3112,20 @@ void PowerModel::post_QC(){
 
         //        Constraint Current_Magnitude_From("Current_Magnitude_From"+a->_name);
         //        Current_Magnitude_From += a->pi*a->pi + a->qi*a->qi;
-        //        Current_Magnitude_From -= src->w*a->ci/pow(a->tr, 2.);
+        //        Current_Magnitude_From -= src->w*a->ci/powf(a->tr, 2.);
         //        Current_Magnitude_From <= 0;
         //        _model->addConstraint(Current_Magnitude_From);
 
         /** Losses */
 
         //        Constraint P_Loss_From("P_Loss_From"+a->_name);
-        //        P_Loss_From += a->r*(a->ci + a->ch*a->qi + pow((a->ch/2)/a->tr,2.)*src->w);
+        //        P_Loss_From += a->r*(a->ci + a->ch*a->qi + powf((a->ch/2)/a->tr,2.)*src->w);
         //        P_Loss_From -= a->pi + a->pj;
         //        P_Loss_From = 0;
         //        _model->addConstraint(P_Loss_From);
 
         //        Constraint Q_Loss_From("Q_Loss_From"+a->_name);
-        //        Q_Loss_From += a->x*(a->ci + a->ch*a->qi + pow((a->ch/2)/a->tr,2.)*src->w) - ((a->ch/2)/pow(a->tr,2))*src->w - (a->ch/2)*dest->w;
+        //        Q_Loss_From += a->x*(a->ci + a->ch*a->qi + powf((a->ch/2)/a->tr,2.)*src->w) - ((a->ch/2)/powf(a->tr,2))*src->w - (a->ch/2)*dest->w;
         //        Q_Loss_From -= a->qi + a->qj;
         //        Q_Loss_From = 0;
         //        _model->addConstraint(Q_Loss_From);
@@ -3293,10 +3295,10 @@ void PowerModel::post_AC_SOCP_Time() {
                 //            cout << endl;
                 //        }
 
-                Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w_t[t];
+                Flow_P_From -= (a->g / (powf(a->cc, 2) + powf(a->dd, 2))) * src->w_t[t];
                 ap = _net->get_arc(a->src, a->dest);
-                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_From = 0;
                 _model->addConstraint(Flow_P_From);
 
@@ -3308,8 +3310,8 @@ void PowerModel::post_AC_SOCP_Time() {
                 Constraint Flow_P_To("Flow_P_To" + a->pj_t[t]._name);
                 Flow_P_To += a->pj_t[t];
                 Flow_P_To -= a->g * dest->w_t[t];
-                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_P_To = 0;
                 _model->addConstraint(Flow_P_To);
 
@@ -3320,9 +3322,9 @@ void PowerModel::post_AC_SOCP_Time() {
 
                 Constraint Flow_Q_From("Flow_Q_From" + a->qi_t[t]._name);
                 Flow_Q_From += a->qi_t[t];
-                Flow_Q_From += (a->ch / 2 + a->b) / (pow(a->cc, 2) + pow(a->dd, 2)) * src->w_t[t];
-                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_From += (a->ch / 2 + a->b) / (powf(a->cc, 2) + powf(a->dd, 2)) * src->w_t[t];
+                Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_From = 0;
                 _model->addConstraint(Flow_Q_From);
 
@@ -3334,8 +3336,8 @@ void PowerModel::post_AC_SOCP_Time() {
                 Constraint Flow_Q_To("Flow_Q_To" + a->qj._name);
                 Flow_Q_To += a->qj_t[t];
                 Flow_Q_To += (a->ch / 2 + a->b) * dest->w_t[t];
-                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr_t[t];
-                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi_t[t];
+                Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wr_t[t];
+                Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (powf(a->cc, 2) + powf(a->dd, 2)) * ap->wi_t[t];
                 Flow_Q_To = 0;
                 _model->addConstraint(Flow_Q_To);
 
@@ -3383,10 +3385,10 @@ void PowerModel::post_AC_SOCP(){
 //            cout << endl;
 //        }
 
-        Flow_P_From -= (a->g/(pow(a->cc,2)+pow(a->dd,2)))*src->w;
+        Flow_P_From -= (a->g/(powf(a->cc,2)+powf(a->dd,2)))*src->w;
         ap = _net->get_arc(a->src, a->dest);
-        Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wr;
-        Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wi;
+        Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*ap->wr;
+        Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*ap->wi;
         Flow_P_From = 0;
         _model->addConstraint(Flow_P_From);
 
@@ -3398,8 +3400,8 @@ void PowerModel::post_AC_SOCP(){
         Constraint Flow_P_To("Flow_P_To"+a->pj._name);
         Flow_P_To += a->pj;
         Flow_P_To -= a->g*dest->w;
-        Flow_P_To -= (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wr;
-        Flow_P_To += (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wi;
+        Flow_P_To -= (-a->g*a->cc - a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*ap->wr;
+        Flow_P_To += (-a->b*a->cc + a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*ap->wi;
         Flow_P_To = 0;
         _model->addConstraint(Flow_P_To);
 
@@ -3410,9 +3412,9 @@ void PowerModel::post_AC_SOCP(){
          */
         Constraint Flow_Q_From("Flow_Q_From"+a->qi._name);
         Flow_Q_From += a->qi;
-        Flow_Q_From += (a->ch/2+a->b)/(pow(a->cc,2)+pow(a->dd,2))*src->w;
-        Flow_Q_From += (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wr;
-        Flow_Q_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wi;
+        Flow_Q_From += (a->ch/2+a->b)/(powf(a->cc,2)+powf(a->dd,2))*src->w;
+        Flow_Q_From += (-a->b*a->cc - a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*ap->wr;
+        Flow_Q_From -= (-a->g*a->cc + a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*ap->wi;
         Flow_Q_From = 0;
         _model->addConstraint(Flow_Q_From);
 
@@ -3424,8 +3426,8 @@ void PowerModel::post_AC_SOCP(){
         Constraint Flow_Q_To("Flow_Q_To"+a->qj._name);
         Flow_Q_To += a->qj;
         Flow_Q_To += (a->ch/2+a->b)*dest->w;
-        Flow_Q_To += (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wr;
-        Flow_Q_To += (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wi;
+        Flow_Q_To += (-a->b*a->cc + a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*ap->wr;
+        Flow_Q_To += (-a->g*a->cc - a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*ap->wi;
         Flow_Q_To = 0;
         _model->addConstraint(Flow_Q_To);
 
@@ -3451,12 +3453,12 @@ void PowerModel::add_AC_Voltage_Bounds_Time(Node* n){
      for (int t = 0; t < _timesteps; t++) {
         Constraint V_UB("V_UB");
         V_UB += ((n->vi_t[t])^2) + ((n->vr_t[t])^2);
-        V_UB <= pow(n->vbound.max,2);
+        V_UB <= powf(n->vbound.max,2);
         _model->addConstraint(V_UB);
         
         Constraint V_LB("V_LB");
         V_LB += ((n->vi_t[t])^2) + ((n->vr_t[t])^2);
-        V_LB >= pow(n->vbound.min,2);
+        V_LB >= powf(n->vbound.min,2);
         _model->addConstraint(V_LB);
      }
 }
@@ -3468,12 +3470,12 @@ void PowerModel::add_AC_Voltage_Bounds(Node* n){
      */
     Constraint V_UB("V_UB");
     V_UB += (n->_V_.square_magnitude());
-    V_UB <= pow(n->vbound.max,2);
+    V_UB <= powf(n->vbound.max,2);
     _model->addConstraint(V_UB);
 
     Constraint V_LB("V_LB");
     V_LB += (n->_V_.square_magnitude());
-    V_LB >= pow(n->vbound.min,2);
+    V_LB >= powf(n->vbound.min,2);
     _model->addConstraint(V_LB);
 }
 
@@ -3595,13 +3597,13 @@ void PowerModel::post_DC(){
     double u = a->tbound.max;
     Function CSR; // cs(theta,u) if theta > 0
     theta_u = max(-l,u);
-    double alpha = (1-cos(theta_u))/pow(theta_u,2);
+    double alpha = (1-cos(theta_u))/powf(theta_u,2);
     double on_cont;
 
 //    Function Cs_r;
 //    Cs_r += a->delta - Mu*(1-a->on) - sqrt((a->on*a->on-a->cs*a->on)/alpha);
 //    on_cont = 0.5;
-//    CSR += on_cont - alpha*(a->delta*a->delta - 2*Mu*a->delta*(1-on_cont) + pow(Mu,2)*(1-on_cont)*(1-on_cont))/on_cont;
+//    CSR += on_cont - alpha*(a->delta*a->delta - 2*Mu*a->delta*(1-on_cont) + powf(Mu,2)*(1-on_cont)*(1-on_cont))/on_cont;
 //    x[a->on.get_idx()] = on_cont;
 //    x[a->delta.get_idx()] = u;
 //    x[a->delta.get_idx()] = Mu - Mu*on_cont + u*on_cont/2;
@@ -3615,7 +3617,7 @@ void PowerModel::post_DC(){
 //    Function Cs_l;
 //    Cs_l += Ml*(1-a->on) - a->delta - sqrt((a->on*a->on-a->cs*a->on)/alpha);
 //    on_cont = 0.5;
-//    CSL += on_cont - alpha*(a->delta*a->delta - 2*Ml*a->delta*(1-on_cont) + pow(Ml,2)*(1-on_cont)*(1-on_cont))/on_cont;
+//    CSL += on_cont - alpha*(a->delta*a->delta - 2*Ml*a->delta*(1-on_cont) + powf(Ml,2)*(1-on_cont)*(1-on_cont))/on_cont;
 //    x[a->on.get_idx()] = on_cont;
 //    x[a->delta.get_idx()] = Ml - Ml*on_cont + l*on_cont/2;
 //    x[a->cs.get_idx()] = CSL.eval(x);
@@ -3643,7 +3645,7 @@ void PowerModel::post_DC(){
             on_cont = i*0.2;
             if (on_cont == 0) on_cont = 0.01;
             CSR.reset();
-            CSR += on_cont - alpha*(a->delta*a->delta - 2*Mu*a->delta*(1-on_cont) + pow(Mu,2)*(1-on_cont)*(1-on_cont))/on_cont;
+            CSR += on_cont - alpha*(a->delta*a->delta - 2*Mu*a->delta*(1-on_cont) + powf(Mu,2)*(1-on_cont)*(1-on_cont))/on_cont;
 
             x[a->on.get_idx()] = on_cont;
 
@@ -3697,7 +3699,7 @@ void PowerModel::post_DC(){
             on_cont = i*0.2;
             if (on_cont == 0) on_cont = 0.01;
             CSL.reset();
-            CSL += on_cont - alpha*(a->delta*a->delta - 2*Ml*a->delta*(1-on_cont) + pow(Ml,2)*(1-on_cont)*(1-on_cont))/on_cont;
+            CSL += on_cont - alpha*(a->delta*a->delta - 2*Ml*a->delta*(1-on_cont) + powf(Ml,2)*(1-on_cont)*(1-on_cont))/on_cont;
 
             x[a->on.get_idx()] = on_cont;
 
@@ -3755,7 +3757,7 @@ void PowerModel::add_Cosine(Arc *a){
     double delta = (cos(u) - cos(l))/(u - l);
     double A = (cos(tm) - cos(u) - delta*(tm - u))/(tm*tm - tm*(u+l) + u*l);
     //double theta_u = max(-l,u);
-    //double alpha = (1-cos(theta_u))/pow(theta_u,2);
+    //double alpha = (1-cos(theta_u))/powf(theta_u,2);
     Function f = -A*(a->delta*a->delta - (u+l)*a->delta + u*l) - delta*(-u + a->delta) - cos(u) + a->cs;
     //Function f = alpha*a->delta*a->delta - 1 + a->cs;
     if(u > 0) {
@@ -3831,7 +3833,7 @@ void PowerModel::post_QC_OTS(bool lin_cos_cuts, bool quad_cos){
 
         Constraint Flow_P_From("Flow_P_From"+a->pi._name);
         Flow_P_From += a->pi;
-        Flow_P_From -= a->g*(a->w_line_ij)/pow(a->tr,2.);
+        Flow_P_From -= a->g*(a->w_line_ij)/powf(a->tr,2.);
         Flow_P_From += a->g/a->tr*a->wr;
         Flow_P_From += a->b/a->tr*a->wi;
         Flow_P_From = 0;
@@ -3847,7 +3849,7 @@ void PowerModel::post_QC_OTS(bool lin_cos_cuts, bool quad_cos){
 
         Constraint Flow_Q_From("Flow_Q_From"+a->qi._name);
         Flow_Q_From += a->qi;
-        Flow_Q_From += (a->ch/2+a->b)*(a->w_line_ij)/pow(a->tr,2.);
+        Flow_Q_From += (a->ch/2+a->b)*(a->w_line_ij)/powf(a->tr,2.);
         Flow_Q_From -= a->b/a->tr*a->wr;
         Flow_Q_From += a->g/a->tr*a->wi;
         Flow_Q_From = 0;
@@ -3972,8 +3974,8 @@ void PowerModel::post_QC_OTS(bool lin_cos_cuts, bool quad_cos){
             else tm = 0;
 
             Constraint Cs_UB("Cs_UB");
-//            Cs_UB += a->cs + (1-cos(theta_u))/pow(theta_u,2)*a->delta*a->delta;
-//            Cs_UB -= pow(M,2)*(1-cos(theta_u))/pow(theta_u,2) - (pow(M,2)*(1-cos(theta_u))/pow(theta_u,2))*a->on + a->on;
+//            Cs_UB += a->cs + (1-cos(theta_u))/powf(theta_u,2)*a->delta*a->delta;
+//            Cs_UB -= powf(M,2)*(1-cos(theta_u))/powf(theta_u,2) - (powf(M,2)*(1-cos(theta_u))/powf(theta_u,2))*a->on + a->on;
 //            Cs_UB <= 0;
 
             A = (cos(tm) - cos(tu) - delta*(tm - tu))/(tm*tm - tm*(tu+tl) + tu*tl);
@@ -4023,13 +4025,13 @@ void PowerModel::post_QC_OTS(bool lin_cos_cuts, bool quad_cos){
 
         Constraint soc_bis("soc_bis");
         soc_bis += a->wr*a->wr + a->wi*a->wi;
-        soc_bis -= a->on*a->src->w*pow(a->dest->vbound.max,2);
+        soc_bis -= a->on*a->src->w*powf(a->dest->vbound.max,2);
         soc_bis <= 0;
         _model->addConstraint(soc_bis);
 
         Constraint soc_bis2("soc_bis2");
         soc_bis2 += a->wr*a->wr + a->wi*a->wi;
-        soc_bis2 -= a->on*a->dest->w*pow(a->src->vbound.max,2);
+        soc_bis2 -= a->on*a->dest->w*powf(a->src->vbound.max,2);
         soc_bis2 <= 0;
         _model->addConstraint(soc_bis2);
 
@@ -4044,35 +4046,35 @@ void PowerModel::post_QC_OTS(bool lin_cos_cuts, bool quad_cos){
 
         Constraint Current_Magnitude_From("Current_Magnitude_From");
         Current_Magnitude_From += a->pi*a->pi + a->qi*a->qi;
-        Current_Magnitude_From -= src->w*a->ci/pow(a->tr, 2.);
+        Current_Magnitude_From -= src->w*a->ci/powf(a->tr, 2.);
         Current_Magnitude_From <= 0;
         _model->addConstraint(Current_Magnitude_From);
         Constraint Current_Magnitude_From_bis("Current_Magnitude_From_bis");
         Current_Magnitude_From_bis += a->pi*a->pi + a->qi*a->qi;
-        Current_Magnitude_From_bis -= pow(src->vbound.max,2)*a->ci*a->on/pow(a->tr, 2.);
+        Current_Magnitude_From_bis -= powf(src->vbound.max,2)*a->ci*a->on/powf(a->tr, 2.);
         Current_Magnitude_From_bis <= 0;
         _model->addConstraint(Current_Magnitude_From_bis);
 
         Constraint P_Loss_From("P_Loss_From");
-        P_Loss_From += a->r*(a->ci + a->ch*a->qi + pow((a->ch/2)/a->tr,2.)*a->w_line_ij);
+        P_Loss_From += a->r*(a->ci + a->ch*a->qi + powf((a->ch/2)/a->tr,2.)*a->w_line_ij);
         P_Loss_From -= a->pi + a->pj;
         P_Loss_From = 0;
         _model->addConstraint(P_Loss_From);
         Constraint Q_Loss_From("Q_Loss_From");
-        Q_Loss_From += a->x*(a->ci + a->ch*a->qi + pow((a->ch/2)/a->tr,2.)*a->w_line_ij) - ((a->ch/2)/pow(a->tr,2))*a->w_line_ij - (a->ch/2)*a->w_line_ji;
+        Q_Loss_From += a->x*(a->ci + a->ch*a->qi + powf((a->ch/2)/a->tr,2.)*a->w_line_ij) - ((a->ch/2)/powf(a->tr,2))*a->w_line_ij - (a->ch/2)*a->w_line_ji;
         Q_Loss_From -= a->qi + a->qj;
         Q_Loss_From = 0;
         _model->addConstraint(Q_Loss_From);
 
         Constraint Thermal_Limit_from("Thermal_Limit_from");
         Thermal_Limit_from += a->_Si_.square_magnitude();
-        Thermal_Limit_from -= pow(a->limit,2.)*a->on*a->on;
+        Thermal_Limit_from -= powf(a->limit,2.)*a->on*a->on;
         Thermal_Limit_from <= 0;
         _model->addConstraint(Thermal_Limit_from);
 
         Constraint Thermal_Limit_to("Thermal_Limit_to");
         Thermal_Limit_to += a->_Sj_.square_magnitude();
-        Thermal_Limit_to -= pow(a->limit,2.)*a->on*a->on;
+        Thermal_Limit_to -= powf(a->limit,2.)*a->on*a->on;
         Thermal_Limit_to <= 0;
         _model->addConstraint(Thermal_Limit_to);
     }
@@ -4123,7 +4125,7 @@ void PowerModel::post_QC_OTS(bool lin_cos_cuts, bool quad_cos){
 //
 //        Constraint Flow_P_From("Flow_P_From"+a->pi._name);
 //        Flow_P_From += a->pi;
-//        Flow_P_From -= a->g*(a->w_line_ij)/pow(a->tr,2.);
+//        Flow_P_From -= a->g*(a->w_line_ij)/powf(a->tr,2.);
 //        Flow_P_From += a->g/a->tr*a->wr;
 //        Flow_P_From += a->b/a->tr*a->wi;
 //        Flow_P_From = 0;
@@ -4139,7 +4141,7 @@ void PowerModel::post_QC_OTS(bool lin_cos_cuts, bool quad_cos){
 //
 //        Constraint Flow_Q_From("Flow_Q_From"+a->qi._name);
 //        Flow_Q_From += a->qi;
-//        Flow_Q_From += (a->ch/2+a->b)*(a->w_line_ij)/pow(a->tr,2.);
+//        Flow_Q_From += (a->ch/2+a->b)*(a->w_line_ij)/powf(a->tr,2.);
 //        Flow_Q_From -= a->b/a->tr*a->wr;
 //        Flow_Q_From += a->g/a->tr*a->wi;
 //        Flow_Q_From = 0;
@@ -4236,8 +4238,8 @@ void PowerModel::post_QC_OTS(bool lin_cos_cuts, bool quad_cos){
 //            double M = max(_net->m_theta_ub, -_net->m_theta_lb);
 //
 //            Constraint Cs_UB("Cs_UB");
-//            Cs_UB += a->cs + (1-cos(theta_u))/pow(theta_u,2)*a->delta*a->delta;
-//            Cs_UB -= pow(M,2)*(1-cos(theta_u))/pow(theta_u,2) - (pow(M,2)*(1-cos(theta_u))/pow(theta_u,2))*a->on + a->on;
+//            Cs_UB += a->cs + (1-cos(theta_u))/powf(theta_u,2)*a->delta*a->delta;
+//            Cs_UB -= powf(M,2)*(1-cos(theta_u))/powf(theta_u,2) - (powf(M,2)*(1-cos(theta_u))/powf(theta_u,2))*a->on + a->on;
 //            Cs_UB <= 0;
 //            _model->addConstraint(Cs_UB);
 //        }
@@ -4279,35 +4281,35 @@ void PowerModel::post_QC_OTS(bool lin_cos_cuts, bool quad_cos){
 //
 //        Constraint Current_Magnitude_From("Current_Magnitude_From");
 //        Current_Magnitude_From += a->pi*a->pi + a->qi*a->qi;
-//        Current_Magnitude_From -= src->w*a->ci/pow(a->tr, 2.);
+//        Current_Magnitude_From -= src->w*a->ci/powf(a->tr, 2.);
 //        Current_Magnitude_From <= 0;
 //        _model->addConstraint(Current_Magnitude_From);
 //        Constraint Current_Magnitude_From_bis("Current_Magnitude_From_bis");
 //        Current_Magnitude_From_bis += a->pi*a->pi + a->qi*a->qi;
-//        Current_Magnitude_From_bis -= pow(src->vbound.max,2)*a->ci*a->on/pow(a->tr, 2.);
+//        Current_Magnitude_From_bis -= powf(src->vbound.max,2)*a->ci*a->on/powf(a->tr, 2.);
 //        Current_Magnitude_From_bis <= 0;
 //        _model->addConstraint(Current_Magnitude_From_bis);
 //
 //        Constraint P_Loss_From("P_Loss_From");
-//        P_Loss_From += a->r*(a->ci + a->ch*a->qi + pow((a->ch/2)/a->tr,2.)*a->w_line_ij);
+//        P_Loss_From += a->r*(a->ci + a->ch*a->qi + powf((a->ch/2)/a->tr,2.)*a->w_line_ij);
 //        P_Loss_From -= a->pi + a->pj;
 //        P_Loss_From = 0;
 //        _model->addConstraint(P_Loss_From);
 //        Constraint Q_Loss_From("Q_Loss_From");
-//        Q_Loss_From += a->x*(a->ci + a->ch*a->qi + pow((a->ch/2)/a->tr,2.)*a->w_line_ij) - ((a->ch/2)/pow(a->tr,2))*a->w_line_ij - (a->ch/2)*a->w_line_ji;
+//        Q_Loss_From += a->x*(a->ci + a->ch*a->qi + powf((a->ch/2)/a->tr,2.)*a->w_line_ij) - ((a->ch/2)/powf(a->tr,2))*a->w_line_ij - (a->ch/2)*a->w_line_ji;
 //        Q_Loss_From -= a->qi + a->qj;
 //        Q_Loss_From = 0;
 //        _model->addConstraint(Q_Loss_From);
 //
 //        Constraint Thermal_Limit_from("Thermal_Limit_from");
 //        Thermal_Limit_from += a->_Si_.square_magnitude();
-//        Thermal_Limit_from -= pow(a->limit,2.)*a->on*a->on;
+//        Thermal_Limit_from -= powf(a->limit,2.)*a->on*a->on;
 //        Thermal_Limit_from <= 0;
 //        _model->addConstraint(Thermal_Limit_from);
 //
 //        Constraint Thermal_Limit_to("Thermal_Limit_to");
 //        Thermal_Limit_to += a->_Sj_.square_magnitude();
-//        Thermal_Limit_to -= pow(a->limit,2.)*a->on*a->on;
+//        Thermal_Limit_to -= powf(a->limit,2.)*a->on*a->on;
 //        Thermal_Limit_to <= 0;
 //        _model->addConstraint(Thermal_Limit_to);
 //    }
@@ -4831,9 +4833,9 @@ void PowerModel::post_SOCP_OTS(){
 
         Constraint Flow_P_From("Flow_P_From"+a->pi._name);
         Flow_P_From += a->pi;
-        Flow_P_From -= (a->g/(pow(a->cc,2)+pow(a->dd,2)))*a->w_line_ij;
-        Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->wr;
-        Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*a->wi;
+        Flow_P_From -= (a->g/(powf(a->cc,2)+powf(a->dd,2)))*a->w_line_ij;
+        Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->wr;
+        Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(powf(a->cc,2)+powf(a->dd,2))*a->wi;
         Flow_P_From = 0;
         _model->addConstraint(Flow_P_From);
     }
