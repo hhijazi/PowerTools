@@ -91,13 +91,12 @@ int main (int argc, const char * argv[]) {
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
 //    PowerModelType pmt = ACPF_BATT_T;
-//    PowerModelType pmt = ACPF_PV_BATT_T;
-//    PowerModelType pmt = ACPF_T;
+    PowerModelType pmt = ACPF_PV_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //   PowerModelType pmt = SOCP_PV_T;
 //      PowerModelType pmt = SOCP_BATT_T;
-    PowerModelType pmt = SOCP_PV_BATT_T;
+//    PowerModelType pmt = SOCP_PV_BATT_T;
 
     //  Start Timers
 
@@ -114,12 +113,16 @@ int main (int argc, const char * argv[]) {
 //    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24-june.csv";
 //    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
            string filename = "../data/anu.m";
-           string loadfile = "../data/Jan_16_1hr_24h.csv";
+//           string loadfile = "../data/Jan_16_1hr_24h.csv";
+//            string loadfile = "../data/July_16_1hr_24h.csv"; //*
+            string loadfile = "../data/February_16_1hr_24h.csv";  //*
+//               string loadfile = "../data/September_16_1hr_24h.csv";
 //           string loadfile = "../data/June_16_1hr_24h.csv";
-//           string loadfile = "../data/September_16_1hr_24h.csv";
-           string radiationfile="../data/radiationfile-24-january.csv";
+//           string radiationfile="../data/radiationfile-24-july.csv";
+        string radiationfile="../data/radiationfile-24-february.csv";
+//        string radiationfile="../data/radiationfile-24-january.csv";
 //        string radiationfile="../data/radiationfile-24-june.csv";
-//        string radiationfile="../data/radiationfile-24-september.csv"
+//        string radiationfile="../data/radiationfile-24-september.csv";
            string costfile = "../data/gencost-24.csv";
 #ifdef __APPLE__
     filename = "../" + filename;
@@ -280,10 +283,10 @@ int main (int argc, const char * argv[]) {
     }*/
 
 /* Plotting functions */
-//    plot p;
+    plot p;
   //  p.plot_V( argc, argv, power_model);
 //    p.plot_PV( argc, argv, power_model);
-  //  p.plot_flow( argc, argv, power_model);
+    p.plot_flow( argc, argv, power_model);
   //  p.plot_soc(argc, argv, power_model);
   //plot *x = new plot(argc, argv, power_model);
 

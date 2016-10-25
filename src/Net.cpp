@@ -100,6 +100,7 @@ bool Net::add_arc(Arc* a){
     return parallel;
 }
 
+
 void Net::remove_arc(Arc* a){
 //    arcs.erase(arcs.at(a->id));
     arcs[a->id] = nullptr;
@@ -1344,7 +1345,33 @@ int Net::readload(string fname, int _timesteps){
 //        cout << pairs[i].first << "  " << pairs[i].second << endl;
         nodes[i]->_in = true;
     }
-    
+    for (auto n:nodes){
+
+        if (n->ID==64){
+            n->_in = true;
+            n->max_pv_size = (21184.0/(365.*24.))/(1000000 * bMVA);
+        };
+        if (n->ID==42){
+            n->_in = true;
+            n->max_pv_size = (7302.0/(365.*24.))/(1000000 * bMVA);
+        }
+        else if (n->ID==135){
+            n->_in = true;
+            n->max_pv_size = (6781.0/(365.*24.))/(1000000 * bMVA);
+        }
+        else if (n->ID==27){
+            n->_in = true;
+            n->max_pv_size = (38704.0/(365.*24.))/(1000000 * bMVA);
+        }
+        else if (n->ID==156){
+            n->_in = true;
+            n->max_pv_size = (59122.0/(365.*24.))/(1000000 * bMVA);
+        }
+        else {
+            n->max_pv_size =  150;
+        }
+
+    }
     return 0;
 }
 

@@ -34,7 +34,10 @@ public:
     Node* predecessor;
     int distance;
     std::vector<Arc*> branches;
-    
+
+    // int max_pv_size = 150; /* Max size of pv panels per building, default = 150 square meters. */
+    int max_pv_size;
+
     Node();
     Node(std::string name, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase);
     Node(std::string name, int id, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase);

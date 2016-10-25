@@ -1082,7 +1082,7 @@ void PowerModel::min_cost_time() {
         }
 
     }
-    *obj = (*obj/_timesteps);
+    //*obj = (*obj/_timesteps);
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
 //    obj->print(true);
@@ -1148,7 +1148,7 @@ void PowerModel::min_cost_batt(){
       //      *obj += 0.0000001 * n->pv_rate;
         }
     }
-//    *obj = *obj/_timesteps;
+    *obj = *obj/_timesteps;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
 //    obj->print(true);
@@ -1579,7 +1579,7 @@ void PowerModel::add_AC_Rect_PV_vars_Time(){
         n->vi_t.resize(_timesteps);
         if (n->in()) {
             n->pv_t.resize(_timesteps);
-            n->pv_rate.init("pv_rate_node_"+n->_name, 0, _net->max_pv_size);
+            n->pv_rate.init("pv_rate_node_"+n->_name, 0, n->max_pv_size);
             _model->addVar(n->pv_rate);
         }
     }
@@ -1646,7 +1646,7 @@ void PowerModel::add_SOCP_Rect_PV_vars_Time(){
         for (auto n:_net->nodes) {
             if(n->in()){
                 n->pv_t.resize(_timesteps);
-                n->pv_rate.init("pv_rate"+n->_name, 0, _net->max_pv_size);
+                n->pv_rate.init("pv_rate"+n->_name, 0, n->max_pv_size);
                 _model->addVar(n->pv_rate);
             }
             n-> w_t.resize(_timesteps);

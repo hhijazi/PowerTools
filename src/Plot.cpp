@@ -511,7 +511,7 @@ void plot::plot_flow( int argc, const char **argv , PowerModel& power_model) {
     pls.reserve(400);
     int pmax = 0;
     for (auto a:power_model._net->arcs) {
-        if(a->status==false){
+        if(a->status==0){
             continue;
         }
         pmax=0;
