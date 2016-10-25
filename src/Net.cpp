@@ -1342,30 +1342,30 @@ int Net::readload(string fname, int _timesteps){
     }
     std::sort(pairs.begin(), pairs.end(), mypair_comp());
     for (int i = 0; i < 20; i++) {
-//        cout << pairs[i].first << "  " << pairs[i].second << endl;
-        nodes[i]->_in = true;
+        //cout <<"pairs" << pairs[i].first << "  " << pairs[i].second << endl;
+        nodes[pairs[i].first]->_in = true;
     }
     for (auto n:nodes){
 
         if (n->ID==64){
             n->_in = true;
-            n->max_pv_size = (21184.0/(365.*24.))/(1000000 * bMVA);
+            n->max_pv_size = (14.28)/(0.945);
         };
         if (n->ID==42){
             n->_in = true;
-            n->max_pv_size = (7302.0/(365.*24.))/(1000000 * bMVA);
+            n->max_pv_size = (5.32)/(0.945); //using lowest radiation,to get max pv size
         }
         else if (n->ID==135){
             n->_in = true;
-            n->max_pv_size = (6781.0/(365.*24.))/(1000000 * bMVA);
+            n->max_pv_size = (4.94)/(0.945);
         }
         else if (n->ID==27){
             n->_in = true;
-            n->max_pv_size = (38704.0/(365.*24.))/(1000000 * bMVA);
+            n->max_pv_size = (34.08)/(0.945);
         }
         else if (n->ID==156){
             n->_in = true;
-            n->max_pv_size = (59122.0/(365.*24.))/(1000000 * bMVA);
+            n->max_pv_size = (28.56)/(0.945);
         }
         else {
             n->max_pv_size =  150;

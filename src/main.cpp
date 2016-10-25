@@ -90,8 +90,8 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
-//    PowerModelType pmt = ACPF_BATT_T;
-    PowerModelType pmt = ACPF_PV_BATT_T;
+    PowerModelType pmt = ACPF_BATT_T;
+//    PowerModelType pmt = ACPF_PV_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //   PowerModelType pmt = SOCP_PV_T;
@@ -250,7 +250,7 @@ int main (int argc, const char * argv[]) {
 //    std::streambuf *oldbuf = std::cout.rdbuf();
 //    std::cout.rdbuf(fw.rdbuf());
 //    ///
-//    power_model._model->print_solution();
+    power_model._model->print_solution();
     cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
     power_model._model->_obj->print(true); //obj->print(true);
     cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
@@ -283,11 +283,11 @@ int main (int argc, const char * argv[]) {
     }*/
 
 /* Plotting functions */
-    plot p;
+//    plot p;
   //  p.plot_V( argc, argv, power_model);
 //    p.plot_PV( argc, argv, power_model);
-    p.plot_flow( argc, argv, power_model);
-  //  p.plot_soc(argc, argv, power_model);
+  //  p.plot_flow( argc, argv, power_model);
+ //   p.plot_soc(argc, argv, power_model);
   //plot *x = new plot(argc, argv, power_model);
 
 

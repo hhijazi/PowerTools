@@ -2500,7 +2500,7 @@ void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t];
-        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945 * 0.82 / (1000000 * _net->bMVA));
+        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945/ (1000000 * _net->bMVA));
         Link_PV_Rate <= 0;
         _model->addConstraint(Link_PV_Rate);
 
