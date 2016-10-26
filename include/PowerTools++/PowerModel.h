@@ -48,6 +48,8 @@ public:
     void add_AC_gen_vars();
     void add_AC_gen_vars_Time();
 
+    void add_Battery_vars();
+    
     void add_AC_Pol_vars();
     void add_AC_Rect_vars();
     void add_AC_Rect_vars_Time();

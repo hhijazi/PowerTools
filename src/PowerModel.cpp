@@ -1129,8 +1129,8 @@ void PowerModel::min_cost_batt(){
 //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
             //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
-        for (auto n:_net->nodes) {
-            if (n->in()) {
+//        for (auto n:_net->nodes) {
+//            if (n->in()) {
 //            *obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
 //            *obj += 1.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24) + 1.5*1000000*n->pv_rate*_net->bMVA/(30*365*24); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(1 hour simulation) keep using for 20 years
 //                *obj += 1.15*n->pv_t[t]*1000*_net->bMVA; // $0.15/kWh -> $150/MWh paid over 1 year
@@ -1138,17 +1138,18 @@ void PowerModel::min_cost_batt(){
 //            *obj += _net->bMVA*(n->batt_cap)*1000000/(30*365*24); // $1000000/MWh battery investment for 30 years.(1 hour simulation)
                 //*obj += _net->bMVA*(n->batt_cap)*1000*0.20; //$0.20/kwh battery investment = $200/MWh paid over one year
                 //*obj += _net->bMVA*(n->pdis_t[t])*1000*0.2;
-            }
-        }
+//            }
+//        }
 
     }
     for (auto n:_net->nodes){
         if (n->in()) {
-            *obj += n->batt_cap;
+            *obj += _net->bMVA*n->batt_cap;
+            *obj += _net->bMVA*n->batt_cap;
       //      *obj += 0.0000001 * n->pv_rate;
         }
     }
-    *obj = *obj/_timesteps;
+//    *obj = *obj/_timesteps;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
 //    obj->print(true);
@@ -1341,48 +1342,12 @@ void PowerModel::add_SOCP_Rect_Batt_vars_Time(){
             _model->addVar(g->qg_t[t]);
         }
     }
-    for (auto n:_net->nodes) {
-        n->pch_t.resize(_timesteps);
-        n->pdis_t.resize(_timesteps);
-        n->soc_t.resize(_timesteps);
-        n->batt_cap.init("battery capacity"+n->_name, 0, 1);
-        _model->addVar(n->batt_cap);
-    }
-    for (int t = 0; t < _timesteps; t++) {
-        for (auto n:_net->nodes) {
-            n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 1);
-            _model->addVar(n->pch_t[t]);
-            n->pdis_t[t].init("pdischarge"+n->_name+"_" + to_string(t), 0, 1);
-            _model->addVar(n->pdis_t[t]);
-            n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 1);
-            _model->addVar(n->soc_t[t]);
-
-        }
-    }
+    add_Battery_vars();
 }
+
 void PowerModel::add_SOCP_Rect_PV_Batt_vars_Time(){
     add_SOCP_Rect_PV_vars_Time();
-    for (auto n:_net->nodes) {
-        if(n->in()) {
-            n->pch_t.resize(_timesteps);
-            n->pdis_t.resize(_timesteps);
-            n->soc_t.resize(_timesteps);
-            n->batt_cap.init("battery capacity" + n->_name, 0, 1);
-            _model->addVar(n->batt_cap);
-        }
-    }
-    for (int t = 0; t < _timesteps; t++) {
-        for (auto n:_net->nodes) {
-            if(n->in()) {
-                n->pch_t[t].init("pcharge" + n->_name + "_" + to_string(t), 0, 1);
-                _model->addVar(n->pch_t[t]);
-                n->pdis_t[t].init("pdischarge" + n->_name + "_" + to_string(t), 0, 1);
-                _model->addVar(n->pdis_t[t]);
-                n->soc_t[t].init("state_of_charge" + n->_name + "_" + to_string(t), 0, 1);
-                _model->addVar(n->soc_t[t]);
-            }
-        }
-    }
+    add_Battery_vars();
 }
 
 
@@ -1408,7 +1373,7 @@ void PowerModel::add_AC_Rect_Batt_vars_Time(){
         g->pg_t.resize(_timesteps);
         g->qg_t.resize(_timesteps);
     }
-
+    add_Battery_vars();
 
     for (int t = 0; t < _timesteps; t++) {
 
@@ -1443,56 +1408,38 @@ void PowerModel::add_AC_Rect_Batt_vars_Time(){
             _model->addVar(g->qg_t[t]);
         }
     }
+    
+}
+
+
+void PowerModel::add_Battery_vars(){
     for (auto n:_net->nodes) {
         if(n->in()) {
             n->pch_t.resize(_timesteps);
             n->pdis_t.resize(_timesteps);
             n->soc_t.resize(_timesteps);
-            n->batt_cap.init("battery capacity"+n->_name, 0, 1);
+            n->batt_cap.init("battery capacity"+n->_name, 0, 1000./(_net->bMVA*1000.));
             _model->addVar(n->batt_cap);
         }
     }
     for (int t = 0; t < _timesteps; t++) {
         for (auto n:_net->nodes) {
             if(n->in()) {
-                n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 1);
+                n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 1000./(_net->bMVA*1000.));
                 _model->addVar(n->pch_t[t]);
-                n->pdis_t[t].init("pdischarge"+n->_name+"_" + to_string(t), 0, 1);
+                n->pdis_t[t].init("pdischarge"+n->_name+"_" + to_string(t), 0, 1000./(_net->bMVA*1000.));
                 _model->addVar(n->pdis_t[t]);
-                n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 1);
+                n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 1000./(_net->bMVA*1000.));
                 _model->addVar(n->soc_t[t]);
             }
-
+            
         }
     }
 
 }
-
 void PowerModel::add_AC_Rect_PV_Batt_vars_Time(){
     add_AC_Rect_PV_vars_Time();
-    for (auto n:_net->nodes) {
-        if(n->in()) {
-            n->pch_t.resize(_timesteps);
-            n->pdis_t.resize(_timesteps);
-            n->soc_t.resize(_timesteps);
-            n->batt_cap.init("battery capacity"+n->_name, 0, 1);
-            _model->addVar(n->batt_cap);
-        }
-    }
-    for (int t = 0; t < _timesteps; t++) {
-        for (auto n:_net->nodes) {
-            if(n->in()) {
-                n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 1);
-                _model->addVar(n->pch_t[t]);
-                n->pdis_t[t].init("pdischarge"+n->_name+"_" + to_string(t), 0, 1);
-                _model->addVar(n->pdis_t[t]);
-                n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 1);
-                _model->addVar(n->soc_t[t]);
-            }
-
-        }
-    }
-    
+    add_Battery_vars();
 }
 
 
@@ -2413,8 +2360,8 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
         Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));
         Link_Batt += n->soc_t[t+1];
         Link_Batt -= n->soc_t[t] ;
-        Link_Batt -= /*(0.80*n->pch_t[t]);*/ ((0.5*(24/_timesteps))*n->pch_t[t]);
-        Link_Batt += /*(0.85*n->pdis_t[t]);*/((0.5*(24/_timesteps))*n->pdis_t[t]);
+        Link_Batt -= (0.80*n->pch_t[t]);
+        Link_Batt += (0.85*n->pdis_t[t]);
         Link_Batt = 0;
         _model->addConstraint(Link_Batt);
         //end of new addition
@@ -2430,12 +2377,12 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
 
         //new addition
         Constraint Change_of_charge_limit("Maximum_Charging"+n->_name+"_"+to_string(t));
-        Change_of_charge_limit += n->pch_t[t+1] - n->pch_t[t]- 0.05*n->batt_cap;
+        Change_of_charge_limit += n->pch_t[t+1] - n->pch_t[t] - (0.5*24/_timesteps)*n->batt_cap;
         Change_of_charge_limit <= 0;
         _model->addConstraint(Change_of_charge_limit);
 
         Constraint Change_of_discharge_limit("Maximum_Discharging"+n->_name+"_"+to_string(t));
-        Change_of_discharge_limit += n->pdis_t[t+1] - n->pdis_t[t]- 0.05*n->batt_cap; // limit of rate, assumed as 5% of battery cap
+        Change_of_discharge_limit += n->pdis_t[t+1] - n->pdis_t[t] - (0.5*24/_timesteps)*n->batt_cap; // limit of rate, assumed as 5% of battery cap
         Change_of_discharge_limit <= 0;
         _model->addConstraint(Change_of_discharge_limit);
         //end of new addition
@@ -2466,7 +2413,7 @@ void PowerModel::add_link_PV_Rate_NoCurt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t];
-        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945 * 0.82 / (_net->bMVA*1000000));
+        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (0.945 / (_net->bMVA*1000));
         Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
         
@@ -2500,7 +2447,7 @@ void PowerModel::add_link_PV_Rate_Curt_Time(Node*n){
     for (int t = 0; t < _timesteps; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t];
-        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (945/ (1000000 * _net->bMVA));
+        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (0.945/ (1000 * _net->bMVA));
         Link_PV_Rate <= 0;
         _model->addConstraint(Link_PV_Rate);
 
