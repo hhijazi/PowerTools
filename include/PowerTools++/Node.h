@@ -25,8 +25,13 @@ public:
     bool cycle;
     /* if node in cycle and power flows in the cycle through this node */
     bool cg;
-    /* if node is selected in */
-    bool _in;
+    
+    /* if PV is already installed here */
+    bool _inst = false;
+    
+    /* if this node is a candidate for PV installation */
+    bool _cand = false;
+    
     /* the number of edges needed to make the subgraph formed by adjacent nodes a clique */
     int fill_in;
     
@@ -47,9 +52,14 @@ public:
     /* number of incident lines */
     int degree();
     
-    const bool in() {
-        return _in;
+    const bool inst() {
+        return _inst;
     }
+    
+    const bool candidate() {
+        return _cand;
+    }
+
     
     /*
      @brief Adds a to the list of incident arcs

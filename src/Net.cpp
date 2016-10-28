@@ -1307,8 +1307,9 @@ int Net::readload(string fname, int _timesteps){
 //        t++;
         _time_count++;
      }
-
+    cout << "total number of timesteps = " << _time_count << endl;
     int sub_time_count = _time_count/_timesteps; //time count of each division
+    cout << "subtime = " << sub_time_count << endl;
     float sum_load_;
     float avg_sub_time_load;
     vector<double> av_loads;
@@ -1343,28 +1344,28 @@ int Net::readload(string fname, int _timesteps){
     std::sort(pairs.begin(), pairs.end(), mypair_comp());
     for (int i = 0; i < 20; i++) {
         //cout <<"pairs" << pairs[i].first << "  " << pairs[i].second << endl;
-        nodes[pairs[i].first]->_in = true;
+        nodes[pairs[i].first]->_cand = true;
     }
     for (auto n:nodes){
 
         if (n->ID==64){
-            n->_in = true;
+            n->_inst = true;
             n->max_pv_size = (14.28)/(0.945);
         };
         if (n->ID==42){
-            n->_in = true;
+            n->_inst = true;
             n->max_pv_size = (5.32)/(0.945); //using lowest radiation,to get max pv size
         }
         else if (n->ID==135){
-            n->_in = true;
+            n->_inst = true;
             n->max_pv_size = (4.94)/(0.945);
         }
         else if (n->ID==27){
-            n->_in = true;
+            n->_inst = true;
             n->max_pv_size = (34.08)/(0.945);
         }
         else if (n->ID==156){
-            n->_in = true;
+            n->_inst = true;
             n->max_pv_size = (28.56)/(0.945);
         }
         else {

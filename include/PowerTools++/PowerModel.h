@@ -97,8 +97,8 @@ public:
     void add_SOCP_KCL_Batt_Time(Node* n);
     void add_SOCP_KCL_PV_Batt_Time(Node* n);
     
-    void add_link_PV_Rate_NoCurt_Time(Node* n);
-    void add_link_PV_Rate_Curt_Time(Node* n);
+    void add_link_PV_Rate(Node* n);
+    void add_link_PV_fixed_Rate(Node* n);
     
     void add_AC_KCL(Node* n, bool switch_lines);
     void add_AC_KCL_PV(Node* n, bool switch_lines);

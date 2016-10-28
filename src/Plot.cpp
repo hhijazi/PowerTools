@@ -91,13 +91,15 @@ void plot::plot_PV( int argc, const char **argv , PowerModel& power_model) {
     char string[20];
 
     // Parse and process command line arguments.
-    pls.reserve(20);
+    pls.reserve(26);
     for (auto n:power_model._net->nodes) {
-        if (n->in()) {
+        if (n->candidate() || n->inst()) {
             pls[i-1] = new plstream();
+            
 #ifdef __APPLE__
-            //                pls->sfnam("out.pdf");
-//        pls->sdev("pdf");
+            std::string name("out"+to_string(i)+".pdf");
+            pls[i-1]->sfnam(name.c_str());
+            pls[i-1]->sdev("pdf");
 #elif __linux__
             std::string name("out"+to_string(i)+".psc");
             pls[i-1]->sfnam(name.c_str());
@@ -113,21 +115,27 @@ void plot::plot_PV( int argc, const char **argv , PowerModel& power_model) {
 
             pls[i-1]->adv(0);
             pls[i-1]->vsta();
-            pls[i-1]->wind(1, power_model._timesteps + 1, 0.0, 150.0);
+            pls[i-1]->wind(1, power_model._timesteps + 1, 0.0, min(n->max_pv_size*2, 150));
             pls[i-1]->box("bc", 1.0, 0, "bcnv", power_model._timesteps + 1, 0);
             pls[i-1]->col0(2);
             pls[i-1]->lab("#frTime Step", "#frkWh", "#frPV Generation");
 
             pls[i-1]->scmap1l(true, 5, pos, red, green, blue, NULL);
+//            pls[i-1]->schr( 0.0, 0.8 );
             n->print();
-            cout << "Panel size = " << n->pv_rate.get_value() << endl;
+            if (n->candidate()){
+                cout << "Panel size = " << n->pv_rate.get_value() << endl;
+            }
+            else {
+                cout << "Panel size = " << n->max_pv_size << endl;
+            }
             for (int t = 0; t < power_model._timesteps; t++) {
                 y0[t] = power_model._net->bMVA * 1000 * n->pv_t[t].get_value();
                 //y0[t] = power_model._net->bMVA * 1000 * n->w_t[t].get_value();
 //                y0[i] = test[i-1];
                 cout << y0[t] << ", ";
                 pls[i - 1]->col1((y0[t]) / 150.);
-                pls[i-1]->schr(0.0, 0.75);
+                pls[i-1]->schr(0.0, 0.5);
                 pls[i - 1]->psty(0);
                 plfbox(t, y0[t], i-1);
                 if (y0[t] >= 0.1) {
@@ -137,11 +145,11 @@ void plot::plot_PV( int argc, const char **argv , PowerModel& power_model) {
                     else {
                         sprintf(string, "%.01f", y0[t]);
                     }
-                    pls[i - 1]->ptex((t + .5), (y0[t] + 5.), 1.0, 0.0, .5, string);
+                    pls[i - 1]->ptex((t + .5), (y0[t] + 0.5 + 5*n->max_pv_size/150.), 1.0, 0.0, .5, string);
                 }
 
                 sprintf(string, "%d", t);
-                pls[i-1]->mtex("b", 1.0, (t / (1. * power_model._timesteps) - .5 / power_model._timesteps), 0.5,
+                pls[i-1]->mtex("b", 1.0, ((t+1) / (1. * power_model._timesteps) - .5 / power_model._timesteps), 0.5,
                                string);
             }
             delete pls[i-1];
@@ -153,12 +161,19 @@ void plot::plot_PV( int argc, const char **argv , PowerModel& power_model) {
 
 #ifdef _WIN32
 #elif __APPLE__
-    system("open out.pdf");
+    i = 1;
+    for (auto n:power_model._net->nodes) {
+        if (n->candidate() || n->inst()) {
+            std::string name("open out" + to_string(i) + ".pdf");
+            system(name.c_str());
+            i++;
+        };
+    };
 #elif __linux__
 
     i = 1;
     for (auto n:power_model._net->nodes) {
-        if (n->in()) {
+        if (n->candidate() || n->inst()) {
             std::string name("gv out" + to_string(i) + ".psc");
             system(name.c_str());
             i++;
@@ -227,13 +242,16 @@ void plot::plot_V( int argc, const char **argv , PowerModel& power_model) {
     char string[20];
 
     // Parse and process command line arguments.
-    pls.reserve(20);
+    pls.reserve(26);
     for (auto n:power_model._net->nodes) {
-        if (n->in()) {
+        if (n->candidate() || n->inst()) {
             pls[i-1] = new plstream();
 #ifdef __APPLE__
             //                pls->sfnam("out.pdf");
 //        pls->sdev("pdf");
+            std::string name("out"+to_string(i)+".pdf");
+            pls[i-1]->sfnam(name.c_str());
+            pls[i-1]->sdev("pdf");
 #elif __linux__
 
             std::string name("out"+to_string(i)+".psc");
@@ -250,14 +268,16 @@ void plot::plot_V( int argc, const char **argv , PowerModel& power_model) {
 
             pls[i-1]->adv(0);
             pls[i-1]->vsta();
-            pls[i-1]->wind(1, power_model._timesteps + 1, 0.0, 150.0);
+            pls[i-1]->wind(1, power_model._timesteps + 1, 0.0, n->max_pv_size);
             pls[i-1]->box("bc", 1.0, 0, "bcnv", power_model._timesteps + 1, 0);
             pls[i-1]->col0(2);
             pls[i-1]->lab("#frTime Step", "#frkV", "#fr voltage square magnitude");
 
             pls[i-1]->scmap1l(true, 5, pos, red, green, blue, NULL);
             n->print();
-            cout << "Panel size = " << n->pv_rate.get_value() << endl;
+            if (n->candidate()) {
+                cout << "Panel size = " << n->pv_rate.get_value() << endl;
+            }
             for (int t = 0; t < power_model._timesteps; t++) {
 
 
@@ -290,11 +310,19 @@ void plot::plot_V( int argc, const char **argv , PowerModel& power_model) {
     }
 #ifdef _WIN32
 #elif __APPLE__
-    system("open out.pdf");
+    i = 1;
+    for (auto n:power_model._net->nodes) {
+        if (n->candidate() || n->inst()) {
+            std::string name("open out" + to_string(i) + ".pdf");
+            system(name.c_str());
+            i++;
+        };
+    };
+    
 #elif __linux__
     i = 1;
     for (auto n:power_model._net->nodes) {
-        if (n->in()) {
+        if (n->candidate() || n->inst()) {
             std::string name("gv out" + to_string(i) + ".psc");
             system(name.c_str());
             i++;
@@ -358,20 +386,18 @@ void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
     double y0[power_model._timesteps];
     int i = 1;
     int b = 1;
-    char string[400];
+    char string[20];
 
     // Parse and process command line arguments.
-    pls.reserve(400);
+    pls.reserve(20);
     for (auto n:power_model._net->nodes) {
-        if (n->in()) {
+        if (n->candidate()) {
             pls[i-1] = new plstream();
 #ifdef __APPLE__
-            //                pls->sfnam("out.pdf");
-//        pls->sdev("pdf");
+            std::string name("out"+to_string(i)+".pdf");
+            pls[i-1]->sfnam(name.c_str());
+            pls[i-1]->sdev("pdf");
 #elif __linux__
-
-
-
             std::string name("out"+to_string(i)+".psc");
             pls[i-1]->sfnam(name.c_str());
             pls[i-1]->sdev("psc");
@@ -386,7 +412,7 @@ void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
 
             pls[i-1]->adv(0);
             pls[i-1]->vsta();
-            pls[i-1]->wind(1, power_model._timesteps + 1, 0.0, 150.0);
+            pls[i-1]->wind(1, power_model._timesteps + 1, 0.0, 1.2*power_model._net->bMVA * 1000.* n->batt_cap.get_value());
             pls[i-1]->box("bc", 1.0, 0, "bcnv", power_model._timesteps + 1, 0);
             pls[i-1]->col0(2);
             pls[i-1]->lab("#frTime Step", "#frkW", "#fr state of charge");
@@ -412,7 +438,7 @@ void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
 
 
                 pls[i - 1]->psty(0);
-                pls[i-1]->schr(0.0, 0.75);
+                pls[i-1]->schr(0.0, 0.5);
                 plfbox(t, y0[t], i-1);
                 if (y0[t] >= 0.1) {
                     if (y0[t] >= 1) {
@@ -421,11 +447,11 @@ void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
                     else {
                         sprintf(string, "%.01f", y0[t]);
                     }
-                    pls[i - 1]->ptex((t + .5), (y0[t] + 5.), 1.0, 0.0, .5, string);
+                    pls[i - 1]->ptex((t + .5), (y0[t] + 0.5 + 0.05*power_model._net->bMVA * 1000.*n->batt_cap.get_value()), 1.0, 0.0, .5, string);
                 }
-
+                
                 sprintf(string, "%d", t);
-                pls[i-1]->mtex("b", 1.0, (t / (1. * power_model._timesteps) - .5 / power_model._timesteps), 0.5,
+                pls[i-1]->mtex("b", 1.0, ((t+1) / (1. * power_model._timesteps) - .5 / power_model._timesteps), 0.5,
                                string);
             }
             delete pls[i-1];
@@ -436,11 +462,18 @@ void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
     }
 #ifdef _WIN32
 #elif __APPLE__
-    system("open out.pdf");
+    i = 1;
+    for (auto n:power_model._net->nodes) {
+        if (n->candidate() || n->inst()) {
+            std::string name("open out" + to_string(i) + ".pdf");
+            system(name.c_str());
+            i++;
+        };
+    };
 #elif __linux__
     i = 1;
     for (auto n:power_model._net->nodes) {
-        if (n->in()) {
+        if (n->candidate()) {
             std::string name("gv out" + to_string(i) + ".psc");
             system(name.c_str());
             i++;
@@ -505,7 +538,7 @@ void plot::plot_flow( int argc, const char **argv , PowerModel& power_model) {
     double y0[power_model._timesteps];
     int i = 1;
     int b = 1;
-    char string[400];
+    char string[20];
 
     // Parse and process command line arguments.
     pls.reserve(400);
@@ -518,8 +551,9 @@ void plot::plot_flow( int argc, const char **argv , PowerModel& power_model) {
 
         pls[i - 1] = new plstream();
 #ifdef __APPLE__
-        //                pls->sfnam("out.pdf");
-//        pls->sdev("pdf");
+        std::string name("out" + to_string(i) + ".pdf");
+        pls[i - 1]->sfnam(name.c_str());
+        pls[i - 1]->sdev("pdf");
 #elif __linux__
         std::string name("out" + to_string(i) + ".psc");
         pls[i - 1]->sfnam(name.c_str());
@@ -590,11 +624,18 @@ void plot::plot_flow( int argc, const char **argv , PowerModel& power_model) {
     }
 #ifdef _WIN32
 #elif __APPLE__
-    system("open out.pdf");
+    i = 1;
+    for (auto a:power_model._net->arcs) {
+        if (a->status==1) {
+            std::string name("open out" + to_string(i) + ".pdf");
+            system(name.c_str());
+            i++;
+        };
+    };
 #elif __linux__
     i = 1;
     for (auto a:power_model._net->arcs) {
-        if (a->status=1) {
+        if (a->status==1) {
             std::string name("gv out" + to_string(i) + ".psc");
             system(name.c_str());
             i++;
