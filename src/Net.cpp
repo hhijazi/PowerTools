@@ -1362,11 +1362,16 @@ int Net::readload(string fname, int _timesteps){
         }
         else if (n->ID==27){
             n->_inst = true;
-            n->max_pv_size = (34.08)/(0.945);
+            n->max_pv_size = (28.56)/(0.945);
         }
         else if (n->ID==156){
             n->_inst = true;
-            n->max_pv_size = (28.56)/(0.945);
+            n->max_pv_size = (34.08)/(0.945);
+        }
+
+        else if (n->ID==3){
+            n->_inst = true;
+            n->max_pv_size = (34.08)/(0.945);
         }
         else {
             n->max_pv_size =  150;
