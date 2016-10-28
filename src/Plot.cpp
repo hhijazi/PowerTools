@@ -593,7 +593,7 @@ void plot::plot_flow( int argc, const char **argv , PowerModel& power_model) {
         for (int t = 0; t < power_model._timesteps; t++) {
 
             if (y0[t] < 0) {
-                pls[i - 1]->col1(0.7);
+                pls[i - 1]->col1(0);
                 y0[t] *= -1;
             }
             else {
