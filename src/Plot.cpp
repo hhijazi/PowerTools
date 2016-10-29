@@ -574,7 +574,7 @@ void plot::plot_flow( int argc, const char **argv , PowerModel& power_model) {
                 pmax = fabs(y0[t]);
             }
         }
-        pls[i - 1]->wind(1, power_model._timesteps + 1, 0.0, pmax*1.2);
+        pls[i - 1]->wind(1, power_model._timesteps + 1, 0.0, 10 + pmax*1.2);
         pls[i - 1]->box("bc", 1.0, 0, "bcnv", power_model._timesteps + 1, 0);
         pls[i - 1]->col0(2);
         pls[i - 1]->lab("#frTime Step", "#frkWh", "#fr real power flow");
