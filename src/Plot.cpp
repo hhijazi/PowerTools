@@ -426,15 +426,7 @@ void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
                 //y0[t] = power_model._net->bMVA * 1000 * n->w_t[t].get_value();
 //                y0[i] = test[i-1];
                 cout << y0[t] << ", ";
-                //pls[i - 1]->col1((y0[t]) / 150.);
-                if (y0[t] < 0) {
-                    pls[i - 1]->col1(3);
-                    y0[t] *= -1;
-                }
-                else {
-                    pls[i - 1]->col1(1);
-                }
-
+                pls[i - 1]->col1((y0[t]) / (power_model._net->bMVA * 1000.* n->batt_cap.get_value()));
 
                 pls[i - 1]->psty(0);
                 pls[i-1]->schr(0.0, 0.5);
@@ -463,7 +455,7 @@ void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
 #elif __APPLE__
     i = 1;
     for (auto n:power_model._net->nodes) {
-        if (n->candidate() || n->inst()) {
+        if (n->candidate()) {
             std::string name("open out_state_of_charge" + to_string(i) + ".pdf");
             system(name.c_str());
             i++;

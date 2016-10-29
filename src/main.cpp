@@ -288,8 +288,8 @@ int main (int argc, const char * argv[]) {
     plot p;
     p.plot_V( argc, argv, power_model);
 //    p.plot_PV( argc, argv, power_model);
-    p.plot_flow( argc, argv, power_model);
-//    p.plot_soc(argc, argv, power_model);
+//    p.plot_flow( argc, argv, power_model);
+    p.plot_soc(argc, argv, power_model);
   //plot *x = new plot(argc, argv, power_model);
 
 
