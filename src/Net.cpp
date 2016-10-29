@@ -1608,12 +1608,12 @@ int Net::readFile(string fname){
         arc_clone->status = arc->status;
         file >> word;
 //        arc->tbound.min = atof(word.c_str())*M_PI/180;
-        arc->tbound.min = -30*M_PI/180.;
+        arc->tbound.min = -35*M_PI/180.;
         arc_clone->tbound.min = arc->tbound.min;
         m_theta_lb += arc->tbound.min;
         file >> word;
 //        arc->tbound.max = atof(word.c_str())*M_PI/180;
-        arc->tbound.max = 30*M_PI/180.;
+        arc->tbound.max = 35*M_PI/180.;
         arc_clone->tbound.max = arc->tbound.max;
         m_theta_ub += arc->tbound.max;
         arc->smax = max(pow(arc->src->vbound.max,2)*(arc->g*arc->g+arc->b*arc->b)*(pow(arc->src->vbound.max,2) + pow(arc->dest->vbound.max,2)), pow(arc->dest->vbound.max,2)*(arc->g*arc->g+arc->b*arc->b)*(pow(arc->dest->vbound.max,2) + pow(arc->src->vbound.max,2)));
