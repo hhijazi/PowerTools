@@ -87,11 +87,11 @@ int main (int argc, const char * argv[]) {
 //      PowerModelType pmt = ACPF_T;
 //      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
-//      PowerModelType pmt = ACPF_PV_T;
+      PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
 //    PowerModelType pmt = ACPF_BATT_T;
-    PowerModelType pmt = ACPF_PV_BATT_T;
+//    PowerModelType pmt = ACPF_PV_BATT_T;
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //   PowerModelType pmt = SOCP_PV_T;
@@ -286,10 +286,16 @@ int main (int argc, const char * argv[]) {
 
 /* Plotting functions */
     plot p;
-//    p.plot_V( argc, argv, power_model);
-//    p.plot_PV( argc, argv, power_model);
-//    p.plot_flow( argc, argv, power_model);
-    p.plot_soc(argc, argv, power_model);
+    if(pmt==ACPF_PV_T || pmt==ACPF_PV_BATT_T || pmt==ACPF_BATT_T){
+        p.plot_V( argc, argv, power_model);
+    }
+//    if(pmt==ACPF_PV_T || pmt==ACPF_PV_BATT_T){
+//        p.plot_PV( argc, argv, power_model);
+//    }
+    p.plot_flow( argc, argv, power_model);
+    if(pmt==SOCP_PV_BATT_T || pmt==SOCP_BATT_T || pmt==ACPF_PV_BATT_T || pmt==ACPF_BATT_T){
+        p.plot_soc(argc, argv, power_model);
+    }
   //plot *x = new plot(argc, argv, power_model);
 
 

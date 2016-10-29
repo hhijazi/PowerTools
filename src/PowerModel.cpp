@@ -523,7 +523,7 @@ void PowerModel::post_AC_PF_Time(){
     for (auto a:_net->arcs) {
         add_AC_Power_Flow_Time(a);     //done
         add_AC_thermal_Time(a);        //done
-//        add_Wr_Wi_time(a);
+        add_AC_Angle_Bounds_Time(a);
     }
     
 };
