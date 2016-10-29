@@ -1480,10 +1480,10 @@ int Net::readFile(string fname){
         kvb = atof(word.c_str());
         file >> ws >> word >> ws >> word;
 //        vmax = atof(word.c_str());
-        vmax = 1.02;
+        vmax = 1.05;
         getline(file, word,';');
 //        vmin = atof(word.c_str());
-        vmin = 0.98;
+        vmin = 0.95;
         node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
         node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
         node->vs = vs;

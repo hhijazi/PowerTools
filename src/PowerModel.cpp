@@ -265,7 +265,7 @@ void PowerModel::post_AC_PF_PV_Batt_Time(){
     for (auto a:_net->arcs) {
         add_AC_Power_Flow_Time(a);     //done
         add_AC_thermal_Time(a);        //done
-
+        add_AC_Angle_Bounds_Time(a);
 
     }
 
@@ -523,7 +523,7 @@ void PowerModel::post_AC_PF_Time(){
     for (auto a:_net->arcs) {
         add_AC_Power_Flow_Time(a);     //done
         add_AC_thermal_Time(a);        //done
-        add_Wr_Wi_time(a);
+//        add_Wr_Wi_time(a);
     }
     
 };
@@ -844,8 +844,7 @@ void PowerModel::post_SOCP_PF_PV_Batt_Time() {
 
             }
             add_AC_thermal_Time(a);        //done
-
-
+            add_SOCP_Angle_Bounds_Time(a);
         }
 
     }
@@ -1422,18 +1421,18 @@ void PowerModel::add_Battery_vars(){
             n->pch_t.resize(_timesteps);
             n->pdis_t.resize(_timesteps);
             n->soc_t.resize(_timesteps);
-            n->batt_cap.init("battery capacity"+n->_name, 0, 1000./(_net->bMVA*1000.));
+            n->batt_cap.init("battery capacity"+n->_name, 0, 500./(_net->bMVA*1000.));
             _model->addVar(n->batt_cap);
         }
     }
     for (int t = 0; t < _timesteps; t++) {
         for (auto n:_net->nodes) {
             if(n->candidate()) {
-                n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 1000./(_net->bMVA*1000.));
+                n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 500./(_net->bMVA*1000.));
                 _model->addVar(n->pch_t[t]);
-                n->pdis_t[t].init("pdischarge"+n->_name+"_" + to_string(t), 0, 1000./(_net->bMVA*1000.));
+                n->pdis_t[t].init("pdischarge"+n->_name+"_" + to_string(t), 0, 500./(_net->bMVA*1000.));
                 _model->addVar(n->pdis_t[t]);
-                n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 1000./(_net->bMVA*1000.));
+                n->soc_t[t].init("state_of_charge"+n->_name+"_" + to_string(t), 0, 500./(_net->bMVA*1000.));
                 _model->addVar(n->soc_t[t]);
             }
             
@@ -2057,7 +2056,7 @@ void PowerModel::add_Wr_Wi(Arc *a){
     }
 }
 
-void PowerModel::add_Wr_Wi_time(Arc *a){
+void PowerModel::add_SOCP_Angle_Bounds_Time(Arc *a){
     for (int t=0; t<_timesteps; t++){
         if (a->status == 1 && !a->parallel) {
        /*     Constraint Wr_Wi_l("Theta_Delta_LB");
@@ -2084,6 +2083,35 @@ void PowerModel::add_Wr_Wi_time(Arc *a){
         }
     }
 }
+
+void PowerModel::add_AC_Angle_Bounds_Time(Arc *a){
+    for (int t=0; t<_timesteps; t++){
+        if (a->status == 1 && !a->parallel) {
+            /*     Constraint Wr_Wi_l("Theta_Delta_LB");
+             Wr_Wi_l += a->wi_t[t];
+             Wr_Wi_l -= tan(a->tbound.max) * a->wr_t[t];
+             Wr_Wi_l <= 0;
+             _model->addConstraint(Wr_Wi_l);
+             Constraint Wr_Wi_u("Theta_Delta_UB");
+             Wr_Wi_u += a->wi_t[t];
+             Wr_Wi_u -= tan(a->tbound.min) * a->wr_t[t];
+             Wr_Wi_u >= 0;
+             _model->addConstraint(Wr_Wi_u);*/
+            
+            Constraint Th_lb("Theta_Delta_LB");
+            Th_lb += a->src->vi_t[t]*a->dest->vr_t[t] - a->src->vr_t[t]*a->dest->vi_t[t];
+            Th_lb -= tan(-a->tbound.max) * (a->src->vr_t[t]*a->dest->vr_t[t] + a->src->vi_t[t]*a->dest->vi_t[t]);
+            Th_lb >= 0;
+            _model->addConstraint(Th_lb);
+            Constraint Th_ub("Theta_Delta_UB");
+            Th_ub += a->src->vi_t[t]*a->dest->vr_t[t] - a->src->vr_t[t]*a->dest->vi_t[t];
+            Th_ub -= tan(a->tbound.max) * (a->src->vr_t[t]*a->dest->vr_t[t] + a->src->vi_t[t]*a->dest->vi_t[t]);
+            Th_ub <= 0;
+            _model->addConstraint(Th_ub);   //original of both versions found above, changed according to (40) on paper.
+        }
+    }
+}
+
 
 
 void PowerModel::add_AC_thermal_Time(Arc* a){
@@ -2596,7 +2624,7 @@ void PowerModel::add_SOCP_KCL_PV_Batt_Time(Node* n){
                 KCL_P += n->pch_t[t];
             }
         }
-        KCL_P += n->gs()*((n->w_t[t])^2) + n->pl(t);
+        KCL_P += n->gs()*(n->w_t[t]) + n->pl(t);
         //        cout << n->_name << " pload = " << n->pl(t) << endl;
         KCL_P = 0;
         _model->addConstraint(KCL_P);
@@ -2605,7 +2633,7 @@ void PowerModel::add_SOCP_KCL_PV_Batt_Time(Node* n){
         KCL_Q += sum_Time(n->get_out(), "qi", t);
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
-        KCL_Q -= n->bs()*((n->w_t[t])^2) - n->ql();
+        KCL_Q -= n->bs()*(n->w_t[t]) - n->ql();
         //            cout << n->_name << " qload = " << n->ql() << endl;
         KCL_Q = 0;
         _model->addConstraint(KCL_Q);

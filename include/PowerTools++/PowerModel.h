@@ -73,7 +73,8 @@ public:
     void add_AC_SOCP_vars_Time();
     /** Constraints */
     void add_Wr_Wi(Arc* a);
-    void add_Wr_Wi_time(Arc *a);
+    void add_SOCP_Angle_Bounds_Time(Arc *a);
+    void add_AC_Angle_Bounds_Time(Arc *a);
     void add_AC_thermal(Arc* a, bool switch_lines);
     
     void add_AC_thermal_Time(Arc* a);

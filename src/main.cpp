@@ -286,7 +286,7 @@ int main (int argc, const char * argv[]) {
 
 /* Plotting functions */
     plot p;
-    p.plot_V( argc, argv, power_model);
+//    p.plot_V( argc, argv, power_model);
 //    p.plot_PV( argc, argv, power_model);
 //    p.plot_flow( argc, argv, power_model);
     p.plot_soc(argc, argv, power_model);
