@@ -89,7 +89,7 @@ int PTSolver::run(int output, bool relax){
 //        prog.ipopt_prog;
 //                        iapp.Options()->SetStringValue("hessian_constant", "yes");
 //                        iapp.Options()->SetStringValue("derivative_test", "second-order");
-                        iapp.Options()->SetNumericValue("tol", 1e-6);
+//                        iapp.Options()->SetNumericValue("tol", 1e-6);
 //                        iapp.Options()->SetNumericValue("tol", 1e-6);
             //            iapp->Options()->SetStringValue("derivative_test", "second-order");
             //            iapp.Options()->SetNumericValue("bound_relax_factor", 0);

@@ -418,7 +418,7 @@ void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
 
             pls[i-1]->scmap1l(true, 5, pos, red, green, blue, NULL);
             n->print();
-            //cout << "soc = " << n->pv_rate.get_value() << endl;
+            cout << "battery capacity = " << n->batt_cap.get_value() << endl;
             for (int t = 0; t < power_model._timesteps; t++) {
 
 
@@ -426,7 +426,7 @@ void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
                 //y0[t] = power_model._net->bMVA * 1000 * n->w_t[t].get_value();
 //                y0[i] = test[i-1];
                 cout << y0[t] << ", ";
-                pls[i - 1]->col1((y0[t]) / (power_model._net->bMVA * 1000.* n->batt_cap.get_value()));
+                pls[i - 1]->col1((y0[t]) / (1.1*power_model._net->bMVA * 1000.* n->batt_cap.get_value()));
 
                 pls[i - 1]->psty(0);
                 pls[i-1]->schr(0.0, 0.5);

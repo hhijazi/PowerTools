@@ -84,9 +84,9 @@ int main (int argc, const char * argv[]) {
 //    setenv("GRB_LICENSE_FILE", "/home/kbestuzheva/gurobi.research.lic", 1);
 
 //    PowerModelType pmt = ACPF;
-      PowerModelType pmt = ACPF_T;
+//      PowerModelType pmt = ACPF_T;
 //      PowerModelType pmt = SOCP;
-//      PowerModelType pmt = SOCP_T;
+      PowerModelType pmt = SOCP_T;
 //      PowerModelType pmt = ACPF_PV_T;
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
@@ -113,9 +113,9 @@ int main (int argc, const char * argv[]) {
 //    string radiationfile = "/home/angela/DEV/PowerTools/data/radiationfile-24-june.csv";
 //    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
            string filename = "../data/anu.m";
-           string loadfile = "../data/Jan_16_1hr_24h.csv";
+//           string loadfile = "../data/Jan_16_1hr_24h.csv";
 //            string loadfile = "../data/July_16_1hr_24h.csv"; //*
-//            string loadfile = "../data/February_16_1hr_24h.csv";  //*
+            string loadfile = "../data/February_16_1hr_24h.csv";  //*
 //            string loadfile = "../data/Weekend_Feb_16.csv";  //*
 //            string loadfile = "../data/July_weekend_16.csv";  //*
 //               string loadfile = "../data/September_16_1hr_24h.csv";
@@ -252,13 +252,25 @@ int main (int argc, const char * argv[]) {
 //    std::streambuf *oldbuf = std::cout.rdbuf();
 //    std::cout.rdbuf(fw.rdbuf());
 //    ///
-//    power_model._model->print_solution();
+    power_model._model->print_solution();
     cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
 //    power_model._model->_obj->print(true); //obj->print(true);
     
     ///
 //    std::cout.rdbuf(oldbuf);
     cout << "\n";
+    
+//    for (int t = 0; t < power_model._timesteps; t++) {
+//        for (auto n:net.nodes) {
+//            if (n->candidate()) {
+//                if (n->pch_t[t].get_value()*n->pdis_t[t].get_value() > 10e-6) {
+//                    n->print();
+//                    cerr << "charging and discharging at the same time!" << endl;
+//                    exit(-1);
+//                }
+//            }
+//        }
+//    }
     /*std::ofstream fileout("out.txt");
     fileout << power_model._model->print_solution();*/
 
@@ -266,6 +278,7 @@ int main (int argc, const char * argv[]) {
 /*
     float sum_power_loss = 0;
 
+ 
     for (int t = 0; t < power_model._timesteps; t++) {
 
         for (auto a:net.arcs) {
@@ -289,15 +302,15 @@ int main (int argc, const char * argv[]) {
 //        p.plot_V( argc, argv, power_model);
     }
     if(pmt==ACPF_PV_T || pmt==ACPF_PV_BATT_T){
-//        p.plot_PV( argc, argv, power_model);
+        p.plot_PV( argc, argv, power_model);
     }
-    p.plot_flow( argc, argv, power_model);
+//    p.plot_flow( argc, argv, power_model);
     if(pmt==SOCP_PV_BATT_T || pmt==SOCP_BATT_T || pmt==ACPF_PV_BATT_T || pmt==ACPF_BATT_T){
         p.plot_soc(argc, argv, power_model);
     }
   //plot *x = new plot(argc, argv, power_model);
 
-
+    power_model._model->_obj->print(true);
     cout << "Model: " << pmt << ", " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
     cout << "OPTIMAL COST = " << power_model._model->_opt << endl;

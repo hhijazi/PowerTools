@@ -1093,7 +1093,7 @@ void PowerModel::min_cost_time() {
         for (auto g:_net->gens) {
             /*if (!g->_active)
                 continue;*/
-            *obj += _net->bMVA*_net->c1[t]*1000*g->pg_t[t];
+            *obj += _net->bMVA*_net->c1[t]*1000*g->pg_t[t]*1.3;
         }
 
     }
@@ -1121,7 +1121,7 @@ void PowerModel::min_cost_pv(){
     }
     for (auto n:_net->nodes) {
         if (n->candidate()) {
-            *obj += 0.0000001 * n->pv_rate;
+            *obj += 2000/(10*365)*n->pv_rate; /* 2 dollars per W = 2000 dollars per square meter divided by ten years */
 
         }
     }
@@ -1178,7 +1178,7 @@ void PowerModel::min_cost_pv_batt(){
         for (auto g:_net->gens) {
 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
 //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
-            *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t])*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
 //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
             //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
@@ -1186,15 +1186,17 @@ void PowerModel::min_cost_pv_batt(){
     }
         for (auto n:_net->nodes){
             if (n->candidate()) {
-                *obj += n->batt_cap;
-                *obj += 0.0000001 * n->pv_rate; //per hour investment for the each pv?
-                //*obj += 2. * n->pv_rate;
+//                *obj += 0.0000001*n->pv_rate; /* 2 dollars per W = 2000 dollars per square meter divided by ten years */
+//                *obj += n->batt_cap; /* 3500 dollars per 10kW battery divided by ten years */
+                *obj += 2000./(10*365.)*n->pv_rate; /* 2 dollars per W = 2000 dollars per square meter divided by ten years */
+                *obj += (350.*_net->bMVA*1000)/(10*365)*n->batt_cap; /* 3500 dollars per 10kW battery divided by ten years */
+                
             }
         }
     //*obj = *obj/_timesteps;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-//    obj->print(true);
+    obj->print(true);
     //    _solver->run();
 }
 
@@ -1863,7 +1865,7 @@ void PowerModel::add_AC_SOCP_vars_Time() {
         }
         for (auto n:_net->nodes) {
             n->w_t[t].init("w" + n->_name, pow(n->vbound.min, 2), pow(n->vbound.max, 2));
-            n->w_t[t] = pow(n->vs, 2);
+            n->w_t[t] = 1;
             _model->addVar(n->w_t[t]);
             if(n->inst()){
                 n->pv_t[t].init("pv" + n->_name + "_" + to_string(t), 0, 1);
@@ -3354,7 +3356,7 @@ void PowerModel::post_AC_SOCP_Time() {
 
             }
             add_AC_thermal_Time(a);
-
+            add_SOCP_Angle_Bounds_Time(a);
         }
 //        add_Wr_Wi_time(a);
     }
