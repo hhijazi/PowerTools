@@ -66,7 +66,7 @@ void PTSolver::set_model(Model* m) {
 }
 
 
-int PTSolver::run(int output, bool relax){
+int PTSolver::run(int output, bool relax, int print_lvl){
     //GurobiProgram* grbprog;
     // Initialize the IpoptApplication and process the options
 
@@ -89,7 +89,7 @@ int PTSolver::run(int output, bool relax){
 //                        iapp.Options()->SetNumericValue("tol", 1e-6);
             //            iapp->Options()->SetStringValue("derivative_test", "second-order");
             //            iapp.Options()->SetNumericValue("bound_relax_factor", 0);
-            //            iapp.Options()->SetIntegerValue("print_level", 5);
+                        iapp.Options()->SetIntegerValue("print_level", print_lvl);
             
             //            iapp.Options()->SetStringValue("derivative_test_print_all", "yes");
         status = iapp.OptimizeTNLP(tmp);

@@ -42,6 +42,6 @@ public:
     /* Destructor */
     ~PTSolver();
     
-    int run(int output, bool relax);
+    int run(int output, bool relax, int print_lvl=5);
 };
 #endif /* defined(__PowerTools____Solver__) */

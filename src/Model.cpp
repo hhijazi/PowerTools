@@ -173,7 +173,7 @@ void Model::delVar(var_* v){
     assert(false);
 };
 
-void Model::addConstraint(Constraint c_){
+void Model::addConstraint(const Constraint &c_){
     Constraint* c = new Constraint(c_);
     _cons.push_back(c);
     c->set_idx(_idx_con++);
