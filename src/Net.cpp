@@ -28,6 +28,7 @@
 #include <queue>
 #include <time.h>
 #include <sstream>
+#include <cstdlib>
 
 using namespace std;
 
@@ -1706,6 +1707,7 @@ int Net::readload(string fname, int _timesteps){
 
 int Net::readFile(string fname){
     string name;
+    vector<string> bus_name;
     double pl = 0, ql = 0, gs = 0, bs = 0, kvb = 0, vmin = 0, vmax = 0, vs = 0;
     int id = 0;
     cout << "Loading file " << fname << endl;
@@ -1732,45 +1734,15 @@ int Net::readFile(string fname){
     bMVA = atoi(word.c_str());
 //    cout << "BaseMVA = " << bMVA << endl;
     
-    
+    /* Node name */
     while (word.compare("mpc.bus_name")){
         file >> word;
     }
     getline(file, word);
-    //cout<<"word is "<<word<<"; ";
-   // Node* node = NULL;
-    //Node* node_clone = NULL;
-    file >> word;
-    cout<<"word is "<<word<<"; ";
-    while(word.compare("];")){
-        name = word.c_str();
-        //cout<<"Bus name is "<<name<<"; ";
-        /*id = atoi(name.c_str());
-        file >> ws >> word >> ws >> word;
-        pl = atof(word.c_str())/bMVA;
+    while(word.compare("};")){
         file >> word;
-        ql = atof(word.c_str())/bMVA;
-        file >> word;
-        gs = atof(word.c_str())/bMVA;
-        file >> word;
-        bs = atof(word.c_str())/bMVA;
-        file >> ws >> word >> ws >> word;
-        vs = atof(word.c_str());
-        file >> ws >> word >> ws >> word;
-        kvb = atof(word.c_str());
-        file >> ws >> word >> ws >> word;
-        //        vmax = atof(word.c_str());
-        vmax = 1.06;
-        getline(file, word,';');
-        //        vmin = atof(word.c_str());
-        vmin = 0.94;
-        node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
-        node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
-        node->vs = vs;
-        add_node(node);
-        _clone->add_node(node_clone);
-        //        node->print();
-        file >> word;*/
+        bus_name.push_back(word.substr(1,(word.length()-3)));
+        //cout<<"Bus name is "<<name <<"; "<<"\n";
     }
     file.seekg (0, file.beg);
     
@@ -1786,6 +1758,7 @@ int Net::readFile(string fname){
         name = word.c_str();
         //cout<<"Bus name is "<<name<<"; ";
         id = atoi(name.c_str());
+        //cout<<"Bus name is "<<id<<"; ";
         file >> ws >> word >> ws >> word;
         pl = atof(word.c_str())/bMVA;
         file >> word;
@@ -1804,8 +1777,9 @@ int Net::readFile(string fname){
         getline(file, word,';');
 //        vmin = atof(word.c_str());
         vmin = 0.94;
-        node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
-        node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
+        node = new Node(bus_name[id-1], pl, ql, gs, bs, vmin, vmax, kvb, 1);
+        node_clone = new Node(bus_name[id-1], pl, ql, gs, bs, vmin, vmax, kvb, 1);
+        cout<<"Bus name is "<<bus_name[id-1] <<"; "<<"\n";
         node->vs = vs;
         add_node(node);
         _clone->add_node(node_clone);
