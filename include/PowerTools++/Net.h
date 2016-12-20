@@ -34,6 +34,7 @@ public:
     std::vector<double> c0;
     std::vector<double> c1;
     std::vector<double> c2;
+    std::vector<double> c3;
     
     
     
@@ -50,6 +51,9 @@ public:
     
     /**radiation limit time dependent*/
     std::vector<double>      _radiation;
+    
+    /* tag the weekdays */
+    vector<int> tag;
 
 
     
@@ -134,6 +138,8 @@ public:
     /* Input Output */
     
     int readFile(std::string fname);
+    int readFile_direct(std::string fname);
+    //vector<int> weekday_tag();
     int readload(std::string ffname, int _timesteps);
     int readpvmax(std::string ffname);
     int readcost(std::string ffname, int _timesteps);

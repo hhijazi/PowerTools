@@ -18,6 +18,7 @@ public:
     //plot_PV( int, const char ** , PowerModel& power_model);
 
     void plot_V( int, const char ** , PowerModel& power_model);
+    //void plot_V_direct( int, const char **);
     void plot_PV( int, const char ** , PowerModel& power_model);
     void plot_flow( int, const char ** , PowerModel& power_model);
     void plot_soc( int argc, const char **argv , PowerModel& power_model);

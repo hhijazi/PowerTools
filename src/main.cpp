@@ -11,14 +11,64 @@
 #include <string>
 #include <stdio.h>
 #include <cstring>
-#include <fstream>
 #include "PowerTools++/PowerModel.h"
 #include "PowerTools++/Plot.h"
+
+#include "PowerTools++/Net.h"
+#include "PowerTools++/IpoptProgram.h"
+#include "PowerTools++/PTSolver.h"
+#include "PowerTools++/Complex.h"
+
 
 
 
 
 using namespace std;
+
+
+
+//direct plot
+
+/*int main()
+{
+    // in your case you'll have a file
+    // std::ifstream ifile("input.txt");
+    std::stringstream ifile("User1, 21kW, 70kW\nUser2, 25kW,68kW\nUser3,29kW,80kW");
+    
+    std::string line; // we read the full line here
+    std::vector<std::string> timestep; //store first column time
+    std::vector<std::string> power_consumed; //store other columns
+    while (std::getline(ifile, line)) // read the current line
+    {
+        std::istringstream iss{line}; // construct a string stream from line
+        
+        // read the tokens from current line separated by comma
+        std::vector<std::string> tokens; // here we store the tokens
+        std::string token; // current token
+        while (std::getline(iss, token, ','))
+        {
+            tokens.push_back(token); // add the token to the vector
+        }
+        
+        // we can now process the tokens
+        // first display them
+        std::cout << "Tokenized line: ";
+        for (const auto& elem : tokens)
+            std::cout << "[" << elem << "]";
+        std::cout << std::endl;
+        
+        // map the tokens into our variables, this applies to your scenario
+        std::string name = tokens[0]; // first is a string, no need for further processing
+        int age = std::stoi(tokens[1]); // second is an int, convert it
+        int height = std::stoi(tokens[2]); // same for third
+        
+        std::cout << "Processed tokens: " << std::endl;
+        std::cout << "\t Timestep: " << name << std::endl;
+        std::cout << "\t B1: " << age << std::endl;
+        std::cout << "\t B2: " << height << std::endl;
+    }
+}*/
+
 
 //  Windows
 #ifdef _WIN32
@@ -84,14 +134,14 @@ int main (int argc, const char * argv[]) {
 //    setenv("GRB_LICENSE_FILE", "/home/kbestuzheva/gurobi.research.lic", 1);
 
 //    PowerModelType pmt = ACPF;
-//      PowerModelType pmt = ACPF_T;
+     PowerModelType pmt = ACPF_T; //no batt no PV
 //      PowerModelType pmt = SOCP;
-      PowerModelType pmt = SOCP_T;
-//      PowerModelType pmt = ACPF_PV_T;
+//      PowerModelType pmt = SOCP_T;
+//       PowerModelType pmt = ACPF_PV_T;  //pv only
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
-//    PowerModelType pmt = ACPF_BATT_T;
-//    PowerModelType pmt = ACPF_PV_BATT_T;
+ //   PowerModelType pmt = ACPF_BATT_T;
+ //   PowerModelType pmt = ACPF_PV_BATT_T;  //pv and batt
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //   PowerModelType pmt = SOCP_PV_T;
@@ -114,12 +164,28 @@ int main (int argc, const char * argv[]) {
 //    string costfile = "/home/angela/DEV/PowerTools/data/gencost-24-recalculated.csv";
            string filename = "../data/anu.m";
 //           string loadfile = "../data/Jan_16_1hr_24h.csv";
-//            string loadfile = "../data/July_16_1hr_24h.csv"; //*
-            string loadfile = "../data/February_16_1hr_24h.csv";  //*
-//            string loadfile = "../data/Weekend_Feb_16.csv";  //*
-//            string loadfile = "../data/July_weekend_16.csv";  //*
-//               string loadfile = "../data/September_16_1hr_24h.csv";
+ //          string loadfile = "../data/July_16_1hr_24h.csv"; //
+ //           string loadfile = "../data/February_16_1hr_24h.csv";  //
+ //           string loadfile = "../data/Weekend_Feb_16.csv";  //
+//            string loadfile = "../data/July_weekend_16.csv";  //
+//              string loadfile = "../data/Weekend_Feb_6_filtered_5000.csv.xls";  //
+//                string loadfile = "../data/Weekend_Feb_28_filtered_5000.csv.xls";  //
+
+  //                  string loadfile = "../data/Feb_6.csv";  //
+   //               string loadfile = "../data/Feb_7.csv.xls";  //
+    //              string loadfile = "../data/Feb_13.csv.xls";  //
+    //              string loadfile = "../data/Feb_14.csv.xls";  //
+     //             string loadfile = "../data/Feb_20.csv";  //
+    //              string loadfile = "../data/Feb_21.csv.xls";  //
+    //              string loadfile = "../data/Feb_28.csv.xls";  //
+    //                string loadfile = "../data/Sep_10.csv";  //
+                     string loadfile = "../data/Sep_25.csv";  //
+
+
+ //              string loadfile = "../data/September_16_1hr_24h.csv";
 //           string loadfile = "../data/June_16_1hr_24h.csv";
+//           string loadfile = "../data/Feb_16.csv";
+//           string loadfile = "../data/Sep_16.csv";
 //           string radiationfile="../data/radiationfile-24-july.csv";
 //        string radiationfile="../data/radiationfile-24-february.csv";
         string radiationfile="../data/radiationfile-24-january.csv";
@@ -133,7 +199,7 @@ int main (int argc, const char * argv[]) {
     costfile = "../" + costfile;
 #endif
 
-    ////        string pvfile = "../../data/pvmax.csv";
+    ////        string pvfile = "../../data/pvmax.cs v";
 
 
 //    string filename = "/Users/hassan/Documents/Dropbox/Work/Dev/Private_PT/data/nesta_case30_ieee.m";
@@ -153,7 +219,7 @@ int main (int argc, const char * argv[]) {
     if (argc >= 2) {
         filename = argv[1];
 
-        if (!strcmp(argv[2], "ACPOL")) pmt = ACPOL;
+        if (!strcmp(argv[2], "ACPOL")) pmt = ACPOL;  //if argv[2]="ACPOL"
         else if (!strcmp(argv[2], "ACRECT")) pmt = ACRECT;
         else if (!strcmp(argv[2], "QC")) pmt = QC;
         else if (!strcmp(argv[2], "QC_SDP")) pmt = QC_SDP;
@@ -161,7 +227,7 @@ int main (int argc, const char * argv[]) {
         else if (!strcmp(argv[2], "SOCP")) pmt = SOCP;
         else if (!strcmp(argv[2], "SOCP_PV_T")) pmt = SOCP_PV_T;
         else if (!strcmp(argv[2], "ACPF_PV_T")) pmt = ACPF_PV_T;
-        else if (!strcmp(argv[2], "SOCP_BATT_T")) pmt = SOCP_PV_BATT_T;
+        else if (!strcmp(argv[2], "SOCP_BATT_T")) pmt = SOCP_BATT_T;
         else if (!strcmp(argv[2], "ACPF_PV_BATT_T")) pmt = ACPF_PV_BATT_T;
         else if (!strcmp(argv[2], "ACPF_BATT_T")) pmt = ACPF_BATT_T;
         else if (!strcmp(argv[2], "SOCP_BATT_T")) pmt = SOCP_BATT_T;
@@ -244,15 +310,15 @@ int main (int argc, const char * argv[]) {
     double cpu1 = get_cpu_time();
 
 
-    /*cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
-    power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";*/
+//    cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
+//    power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
 
 //    ofstream fw;
 //    fw.open("text.txt");
 //    std::streambuf *oldbuf = std::cout.rdbuf();
 //    std::cout.rdbuf(fw.rdbuf());
 //    ///
-    power_model._model->print_solution();
+ power_model._model->print_solution();
     cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
 //    power_model._model->_obj->print(true); //obj->print(true);
     
@@ -271,8 +337,8 @@ int main (int argc, const char * argv[]) {
 //            }
 //        }
 //    }
-    /*std::ofstream fileout("out.txt");
-    fileout << power_model._model->print_solution();*/
+   // std::ofstream fileout("out.txt");
+  //  fileout << power_model._model->print_solution();
 
 
 /*
@@ -296,9 +362,10 @@ int main (int argc, const char * argv[]) {
 
     }*/
 
-/* Plotting functions */
-    plot p;
-    if(pmt==ACPF_PV_T || pmt==ACPF_PV_BATT_T || pmt==ACPF_BATT_T){
+///* Plotting functions */
+ plot p;
+//comment for plot
+ if(pmt==ACPF_PV_T || pmt==ACPF_PV_BATT_T || pmt==ACPF_BATT_T){
 //        p.plot_V( argc, argv, power_model);
     }
     if(pmt==ACPF_PV_T || pmt==ACPF_PV_BATT_T){
@@ -307,15 +374,16 @@ int main (int argc, const char * argv[]) {
 //    p.plot_flow( argc, argv, power_model);
     if(pmt==SOCP_PV_BATT_T || pmt==SOCP_BATT_T || pmt==ACPF_PV_BATT_T || pmt==ACPF_BATT_T){
         p.plot_soc(argc, argv, power_model);
-    }
+    } //comment for plot
   //plot *x = new plot(argc, argv, power_model);
 
-    power_model._model->_obj->print(true);
+ //   p.plot_V_direct(argc, argv);
+    
+    /*power_model._model->_obj->print(true);
     cout << "Model: " << pmt << ", " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
     power_model._model->_opt << ", " << status << ", " << wall1 - wall0 << ", -inf\n";
-    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
-
+    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;*/
     
-    return 0;
+return 0;
 
 }

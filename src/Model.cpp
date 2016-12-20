@@ -176,12 +176,12 @@ void Model::delVar(var_* v){
 
 void Model::addConstraint(Constraint c_){
     Constraint* c = new Constraint(c_);
-    _cons.push_back(c);
-    c->set_idx(_idx_con++);
-    var_* vi = NULL;
-    int vid = 0;
+    _cons.push_back(c);  //?????
+    c->set_idx(_idx_con++);  //idx_con: Index counter for variables
+    var_* vi = NULL;  //var_:Backbone class for a variable
+    int vid = 0; //
 //    Function* dfdx = NULL;
-    for(auto it = c->_vars.cbegin(); it != c->_vars.end(); it++) {
+    for(auto it = c->_vars.cbegin(); it != c->_vars.end(); it++) { //_vars: sorted map pointing to all variables contained in this function
         vid = it->first;
         vi = it->second;
         vi->addConstraint(c);
@@ -211,7 +211,7 @@ void Model::addConstraint(Constraint c_){
 
 //        }
     }
-    _nnz_g+=c->get_nb_vars();
+    _nnz_g+=c->get_nb_vars(); // get number of variables
 
 //    c->print();
 };

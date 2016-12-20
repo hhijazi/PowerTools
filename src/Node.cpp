@@ -143,6 +143,19 @@ vector<Arc*> Node::get_in(){
     return res;
 }
 
+/*vector<Gen*> Node::_gen(){
+    vector<Arc*> res;
+    for (auto a:branches) {
+        if (a->status==0) {
+            continue;
+        }
+        if(a->dest->ID==ID){
+            res.push_back(a);
+        }
+    }
+    return res;
+}*/
+
 
 //void Node::print(){
 //    if(gen)

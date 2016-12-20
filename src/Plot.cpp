@@ -250,7 +250,7 @@ void plot::plot_V( int argc, const char **argv , PowerModel& power_model) {
             //                pls->sfnam("out.pdf");
 //        pls->sdev("pdf");
             std::string name("out_voltage"+to_string(i)+".pdf");
-            pls[i-1]->sfnam(name.c_str());
+            pls[i-1]->sfnam(name.c_str()); // Set the output file name.
             pls[i-1]->sdev("pdf");
 #elif __linux__
 
@@ -258,47 +258,49 @@ void plot::plot_V( int argc, const char **argv , PowerModel& power_model) {
             pls[i-1]->sfnam(name.c_str());
             pls[i-1]->sdev("psc");
 #endif
-            pls[i-1]->spal0("cmap0_black_on_white.pal");
-            pls[i-1]->spal1("cmap1_gray.pal", true);
+            pls[i-1]->spal0("cmap0_black_on_white.pal");    // Set the colors for color table 0 from a cmap0 file
+            pls[i-1]->spal1("cmap1_gray.pal", true);       // Set the colors for color table 1 from a cmap1 file
 
             // Initialize plplot.
 
             pls[i-1]->init();
 
 
-            pls[i-1]->adv(0);
-            pls[i-1]->vsta();
-            pls[i-1]->wind(1, power_model._timesteps + 1, 0.0, n->_kvb * 1000*1.5);
-            pls[i-1]->box("bc", 1.0, 0, "bcnv", power_model._timesteps + 1, 0);
-            pls[i-1]->col0(2);
-            pls[i-1]->lab("#frTime Step", "#fr|V|", "#fr voltage magnitude");
-
-            pls[i-1]->scmap1l(true, 5, pos, red, green, blue, NULL);
-            pls[i-1]->schr(0.0, 0.3);
+            pls[i-1]->adv(0);  //Advance to subpage "page", or to the next one if "page" = 0.
+            pls[i-1]->vsta();  // Defines a "standard" viewport with seven character heights for
+            // the left margin and four character heights everywhere else.
+            pls[i-1]->wind(1, power_model._timesteps + 1, 0.0, n->_kvb * 1000*1.5);  // Set up world coordinates of the viewport boundaries (2d plots).
+            pls[i-1]->box("bc", 1.0, 0, "bcnv", power_model._timesteps + 1, 0);  // This draws a box around the current viewport.
+            pls[i-1]->col0(2); // Set color, map 0.  Argument is integer between 0 and 15.
+            pls[i-1]->lab("#frTime Step", "#fr|V|", "#fr voltage magnitude");  // Simple routine for labelling graphs.
+            
+            pls[i-1]->scmap1l(true, 5, pos, red, green, blue, NULL);  // Set color map 1 colors using a piece-wise linear relationship between
+            // intensity [0,1] (cmap 1 index) and position in HLS or RGB color space.
+            pls[i-1]->schr(0.0, 0.3);  // Set character height.
             for (int t = 0; t < power_model._timesteps; t++) {
 
 
-                y0[t] = n->_kvb * 1000. * sqrt(pow(n->vr_t[t].get_value(),2) + pow(n->vi_t[t].get_value(),2));
+                y0[t] = n->_kvb * 1000. * sqrt(pow(n->vr_t[t].get_value(),2) + pow(n->vi_t[t].get_value(),2));//kvb:Bus base kvolts,
                 //y0[t] = power_model._net->bMVA * 1000 * n->w_t[t].get_value();
 //                y0[i] = test[i-1];
                 cout << y0[t] << ", ";
-                pls[i - 1]->col1((y0[t]) / (n->_kvb * 1000*1.5));
-                pls[i - 1]->psty(0);
-                pls[i-1]->schr(0.0, 0.3);
-                plfbox(t+1, y0[t], i-1);
-                if (y0[t] >= 0.1) {
+                pls[i - 1]->col1((y0[t]) / (n->_kvb * 1000*1.5)); //set colour
+                pls[i - 1]->psty(0); //set fill pattern, using one of the predefined patterns
+                pls[i - 1]->schr(0.0, 0.3); //Set character height
+                plfbox(t+1, y0[t], i-1);  //set box
+                if (y0[t] >= 0.1) { //set height of bar
                     if (y0[t] >= 1) {
-                        sprintf(string, "%.00f", y0[t]);
+                        sprintf(string, "%.00f", y0[t]); //if >=1
                     }
                     else {
-                        sprintf(string, "%.01f", y0[t]);
+                        sprintf(string, "%.01f", y0[t]); //if >=0.1 and <1??????????
                     }
-                    pls[i - 1]->ptex((t + 1.5), (y0[t] + 0.5 + 0.05*(n->_kvb * 1000*1.5)), 1.0, 0.0, .5, string);
+                    pls[i - 1]->ptex((t + 1.5), (y0[t] + 0.5 + 0.05*(n->_kvb * 1000*1.5)), 1.0, 0.0, .5, string);//Prints out "text" at world cooordinate (x,y)
                 }
                 
                 sprintf(string, "%d", t);
                 pls[i-1]->mtex("b", 1.0, ((t+1) / (1. * power_model._timesteps) - .5 / power_model._timesteps), 0.5,
-                               string);
+                               string); //Prints out "text" at specified position relative to viewport
 
             }
             delete pls[i-1];
@@ -335,6 +337,114 @@ void plot::plot_V( int argc, const char **argv , PowerModel& power_model) {
 
 
 }
+
+
+
+/*void plot::plot_V_direct( int argc, const char **argv) {
+    
+   
+    double y0[power_model._timesteps];
+    int i = 1;
+    int b = 1;
+    char string[100];
+    
+    // Parse and process command line arguments.
+    pls.reserve(26);
+    for (auto n:power_model._net->nodes) {
+        if (n->candidate() || n->inst()) {
+            pls[i-1] = new plstream();
+#ifdef __APPLE__
+            //                pls->sfnam("out.pdf");
+            //        pls->sdev("pdf");
+            std::string name("out_voltage"+to_string(i)+".pdf");
+            pls[i-1]->sfnam(name.c_str());
+            pls[i-1]->sdev("pdf");
+#elif __linux__
+            
+            std::string name("out_voltage"+to_string(i)+".psc");
+            pls[i-1]->sfnam(name.c_str());
+            pls[i-1]->sdev("psc");
+#endif
+            pls[i-1]->spal0("cmap0_black_on_white.pal");
+            pls[i-1]->spal1("cmap1_gray.pal", true);
+            
+            // Initialize plplot.
+            
+            pls[i-1]->init();
+            
+            
+            pls[i-1]->adv(0);  //Advance to subpage "page", or to the next one if "page" = 0.
+            pls[i-1]->vsta();  // Defines a "standard" viewport with seven character heights for
+            // the left margin and four character heights everywhere else.
+            pls[i-1]->wind(1, power_model._timesteps + 1, 0.0, n->_kvb * 1000*1.5);  // Set up world coordinates of the viewport boundaries (2d plots).
+            pls[i-1]->box("bc", 1.0, 0, "bcnv", power_model._timesteps + 1, 0);  // This draws a box around the current viewport.
+            pls[i-1]->col0(2); // Set color, map 0.  Argument is integer between 0 and 15.
+            pls[i-1]->lab("#frTime Step", "#fr|V|", "#fr voltage magnitude");  // Simple routine for labelling graphs.
+            
+            pls[i-1]->scmap1l(true, 5, pos, red, green, blue, NULL);  // Set color map 1 colors using a piece-wise linear relationship between
+            // intensity [0,1] (cmap 1 index) and position in HLS or RGB color space.
+            pls[i-1]->schr(0.0, 0.3);  // Set character height.
+            for (int t = 0; t < power_model._timesteps; t++) {
+                
+                
+                y0[t] = n->_kvb * 1000. * sqrt(pow(n->vr_t[t].get_value(),2) + pow(n->vi_t[t].get_value(),2));//kvb:Bus base kvolts,
+                //y0[t] = power_model._net->bMVA * 1000 * n->w_t[t].get_value();
+                //                y0[i] = test[i-1];
+                cout << y0[t] << ", ";
+                pls[i - 1]->col1((y0[t]) / (n->_kvb * 1000*1.5)); //set colour
+                pls[i - 1]->psty(0); //set fill pattern, using one of the predefined patterns
+                pls[i - 1]->schr(0.0, 0.3); //Set character height
+                plfbox(t+1, y0[t], i-1);  //set box
+                if (y0[t] >= 0.1) { //set height of bar
+                    if (y0[t] >= 1) {
+                        sprintf(string, "%.00f", y0[t]); //if >=1
+                    }
+                    else {
+                        sprintf(string, "%.01f", y0[t]); //if >=0.1 and <1??????????
+                    }
+                    pls[i - 1]->ptex((t + 1.5), (y0[t] + 0.5 + 0.05*(n->_kvb * 1000*1.5)), 1.0, 0.0, .5, string);//Prints out "text" at world cooordinate (x,y)
+                }
+                
+                sprintf(string, "%d", t);
+                pls[i-1]->mtex("b", 1.0, ((t+1) / (1. * power_model._timesteps) - .5 / power_model._timesteps), 0.5,
+                               string); //Prints out "text" at specified position relative to viewport
+                
+            }
+            delete pls[i-1];
+            i++;
+        }
+        
+        
+    }
+#ifdef _WIN32
+#elif __APPLE__
+    i = 1;
+    for (auto n:power_model._net->nodes) {
+        if (n->candidate() || n->inst()) {
+            std::string name("open out_voltage" + to_string(i) + ".pdf");
+            system(name.c_str());
+            i++;
+        };
+    };
+    
+#elif __linux__
+    i = 1;
+    for (auto n:power_model._net->nodes) {
+        if (n->candidate() || n->inst()) {
+            std::string name("gv out_voltage" + to_string(i) + ".psc");
+            system(name.c_str());
+            i++;
+        };
+    };
+    
+#else
+#   error "Unknown compiler"
+#endif
+    //
+    
+    
+}
+*/
 
 void plot::plot_soc( int argc, const char **argv , PowerModel& power_model) {
 
