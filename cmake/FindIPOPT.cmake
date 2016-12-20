@@ -12,6 +12,7 @@ message("Looking for Ipopt in ${IPOPT_ROOT_DIR}")
 find_path(IPOPT_INCLUDE_DIR
 	NAMES IpNLP.hpp 
 	HINTS /usr/local/include/coin
+	HINTS ~/Utils/ipopt/build/include/coin
 	HINTS ${IPOPT_ROOT_DIR}/include/coin
 	HINTS ${IPOPT_ROOT_DIR}/include
 )
@@ -20,6 +21,7 @@ if(APPLE)
 find_library(IPOPT_LIBRARY 
 	libipopt.dylib
 	HINTS /usr/local/lib
+	HINTS ~/Utils/ipopt/build/lib
 	HINTS ${IPOPT_ROOT_DIR}/lib
 )
 elseif(UNIX)
