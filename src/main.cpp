@@ -134,14 +134,14 @@ int main (int argc, const char * argv[]) {
 //    setenv("GRB_LICENSE_FILE", "/home/kbestuzheva/gurobi.research.lic", 1);
 
 //    PowerModelType pmt = ACPF;
-     PowerModelType pmt = ACPF_T; //no batt no PV
+//     PowerModelType pmt = ACPF_T; //no batt no PV
 //      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
-//       PowerModelType pmt = ACPF_PV_T;  //pv only
+       PowerModelType pmt = ACPF_PV_T;  //pv only
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
- //   PowerModelType pmt = ACPF_BATT_T;
- //   PowerModelType pmt = ACPF_PV_BATT_T;  //pv and batt
+//   PowerModelType pmt = ACPF_BATT_T;
+//   PowerModelType pmt = ACPF_PV_BATT_T;  //pv and batt
 //    PowerModelType pmt = QC_OTS_N;
 //    PowerModelType pmt = GRB_TEST;
 //   PowerModelType pmt = SOCP_PV_T;
@@ -171,21 +171,27 @@ int main (int argc, const char * argv[]) {
 //              string loadfile = "../data/Weekend_Feb_6_filtered_5000.csv.xls";  //
 //                string loadfile = "../data/Weekend_Feb_28_filtered_5000.csv.xls";  //
 
-  //                  string loadfile = "../data/Feb_6.csv";  //
+   //                 string loadfile = "../data/Feb_6.csv";  //
    //               string loadfile = "../data/Feb_7.csv.xls";  //
     //              string loadfile = "../data/Feb_13.csv.xls";  //
     //              string loadfile = "../data/Feb_14.csv.xls";  //
-     //             string loadfile = "../data/Feb_20.csv";  //
+    //              string loadfile = "../data/Feb_20.csv";  //
     //              string loadfile = "../data/Feb_21.csv.xls";  //
     //              string loadfile = "../data/Feb_28.csv.xls";  //
     //                string loadfile = "../data/Sep_10.csv";  //
-                     string loadfile = "../data/Sep_25.csv";  //
-
+    //                 string loadfile = "../data/Sep_25.csv";  //
+    
 
  //              string loadfile = "../data/September_16_1hr_24h.csv";
 //           string loadfile = "../data/June_16_1hr_24h.csv";
 //           string loadfile = "../data/Feb_16.csv";
 //           string loadfile = "../data/Sep_16.csv";
+          string loadfile = "../data/Feb_Sep_Wkd.csv";
+    
+             string mapfile = "../data/ID_mapping_building.csv";
+    
+    
+    
 //           string radiationfile="../data/radiationfile-24-july.csv";
 //        string radiationfile="../data/radiationfile-24-february.csv";
         string radiationfile="../data/radiationfile-24-january.csv";
@@ -194,6 +200,7 @@ int main (int argc, const char * argv[]) {
            string costfile = "../data/gencost-24.csv";
 #ifdef __APPLE__
     filename = "../" + filename;
+    mapfile = "../" + mapfile;
     loadfile  = "../" + loadfile;
     radiationfile = "../" + radiationfile;
     costfile = "../" + costfile;
@@ -265,6 +272,8 @@ int main (int argc, const char * argv[]) {
     if (net.readFile(filename) == -1)
         return -1;
 
+    if (net.readmap(mapfile, timesteps) == -1)
+        return -1;
 
     if (net.readload(loadfile, timesteps) == -1) {
         return -1;
@@ -281,6 +290,7 @@ int main (int argc, const char * argv[]) {
     if (net.readrad(radiationfile, timesteps) == -1)
         return -1;
 
+   
 //    if(net.choosetime()==-1)                 
 //        return -1;
 //  
@@ -363,7 +373,7 @@ int main (int argc, const char * argv[]) {
     }*/
 
 ///* Plotting functions */
- plot p;
+/* plot p;
 //comment for plot
  if(pmt==ACPF_PV_T || pmt==ACPF_PV_BATT_T || pmt==ACPF_BATT_T){
 //        p.plot_V( argc, argv, power_model);
@@ -376,7 +386,7 @@ int main (int argc, const char * argv[]) {
         p.plot_soc(argc, argv, power_model);
     } //comment for plot
   //plot *x = new plot(argc, argv, power_model);
-
+*/
  //   p.plot_V_direct(argc, argv);
     
     /*power_model._model->_obj->print(true);

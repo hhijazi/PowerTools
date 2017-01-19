@@ -36,7 +36,7 @@ public:
     std::vector<double> c2;
     std::vector<double> c3;
     
-    
+    std::map<std::string, string> busmap;  //mapping between code and building number
     
     string _name;
     
@@ -138,13 +138,14 @@ public:
     /* Input Output */
     
     int readFile(std::string fname);
-    int readFile_direct(std::string fname);
+    //int readFile_direct(std::string fname);
     //vector<int> weekday_tag();
     int readload(std::string ffname, int _timesteps);
     int readpvmax(std::string ffname);
     int readcost(std::string ffname, int _timesteps);
     int choosetime();
     int readrad(std::string fname, int _timesteps);
+    int readmap(std::string ffname, int timesteps);
     
    
     void writeDAT(std::string name);

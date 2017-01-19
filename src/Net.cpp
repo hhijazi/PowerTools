@@ -1229,6 +1229,87 @@ int Net::readcost(string fname, int _timesteps){
     }
     return wkd_tag;
 }*/
+int Net::readmap(string fname, int timesteps){
+    cout << "Loading file " << fname << endl;
+    ifstream file(fname.c_str());
+    if(!file.is_open()){          // if file is not opened
+        cout << "Could not open file\n";
+        return -1;
+    }
+    
+    if(file.peek()==EOF)          // if peek naxt char is at the end
+    {cout << "File is empty" <<endl;
+        return 999;
+    }
+    
+    string line, word;
+    getline(file, line);  //ignore the first line
+    
+    //string test="hello";
+    //busmap[test] = "23";
+    // check if key is present
+    //if (busmap.find("world") != busmap.end())
+        //std::cout << "map contains key world!\n";
+    // retrieve
+    //std::cout << "Value is !!!"<<busmap[test] << "; "<<'\n';
+   // std::map<std::string, string>::iterator i;
+   // i = busmap.find("hello");
+    //assert(i != busmap.end());
+    //std::cout << "Key: " << i->first << " Value: " << i->second << '\n';
+    /*for (map<string, string>::iterator iter = busmap.begin();
+         iter != busmap.end();
+         ++iter) {
+        cout <<"!!! "<< iter->first<<" "<< iter->second << endl;
+    }*/
+
+   // std::cout << "Key: " << test << " Value: " <<     busmap[test] << '\n';
+    
+    
+    
+    /*getline(file,line);                           //third line store in 'line'
+    
+    // int i=0;                                          //initialize i when starting each new line
+    std::stringstream copy(line);                 //store the whole line into copy, copy is the string stream
+    cout<<"line is "<<line <<"; "<<endl;
+    getline(copy,word,',');                       //first column to ignore
+    getline(copy,word,',');                       //get the code in the second column
+    string code = word;
+    cout<<"key is "<<code<<"; "<<endl;
+    getline(copy,word,',');                       //get the building number in the third column
+    cout<<"value is "<< word<<"; "<<endl;
+    //string building = word.substr(1,word.end());
+    //int bn= atoi(building.c_str());
+    busmap[code] = word;
+    std::cout << "Key: " <<code<<" Value: "<<busmap[code] << "; "<<'\n';
+*/
+    
+   while(file.peek()!=EOF){         //peek next char is not the end
+        getline(file,line);                           //third line store in 'line'
+        
+       // int i=0;                                          //initialize i when starting each new line
+        std::stringstream copy(line);                 //store the whole line into copy, copy is the string stream
+        //cout<<"line is "<<line <<"; "<<endl;
+        getline(copy,word,',');                       //first column to ignore
+        //string code = word;// atoi(word.c_str());
+        getline(copy,word,',');                       //get the code in the second column
+        if(word.length()>3){
+            string code = word.substr(1, word.length()-3);
+            cout<<"key is "<<code<<"; "<<endl;
+            getline(copy,word,',');                       //get the building number in the third column
+            cout<<"value is "<< word<<"; "<<endl;
+            //string building = word.substr(1,word.end());
+            //int bn= atoi(building.c_str());
+            busmap[code] = word;
+            std::cout << "Key: " <<code<<" Value: "<<busmap[code] << "; "<<'\n';
+       }
+    }
+    cout<<"!!!"<<endl;
+   /* for (auto n: busmap) {
+        cout <<"Key!!! "<< n.first<<" Value!!!"<< n.second << endl;
+    }*/
+    
+    return 0;
+}
 
 
 
@@ -1250,19 +1331,50 @@ int Net::readload(string fname, int _timesteps){
         n->_cond[0]->_pl.pop_back();                  //_pl: Conductor active power load. remove last element ??????
 //        cout << "pl size = " << n->_cond[0]->_pl.size() << endl;
     }
+    
     int i=0;                                         //number of bus, or number of buildings
     
 //    int pos=0;
     
     string line;
     string word;
+    vector<string> b_num; //building number
     
-    getline(file,line);                               //first line to ignore, call "getline" once, get the first line
-//    getline(file,line);                               //second line to ignore
-    /*for (int tstep = 0; tstep < 24*5; tstep++ ){
-        getline(file,line);
-    }*/
+    getline(file,line);                               //first line
+   cout<<" !!!!line is "<<line;
+  //  cout<<"line is "<<line<<endl;
+    std::stringstream building_num(line);
     
+    getline(building_num, word, ',');          //ignore first column
+    getline(building_num, word, ',');          //ignore second column
+    //string building1;
+    while(getline(building_num, word, ',')){
+        //cout<<"the second char is "<<word.substr(1,1)<<" "<<word.substr(2,1)<<endl;
+        if((word.substr(1,1)=="0")&&(word.substr(2,1)=="0")){
+            word.erase(word.begin()+1,word.begin()+3);
+            //cout <<"222222"<<endl;
+        }
+        if((word.substr(1,1)=="0")&&(word.substr(2,1)!="0")){
+            word.erase(word.begin()+1,word.begin()+2);
+            //cout << "1111111"<<endl;
+        }
+        for(int i=0; i<word.length(); i++){
+            if (word.substr(i,2)==" B"){
+                word.erase(word.begin()+i,word.end());
+                break;
+            }
+        }
+        //if((word.substr(0,1)>="A")&&(word.substr(0,1)<="Z")){
+        cout<<"word is "<<word<<"; "<<endl;
+        b_num.push_back(word);
+        //}else{
+        //    break;
+        //}
+    }
+    
+    for(auto n: b_num){
+        cout<<"b_num is "<<n<<endl;
+    }
     
     
     double av = 0;                  //average values,fill the remaining part buildings for average values
@@ -1271,49 +1383,151 @@ int Net::readload(string fname, int _timesteps){
     double pl = 0;                  //power load
     double tot_Kw = 0;              //filtered total power consumed for all buildings in one timestep
     int _time_count = 0;            //counts all time instances
+    
+    
+    map<string,string>::iterator result;
+    //map<string,CAgent>::iterator iter=m_AgentClients.find(strAgentName);
+    vector<int> position; //record the position of the building number
+    for (auto k: busmap) {
+       // cout <<"Key!!! "<< k.first<<" Value!!!"<< k.second << endl;
+        //if(n.second!=""){
+        int tag=0;
+        if(k.second!=""){
+            for (int i=0; i < b_num.size(); i++){
+                if(b_num[i]==k.second){
+                    position.push_back(i);
+                    cout<<"The position is "<<i<<endl;
+                    tag=1;
+                    break;
+                    
+                }
+            }
+            if(tag!=1){
+                cout<<"value exists but not in the csv file."<<endl;
+                position.push_back(-1);
+            }else{
+                cout<<"value exists and in the csv."<<endl;
+            }
+            
+        }else{
+            cout<<"value does not exist."<<endl;
+            position.push_back(-1);
+        }
+            //cout<<find(busmap.begin() , busmap.end() , n.second)<<"!!!!!"<<endl;
+            //if(vector<int>::const_iterator result = find(vec.begin() , vec.end() , search_value);)
+    }
+
+    //cout<<"!!! value is "<<busmap["1008B1T1"]<<"; "<<endl;
+    /*for(auto n: position){
+        cout<<"the position vector is "<<n<<endl;
+    }*/
+   
     while(file.peek()!=EOF)         //peek next char is not the end
     {
-        getline(file,line);                           //third line store in 'line'
+        getline(file,line);                           //second line store in 'line'
+        
+        //i=0;                                          //initialize i when starting each new line
+        std::stringstream copy(line);                 //store the whole line into copy, copy is the string stream
+        getline(copy,word,',');                       //first column to ignore
+        getline(copy,word,',');
+        tag.push_back(atoi(word.c_str()));
+        // cout<<"tag is "<< atoi(word.c_str()) <<"; ";
+        tot = 0;                    //initialize total power when starting each new line
+        tot_Kw = 0;                 //initialize filtered total power when starting each new line
+        //int n =0;
+        
+        vector<double> pl_one_line = {};
+        
+        while(getline(copy,word,','))                 //start with the second column, while each word
+        {
+            if(word==""){
+                pl = 0;
+            }else{
+                
+                int len=word.length()-2;                  //erase 'kW'
+                string c=word.substr(0,len);              //new string, only power value
+            
+                tot_Kw +=  atof(c.c_str());               //convert string to float
+                pl = atof(c.c_str())/(1000*bMVA);         //power demand for one building, baseMVA: max power. bMVA=100
+            }
+            pl_one_line.push_back(pl);
+            //cout<<"sdkflals "<< pl<<endl;
+            
+            /*if (pl <= 0.05) {                                  //filter buildings with power >5000kW
+                cout <<  "pl is " << pl*1000*bMVA << " ;";
+                nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW, push the remaining buildings to nodes
+                i++;
+                n++;
+            }*/
+            
+            //cout <<"number of node is " << n <<" ;" ;
+            //tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];  //*MW. calculate the filtered total power for each
+        }
+        
+        for(auto n: pl_one_line){
+            cout<<"kkk "<<n<<" ; "<<endl;
+        }
+        
+        int i = 0;
+        for(auto k: position){
+            //cout<<"888position is "<<pl_one_line[k]<<" ; "<<endl;
+            if((k==-1)|(pl_one_line[k]>0.05)){
+                nodes[i]->_cond[0]->_pl.push_back(0);
+            }else{
+                nodes[i]->_cond[0]->_pl.push_back(pl_one_line[k]);
+            }
+            i++;
+            tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];  //*MW. calculate the filtered total power for each
+        }
+        
+        //cout << "Original TOTAL Kw = " << tot_Kw << endl;  //cout for each line (each timestep)
+        cout << "TOTAL Kw = " << tot*1000*bMVA << endl;
+        
+        remain = fmax(0, 0.1 - tot);              //assumed limit=10MW  (which is the average total consumption (power)...making sure no bus gets negative power
+        //shouble be changed again when the loadfile is accurate*
+        
+        double tot2 = tot;
+        
+        av = remain/(nodes.size() - i);          //fill the remaining part buildings for average values
+        for (int j = i; j < nodes.size(); j++)
+        {
+            nodes[j]->_cond[0]->_pl.push_back(av);
+            tot2 += av;
+        }
+        
+        _time_count++;
+    }
+    
+    for (int i=0; i<nodes.size(); i++){
+        for(int j=0; j<nodes[i]->_cond[0]->_pl.size(); j++){
+            cout<<"node is "<<nodes[i]->_cond[0]->_pl[j]<<" ;";
+        }
+        cout<<endl;
+    }
 
+
+    
+    /*while(file.peek()!=EOF)         //peek next char is not the end
+    {
+        getline(file,line);                           //second line store in 'line'
+        
         i=0;                                          //initialize i when starting each new line
         std::stringstream copy(line);                 //store the whole line into copy, copy is the string stream
         getline(copy,word,',');                       //first column to ignore
         getline(copy,word,',');
         tag.push_back(atoi(word.c_str()));
-       // cout<<"tag is "<< atoi(word.c_str()) <<"; ";
+        // cout<<"tag is "<< atoi(word.c_str()) <<"; ";
         tot = 0;                    //initialize total power when starting each new line
         tot_Kw = 0;                 //initialize filtered total power when starting each new line
         int n =0;
-       
+        
         while(getline(copy,word,','))                 //start with the second column, while each word
         {
-//            int length=word.length();
             int len=word.length()-2;                  //erase 'kW'
-//            if (len !=2 ) {
-//                continue;
-//            }
-            
             string c=word.substr(0,len);              //new string, only power value
             
-          
-//            double test = atof(c.c_str());          //simulate pl(i,t)
-//            cout << "bus" << i << " pl = ";
             tot_Kw +=  atof(c.c_str());               //convert string to float
             pl = atof(c.c_str())/(1000*bMVA);         //power demand for one building, baseMVA: max power. bMVA=100
-            //cout << "base MVA is "<<bMVA<<" ;";
-            
-            
-/*
-            if (pl > 0.1) {
-                nodes[i]->_cond[0]->_pl.push_back(0);
-//                cerr << " 0; ";
-            }
-            else {
-//                cout <<  " " << pl << " ;";
-                nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW
-            }
- 
-*/
             if (pl <= 0.05) {                                  //filter buildings with power >5000kW
                 cout <<  "pl is " << pl*1000*bMVA << " ;";
                 nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW, push the remaining buildings to nodes
@@ -1322,42 +1536,31 @@ int Net::readload(string fname, int _timesteps){
             }
             
             cout <<"number of node is " << n <<" ;" ;
-            tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];  //*MW. calculate the filtered total power for each timestep
-//            i++;  //indicate reading next word (next building)
-//            cout << endl;
+            tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];  //*MW. calculate the filtered total power for each
         }
         
         cout << "Original TOTAL Kw = " << tot_Kw << endl;  //cout for each line (each timestep)
         cout << "TOTAL Kw = " << tot*1000*bMVA << endl;
-       // cout << "node = " << n << endl;
         
-//        cout << "My TOTAL = " << tot << "__"<< nodes[i]->_cond[0]->_pl.size()-1 << endl;
         remain = fmax(0, 0.1 - tot);              //assumed limit=10MW  (which is the average total consumption (power)...making sure no bus gets negative power
-                                                  //*shouble be changed again when the loadfile is accurate*
+        //shouble be changed again when the loadfile is accurate*
         
         double tot2 = tot;
-    
+        
         av = remain/(nodes.size() - i);          //fill the remaining part buildings for average values
         for (int j = i; j < nodes.size(); j++)
         {
             nodes[j]->_cond[0]->_pl.push_back(av);
             tot2 += av;
         }
-//        cout << "TOTAL2 = " << tot2 << endl;
-//        for (int j = 0; j< nodes.size(); j++)
-//        {cout<<j<<" "<<nodes[j]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1]<<endl;}
         
-//        t++;
         _time_count++;
-     }
-    /*if (pl <= 0.05) {//filter buildings with power >5000kW
-        cout <<  "pl is " << pl*1000*bMVA << " ;";
-        nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW
-        //n++;
     }*/
+   
     cout << "total number of timesteps = " << _time_count << endl;
     int sub_time_count = _time_count/_timesteps; //time count of each division
     cout << "subtime = " << sub_time_count << endl;
+    vector<float> sum_load_days;
     float sum_load_;
     float avg_sub_time_load;
     vector<double> av_loads;
@@ -1375,9 +1578,9 @@ int Net::readload(string fname, int _timesteps){
         cout << "av load for bus " << i << " = ";
         for (int t = 1; t <= _timesteps; t++) {
             sum_load_ = 0;
-                for (int stc = (t-1)*sub_time_count; stc < (t-1)*sub_time_count + sub_time_count; stc++) {
-                    sum_load_ += nodes[i]->_cond[0]->_pl[stc]; //sum for each division
-                }
+            for (int stc = (t-1)*sub_time_count; stc < (t-1)*sub_time_count + sub_time_count; stc++) {
+                sum_load_ += nodes[i]->_cond[0]->_pl[stc]; //sum for each division
+            }
             avg_sub_time_load = sum_load_/sub_time_count;
             av_loads.push_back(avg_sub_time_load);
             cout << " ; " << avg_sub_time_load;
@@ -1389,34 +1592,31 @@ int Net::readload(string fname, int _timesteps){
         nodes[i]->_cond[0]->_pl = av_loads;
         av_loads.clear();
     }
+    
     std::sort(pairs.begin(), pairs.end(), mypair_comp());
+    
     for (int i = 0; i < 20; i++) { //first 20 buidling install
         //cout <<"pairs" << pairs[i].first << "  " << pairs[i].second << endl;
         nodes[pairs[i].first]->_cand = true;
     }
+    
     for (auto n:nodes){
-
+        
         if (n->ID==155){ //Concessions Building Students' Association (ANUSA)
             n->_inst = true;
             n->max_pv_size = (14.28)/(0.218);
-        };
-        if (n->ID==185){ //Lennox House Block F University Preschool
+        }
+        
+        else if (n->ID==185){ //Lennox House Block F University Preschool
             n->_inst = true;
             n->max_pv_size = (5.32+4.94)/(0.218); //using lowest radiation,to get max pv size
         }
-        /*else if (n->ID==135){ //Lennox House Block G Heritage Preschool
-            n->_inst = true;
-            n->max_pv_size = (4.94)/(0.218);
-        }*/
+        
         else if (n->ID==5){ //Frank Fenner
             n->_inst = true;
             n->max_pv_size = 115;
         }
-        /*else if (n->ID==27){ //Lena Karmel
-            n->_inst = true;
-            n->max_pv_size = (28.56)/(0.218);
-        }*/
-
+        
         else if (n->ID==66){ //Sir Roland Wilson Building
             n->_inst = true;
             n->max_pv_size = 109;
@@ -1484,192 +1684,14 @@ int Net::readload(string fname, int _timesteps){
         else {
             n->max_pv_size =  300;
         }
-
+        
     }
     return 0;
 }
 
 
 
-/*int Net::readload_direct(string fname, int _timesteps){
-    cout << "Loading file " << fname << endl;
-    ifstream file(fname.c_str());
-    if(!file.is_open()){
-        cout << "Could not open file\n";
-        return -1;
-    }
-    
-    if(file.peek()==EOF)
-    {cout << "File is empty" <<endl;
-        return 999;
-    }
-    
-    for (auto n : nodes) {
-        n->_cond[0]->_pl.pop_back();
-        //        cout << "pl size = " << n->_cond[0]->_pl.size() << endl;
-    }
-    int i=0;                                         //number of bus
-    
-    //    int pos=0;
-    
-    string line;
-    string word;
-    
-    getline(file,line);                               //first line to ignore
-    //    getline(file,line);                               //second line to ignore
-    
-    double av = 0;
-    double tot = 0;
-    double remain = 0;
-    double pl = 0;
-    double tot_Kw = 0;
-    int _time_count = 0; //counts all time instances
-    while(file.peek()!=EOF)
-    {
-        getline(file,line);                           //third line store in 'line'
-        
-        i=0;                                          //initialize i, new line
-        std::stringstream copy(line);                 //store the whole line into copy
-        getline(copy,word,',');                       //first column to ignore
-        tot = 0;
-        tot_Kw = 0;
-        while(getline(copy,word,','))                 //start with the second column
-        {
-            //            int length=word.length();
-            int len=word.length()-2;                  //erase 'kW'
-            //            if (len !=2 ) {
-            //                continue;
-            //            }
-            
-            string c=word.substr(0,len);
-            
-            
-            //            double test = atof(c.c_str());            //simulate pl(i,t)
-            //            cout << "bus" << i << " pl = ";
-            tot_Kw +=  atof(c.c_str());
-            pl = atof(c.c_str())/(1000*bMVA);//power demand for one building
-            
-            
-            
-            if (pl > 0.1) {
-                nodes[i]->_cond[0]->_pl.push_back(0);
-                //                cerr << " 0; ";
-            }
-            else {
-                //                cout <<  " " << pl << " ;";
-                nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW
-            }
-            
-            
-            tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];                                      //*MW
-            i++;
-            //            cout << endl;
-        }
-        cout << "Original TOTAL Kw = " << tot_Kw << endl;
-        cout << "TOTAL Kw = " << tot*1000*bMVA << endl;
-        
-        //        cout << "My TOTAL = " << tot << "__"<< nodes[i]->_cond[0]->_pl.size()-1 << endl;
-        remain = fmax(0, 0.1 - tot);              //assumed limit=10MW  (which is the average total consumption (power)...making sure no bus gets negative power
-        //*shouble be chenged again when the loadfile is accurate*
-        
-        /* double tot2 = tot;  // no need for average
-        
-        av = remain/(nodes.size() - i);//fill the remaining part buildings for average values
-        for (int j = i; j < nodes.size(); j++)
-        {
-            nodes[j]->_cond[0]->_pl.push_back(av);
-            tot2 += av;
-        }*/
-        //        cout << "TOTAL2 = " << tot2 << endl;
-        //        for (int j = 0; j< nodes.size(); j++)
-        //        {cout<<j<<" "<<nodes[j]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1]<<endl;}
-        
-        //        t++;
- /*       _time_count++;
-    }
-    cout << "total number of timesteps = " << _time_count << endl;
-    int sub_time_count = _time_count/_timesteps; //time count of each division
-    cout << "subtime = " << sub_time_count << endl;
-    float sum_load_;
-    float avg_sub_time_load;
-    vector<double> av_loads;
-    typedef std::pair<int, double> myPair_type;
-    
-    struct mypair_comp{
-        bool operator()(myPair_type const& lhs, myPair_type const& rhs){
-            return lhs.second > rhs.second;
-        }
-    };
-    vector<myPair_type> pairs;//order decreasing average load
-    double tot_aver = 0;
-    for (int i = 0; i < nodes.size(); i++) {
-        tot_aver = 0;
-        cout << "av load for bus " << i << " = ";
-        for (int t = 1; t <= _timesteps; t++) {
-            sum_load_ = 0;
-            for (int stc = (t-1)*sub_time_count; stc < (t-1)*sub_time_count + sub_time_count; stc++) {
-                sum_load_ += nodes[i]->_cond[0]->_pl[stc]; //sum for each division
-            }
-            avg_sub_time_load = sum_load_/sub_time_count;
-            av_loads.push_back(avg_sub_time_load);
-            cout << " ; " << avg_sub_time_load;
-            tot_aver += avg_sub_time_load;
-        }
-        tot_aver /= _timesteps;
-        pairs.push_back(make_pair(i, tot_aver));
-        cout << endl;
-        nodes[i]->_cond[0]->_pl = av_loads;
-        av_loads.clear();
-    }
-    std::sort(pairs.begin(), pairs.end(), mypair_comp());
-    for (int i = 0; i < 20; i++) { //first 20 buidling install
-        //cout <<"pairs" << pairs[i].first << "  " << pairs[i].second << endl;
-        nodes[pairs[i].first]->_cand = true;
-    }
-    for (auto n:nodes){
-        
-        if (n->ID==64){
-            n->_inst = true;
-            n->max_pv_size = (14.28)/(0.945);
-        };
-        if (n->ID==42){
-            n->_inst = true;
-            n->max_pv_size = (5.32)/(0.945); //using lowest radiation,to get max pv size
-        }
-        else if (n->ID==135){
-            n->_inst = true;
-            n->max_pv_size = (4.94)/(0.945);
-        }
-        else if (n->ID==27){
-            n->_inst = true;
-            n->max_pv_size = (28.56)/(0.945);
-        }
-        else if (n->ID==156){
-            n->_inst = true;
-            n->max_pv_size = (34.08)/(0.945);
-        }
-        
-        else if (n->ID==3){
-            n->_inst = true;
-            n->max_pv_size = (34.08)/(0.945);
-        }
-        else {
-            n->max_pv_size =  150;
-        }
-        
-    }
-    return 0;
-}*/
 
-
-
-
-
-
-    
-    
-    
-    
 //    
 //int Net::choosetime(){
 //    string time;
@@ -1725,7 +1747,7 @@ int Net::readFile(string fname){
     file >> word;
 //    getline(file, word);
     _name = word;
-//    cout << _name << endl;
+//    cout <<"name is "<< _name << endl;
     while (word.compare("mpc.baseMVA")){
         file >> word;
     }
@@ -1734,7 +1756,7 @@ int Net::readFile(string fname){
     bMVA = atoi(word.c_str());
 //    cout << "BaseMVA = " << bMVA << endl;
     
-    /* Node name */
+    /* Bus name */
     while (word.compare("mpc.bus_name")){
         file >> word;
     }
@@ -1754,6 +1776,7 @@ int Net::readFile(string fname){
     Node* node = NULL;
     Node* node_clone = NULL;
     file >> word;
+    int i=0;
     while(word.compare("];")){
         name = word.c_str();
         //cout<<"Bus name is "<<name<<"; ";
@@ -1777,9 +1800,11 @@ int Net::readFile(string fname){
         getline(file, word,';');
 //        vmin = atof(word.c_str());
         vmin = 0.94;
-        node = new Node(bus_name[id-1], pl, ql, gs, bs, vmin, vmax, kvb, 1);
-        node_clone = new Node(bus_name[id-1], pl, ql, gs, bs, vmin, vmax, kvb, 1);
-        cout<<"Bus name is "<<bus_name[id-1] <<"; "<<"\n";
+        node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
+        node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
+        //cout<<"Bus name is "<<bus_name[id-1] <<"; "<<"\n";
+        i++;
+        cout<<"times is "<<i<<"; ";
         node->vs = vs;
         add_node(node);
         _clone->add_node(node_clone);

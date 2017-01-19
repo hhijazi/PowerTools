@@ -31,6 +31,7 @@ public:
     Net*                _net;
     SolverType          _stype;
     int                 _timesteps;
+    int                 _days = 3;
 
     
     

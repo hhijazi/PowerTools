@@ -1,14 +1,14 @@
 Id number,Code,Building Number,Building Name
-1,'1008B1T1';,B109,Kingsley Street Parking Station
-2,, B24,Copland Building
+1,1008B1T1';,B109,Kingsley Street Parking Station
+2,'1008B1T2';,B24,Copland Building
 3,'1225E1';,B116,Gould Wing
 4,'1225E2';,B133,Wes Whitten Building
 5,'1225T1';,B141,Frank Fenner Building
 6,'1225T2';,B47,D.A. Brown Building
-7,'1240E1';,B50T1,Laurus Wing Stage 1
-8,'1240T1';,B50T2,Laurus Wing Stage 2
+7,'1240E1';,B50T,Laurus Wing Stage 1
+8,'1240T1';,,Laurus Wing Stage 2
 9,'1240T2';,B50,Ursula Hall
-10,'1241E1';,B10T1,Chancelry 10T1
+10,'1241E1';,B10T,Chancelry 10T1
 11,'1241T1';,B10,Chancelry Building
 12,'1348E1';,B113,Jaeger 5
 13,'1348E2';,B142,Jaeger 8
@@ -21,7 +21,7 @@ Id number,Code,Building Number,Building Name
 20,'1853B1T1';,B20,University Union Building
 21,'1853B2T2';,B22,Haydon-Allen Building
 22,'1952B1E1';,B12,Melville Hall
-23,'1952B1T1';,B13T1,Australian National Dictionary Centre
+23,'1952B1T1';,B13T,Australian National Dictionary Centre
 24,'1952B2E2';,B13,Beryl Rawson Building
 25,'1952B2T2';,B14,AD Hope Building
 26,'2002E1';,B29,Drill Hall Gallery
@@ -31,7 +31,7 @@ Id number,Code,Building Number,Building Name
 30,'2972T1';,B19,David Cocking Building
 31,'3294B1E1';,B1A,Molley Huxley Building
 32,'3294B1T1';,B1,University House
-33,'3294B2E2';,B8,HC Coombs BuildingäóîExtension
+33,'3294B2E2';,B8,HC Coombs BuildingŠ—”Extension
 34,'3294B2T2';,B9,HC Coombs Building
 35,'3401E1';,B56A,Leonard Huxley Plant Building
 36,'3401T1';,B56,Leonard Huxley Building
@@ -67,7 +67,7 @@ Id number,Code,Building Number,Building Name
 66,'8007E1';,B120,Sir Roland Wilson Building
 67,'8007T1';,B126,Judith Wright Court
 68,'8500E1';,B46C,RN Robertson Controlled Environment Facility
-69,'8500T1';,B46H,RN Robertson äóñ Old Growth Cabinet Shed
+69,'8500T1';,B46H,RN Robertson Š—– Old Growth Cabinet Shed
 70,'8609E1';,,
 71,'8773B1T1';,B117,Hugh Ennor Building
 72,'8773B2T2';,B53,Central Store
@@ -117,10 +117,10 @@ Id number,Code,Building Number,Building Name
 116,'S1225';,B48,Forestry Building
 117,'S1240';,B51,John XXIII College
 118,'S1241';,B6,Law School - North Wing
-119,'S1348';,B63T1,Research School of Population Health T1
+119,'S1348';,B63T,Research School of Population Health T1
 120,'S1744B1';,,
 121,'S1744B2';,,
-122,'S1853B1';,26A,Manning Clark Centre
+122,'S1853B1';,B26A,Manning Clark Centre
 123,'S1853B2';,,
 124,'S1952B1';,,
 125,'S1952B2';,,
@@ -131,7 +131,7 @@ Id number,Code,Building Number,Building Name
 130,'S3401';,,
 131,'S3411B1';,,
 132,'S3411B2';,,
-133,'S3488';,"B49A,49C","Staff Residence, Bruce Hall Warden's Lodge"
+133,'S3488';,B49A,"Staff Residence, Bruce Hall Warden's Lodge"
 134,'S3492';,,
 135,'S4115';,B73,Old Canberra House
 136,'S4685';,B79A,The Andrew Cockburn Building
@@ -155,8 +155,8 @@ Id number,Code,Building Number,Building Name
 154,'S7673';,,
 155,'S776';,B17,Concessions Building
 156,'S8007';,B77A,27 Brian Lewis Crescent
-157,'S8500';,B46J,RN Robertson äóñ Banksia Greenhouse
-158,'S8773B1';,B88T1,(DOI) Annex Garran Road (Removed June 2016)
+157,'S8500';,B46J,RN Robertson Š—– Banksia Greenhouse
+158,'S8773B1';,B88TH,(DOI) Annex Garran Road (Removed June 2016)
 159,'S8773B2';,B88,South Pavillion
 160,'S8845';,,
 161,'S8972B1';,,
@@ -193,7 +193,7 @@ Id number,Code,Building Number,Building Name
 192,'Z1_7584';,,
 193,'Z1_776';,B89,N/A
 194,'Z1_8007';,B77,University Accommodation Services
-195,'Z1_8500';,B46N,RN Robertson äóñ Acacia Greenhouse
+195,'Z1_8500';,B46N,RN Robertson Š—– Acacia Greenhouse
 196,'Z1_8773';,,
 197,'Z1_8845';,,
 198,'Z1_9142';,,

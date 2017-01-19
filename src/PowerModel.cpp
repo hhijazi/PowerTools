@@ -33,13 +33,13 @@ void PowerModel::build(int time_steps){
     _solver = new PTSolver(_model, _stype);
     switch (_type) {
 
-        case ACPF_T:
+        case ACPF_T:  //no pv no battery
             add_AC_Rect_vars_Time();
             post_AC_PF_Time();
             min_cost_time();
             break;
 
-        case ACPF_PV_T:
+        case ACPF_PV_T: //pv only
             add_AC_Rect_PV_vars_Time();
             post_AC_PF_PV_Time();
             min_cost_pv();
@@ -51,7 +51,7 @@ void PowerModel::build(int time_steps){
             min_cost_pv_batt();
             break;
 
-        case ACPF_PV_BATT_T:
+        case ACPF_PV_BATT_T: //pv and battery
             add_AC_Rect_PV_Batt_vars_Time();
             post_AC_PF_PV_Batt_Time();
             min_cost_pv_batt();
@@ -240,8 +240,8 @@ void PowerModel::post_AC_PF_PV_Batt_Time(){
     
     for (auto n:_net->nodes) {  //for each node, add constraits
         add_AC_KCL_PV_Batt_Time(n);  //KCL constraints for PV and batt, time dependent
-        if (n->candidate()) {  //if this node is candidate for PV installation
-            add_AC_link_Batt_Time(n);  //battery constraints
+        if (n->candidate()) {  //if this node is candidate
+            add_AC_link_Batt_Time(n);  //battery constraints??????
             add_link_PV_Rate(n);       //with curtailment, PV constraints, capacity is a variable
 //            add_link_PV_Rate_NoCurt_Time(n);      //no curtailment
         }
@@ -1187,42 +1187,90 @@ void PowerModel::min_cost_batt(){
 }
 
 /** Objective Functions */
+/*void PowerModel::min_cost_pv_batt(){
+    _objective = MinCostPvBatt;
+    Function* obj = new Function();
+    //for (int month = 1; month < 5; month++){
+        for (int t = 0; t < _timesteps; t++) {
+            for (auto g:_net->gens) {
+                //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
+                //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+                if (_net->tag[t]==1){
+ 
+                    *obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                }else{
+ 
+                    *obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                }
+                
+                //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+            }
+            
+        }
+   // }
+   // *obj *=10;   // 10 years
+    for (auto n:_net->nodes){
+        if (n->candidate()) {
+            *obj += 2000.*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+            *obj += (350.*_net->bMVA*1000)*n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
+            
+        }
+    }
+    //*obj /=1000000;    //120
+    //*obj = *obj/_timesteps;
+    _model->setObjective(obj);
+    _model->setObjectiveType(minimize); // currently for gurobi
+    obj->print(true);
+    //    _solver->run();
+}*/
+
+
+/** Objective Functions */
 void PowerModel::min_cost_pv_batt(){
     _objective = MinCostPvBatt;
     Function* obj = new Function();
-    for (int t = 0; t < _timesteps; t++) {
-        for (auto g:_net->gens) {
-//            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
-//            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
-            if (_net->tag[t]==1){
-                *obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-            }else{
-                *obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+        for (int t = 0; t < _timesteps*_days; t++) {
+            for (auto g:_net->gens) {
+                //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
+                //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+                    if ((t>=0)&&(t<24)){ //summer Feb
+                        *obj += 20*6*_net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;
+                    }
+                    if ((t>=24)&&(t<48)){ //spring or autumn Sep
+                        *obj += 20*6*_net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;
+                    }
+                
+                    //*obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                    if ((t>=48)&&(t<72)){ //weekend
+                        *obj += 2*4*12*_net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;
+                    }
+                    //*obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                
+                
+                //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
             }
             
-//            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
-
-    }
+    
+    *obj *=10;   // 10 years
         for (auto n:_net->nodes){
             if (n->candidate()) {
-//                *obj += 0.0000001*n->pv_rate; /* 2 dollars per W = 2000 dollars per square meter divided by ten years */
-//                *obj += n->batt_cap; /* 3500 dollars per 10kW battery divided by ten years */
-                *obj += 2000./(10*365.)*n->pv_rate; /* 2 dollars per W = 2000 dollars per square meter divided by ten years */
-                *obj += (350.*_net->bMVA*1000)/(10*365)*n->batt_cap; /* 3500 dollars per 10kW battery divided by ten years */
+//                *obj += 0.0000001*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+//                *obj += n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
+                *obj += 2000.*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+                *obj += (350.*_net->bMVA*1000)*n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
                 
             }
         }
+    *obj /=1000000;    //120
     //*obj = *obj/_timesteps;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
     obj->print(true);
     //    _solver->run();
 }
-
-
-
 
 
 
@@ -1447,14 +1495,14 @@ void PowerModel::add_AC_Rect_Batt_vars_Time(){
 void PowerModel::add_Battery_vars(){
     for (auto n:_net->nodes) {  //for all nodes
         if(n->candidate()) {  //if this node is a candidate for PV installation
-            n->pch_t.resize(_timesteps);  //active power charging value, reserve mem to variables
-            n->pdis_t.resize(_timesteps);  //active power discharging value
-            n->soc_t.resize(_timesteps);  //state of charge
+            n->pch_t.resize(_timesteps*_days);  //active power charging value, reserve mem to variables
+            n->pdis_t.resize(_timesteps*_days);  //active power discharging value
+            n->soc_t.resize(_timesteps*_days);  //state of charge
             n->batt_cap.init("battery capacity"+n->_name, 0, 500./(_net->bMVA*1000.));  //battery capacity, give name to variable
             _model->addVar(n->batt_cap);   //add battery capacity to model
         }
     }
-    for (int t = 0; t < _timesteps; t++) {  //for each time step, initialize and add 3 variables dependent on time
+    for (int t = 0; t < _timesteps*_days; t++) {  //for each time step, initialize and add 3 variables dependent on time
         for (auto n:_net->nodes) {
             if(n->candidate()) {  //if this node is a candidate for PV installation
                 n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 500./(_net->bMVA*1000.));
@@ -1553,32 +1601,31 @@ void PowerModel::add_AC_Rect_PV_vars_Time(){
         if (a->status==0) {  //if disconnect
             continue;
         }
-        a->pi_t.resize(_timesteps);  //active power src, resize: reserve mem for variable
-        a->pj_t.resize(_timesteps);  //active power dest
-        a->qi_t.resize(_timesteps);  //reactive power src
-        a->qj_t.resize(_timesteps);  //reactive power dest
+        a->pi_t.resize(_timesteps*_days);  //active power src, resize: reserve mem for variable
+        a->pj_t.resize(_timesteps*_days);  //active power dest
+        a->qi_t.resize(_timesteps*_days);  //reactive power src
+        a->qj_t.resize(_timesteps*_days);  //reactive power dest
 
     }
 
     for (auto n:_net->nodes) {  //nodes in network
-        n->vr_t.resize(_timesteps);  //Re(voltage)
-        n->vi_t.resize(_timesteps);  //Im(voltage)
+        n->vr_t.resize(_timesteps*_days);  //Re(voltage)
+        n->vi_t.resize(_timesteps*_days);  //Im(voltage)
         if (n->candidate() || n->inst()) {  //
-            n->pv_t.resize(_timesteps);  //Active power from PV pannels (time dependent)
+            n->pv_t.resize(_timesteps*_days);  //Active power from PV pannels (time dependent)
             if (n->candidate()) {  //if this node is a candidate for PV installation
-                n->pv_rate.init("pv_rate_node_"+n->_name, 0, 0.218*n->max_pv_size);  //initiate pv_rate: Size for PV pannels (sq.m). give name to it
+                n->pv_rate.init("pv_rate_node_"+n->_name, 0, 0.218*n->max_pv_size);  //initiate pv_rate: Size for PV pannels (sq.m). give name to it, give lower bound and upper bound to the function.
                 _model->addVar(n->pv_rate);  //add Variable to model
             }
         }
     }
     
     for (auto g:_net->gens) {  //generators
-        g->pg_t.resize(_timesteps);  //Active power generation variable (time dependent)
-        g->qg_t.resize(_timesteps);  //Reactive power generation variable (time dependent)
+        g->pg_t.resize(_timesteps*_days);  //Active power generation variable (time dependent)
+        g->qg_t.resize(_timesteps*_days);  //Reactive power generation variable (time dependent)
     }
 
-    
-    for (int t = 0; t < _timesteps; t++) {   //for each time step, initialise variables and add them to model
+    for (int t = 0; t < _timesteps*_days; t++) {   //for each time step, initialise variables and add them to model
 
         for (auto a:_net->arcs) {
             if (a->status==0) {
@@ -2114,7 +2161,7 @@ void PowerModel::add_SOCP_Angle_Bounds_Time(Arc *a){
 }
 
 void PowerModel::add_AC_Angle_Bounds_Time(Arc *a){
-    for (int t=0; t<_timesteps; t++){
+    for (int t=0; t<_timesteps*_days; t++){
         if (a->status == 1 && !a->parallel) {
             /*     Constraint Wr_Wi_l("Theta_Delta_LB");
              Wr_Wi_l += a->wi_t[t];
@@ -2144,7 +2191,7 @@ void PowerModel::add_AC_Angle_Bounds_Time(Arc *a){
 
 
 void PowerModel::add_AC_thermal_Time(Arc* a){
-    for (int t = 0; t < _timesteps; t++) {
+    for (int t = 0; t < _timesteps*_days; t++) {
         /** subject to Thermal_Limit {(l,i,j) in arcs}: p[l,i,j]^2 + q[l,i,j]^2 <= s[l]^2;*/
         
         if (a->status==1 && !a->dest->_has_gen && !a->src->_has_gen) {
@@ -2244,7 +2291,7 @@ void PowerModel::add_AC_Angle_Bounds(Arc* a, bool switch_lines){
 
 
 void PowerModel::add_AC_Power_Flow_Time(Arc *a){
-    for (int t = 0; t < _timesteps; t++) {
+    for (int t = 0; t < _timesteps*_days; t++) {
         if (a->status==1) { //if nodes are connected
             /** subject to Flow_P_From {(l,i,j) in arcs_from}:
              p[l,i,j] = g[l]*(v[i]/tr[l])^2
@@ -2408,7 +2455,7 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
     _model->addConstraint(SOC_Batt_init);
     
     
-    for (int t = 0; t < _timesteps; t++) {
+    for (int t = 0; t < _timesteps*_days; t++) {
         
 /*
         Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));                         //soc[t+1]=soc[t]+pch-pdis
@@ -2439,7 +2486,7 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
 
     }
     
-    for (int t = 0; t < _timesteps-1; t++){ //change timestep back to _timesteps-1 with new addition
+    for (int t = 0; t < _timesteps*_days-1; t++){ //change timestep back to _timesteps-1 with new addition
 
         //new addition
         Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));
@@ -2463,6 +2510,7 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
         //new addition
         Constraint Change_of_charge_limit("Maximum_Charging"+n->_name+"_"+to_string(t));
         Change_of_charge_limit += n->pch_t[t+1] - n->pch_t[t] - (0.5*24/_timesteps)*n->batt_cap;
+        //cout<<"timestep is "<< _timesteps<<" ; "<<endl;
         Change_of_charge_limit <= 0;
         _model->addConstraint(Change_of_charge_limit);
 
@@ -2482,12 +2530,12 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
     }
     //new  addition
         Constraint Last_step_ch("Last_step"+n->_name);
-        Last_step_ch += n->pch_t[_timesteps-1];
+        Last_step_ch += n->pch_t[_timesteps*_days-1];
         Last_step_ch = 0;
         _model->addConstraint(Last_step_ch);
 
         Constraint Last_step_dis("Last_step"+n->_name);
-        Last_step_dis += n->pdis_t[_timesteps-1];
+        Last_step_dis += n->pdis_t[_timesteps*_days-1];
         Last_step_dis = 0;
         _model->addConstraint(Last_step_dis);
     //end of new addition
@@ -2496,7 +2544,7 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
 
 
 void PowerModel::add_link_PV_Rate(Node*n){
-    for (int t = 0; t < _timesteps; t++) {
+    for (int t = 0; t < _timesteps*_days; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t];
         Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (0.945/ (1000 * _net->bMVA));
@@ -2513,7 +2561,7 @@ void PowerModel::add_link_PV_Rate(Node*n){
 }
 
 void PowerModel::add_link_PV_fixed_Rate(Node*n){
-    for (int t = 0; t < _timesteps; t++) {
+    for (int t = 0; t < _timesteps*_days; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t];
         Link_PV_Rate -= (_net->_radiation[t]) * (n->max_pv_size) * (0.945/ (1000 * _net->bMVA));
@@ -2530,7 +2578,7 @@ void PowerModel::add_link_PV_fixed_Rate(Node*n){
 }       
 
 void PowerModel::add_AC_KCL_PV_Batt_Time(Node* n){
-    for (int t = 0; t < _timesteps; t++) { // for each time step
+    for (int t = 0; t < _timesteps*_days; t++) { // for each time step
         
         /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
          subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
@@ -2558,6 +2606,7 @@ void PowerModel::add_AC_KCL_PV_Batt_Time(Node* n){
         KCL_Q += sum_Time(n->get_out(), "qi", t);
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
+        //cout<<"n gen is "<<n->_gen[0]<<endl;
         KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - n->ql();  //bs:Returns the real part of the bus shunt. ql:Returns the reactive power load at this bus at given time step. bs*|W|^2+ql, sum for all time steps.
         //            cout << n->_name << " qload = " << n->ql() << endl;
         KCL_Q = 0;
@@ -3487,7 +3536,7 @@ void PowerModel::add_AC_Voltage_Bounds_Time(Node* n){
     /** subject to V_UB{i in buses}: vr[i]^2 + vi[i]^2 <= v_max[i]^2;
      subject to V_LB{i in buses}: vr[i]^2 + vi[i]^2 >= v_min[i]^2;
      */
-     for (int t = 0; t < _timesteps; t++) {
+     for (int t = 0; t < _timesteps*_days; t++) {
         Constraint V_UB("V_UB");
         V_UB += ((n->vi_t[t])^2) + ((n->vr_t[t])^2);
         V_UB <= pow(n->vbound.max,2);
