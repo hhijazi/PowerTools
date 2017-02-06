@@ -1059,6 +1059,7 @@ int Net::readFile(string fname){
     int status = 0;
     getline(file, word);
     file >> word;
+    std::vector<bool> gen_status;
     while(word.compare("];")){
         name = word.c_str();
         node = get_node(name);
@@ -1077,6 +1078,7 @@ int Net::readFile(string fname){
         file >> word;
         pmin = atof(word.c_str())/bMVA;
         getline(file, word,'\n');
+        gen_status.push_back(status==1);
         if(status==1){
             node->_has_gen = true;
             Gen* g = new Gen(node, to_string(node->_gen.size()), pmin, pmax, qmin, qmax);
@@ -1084,8 +1086,8 @@ int Net::readFile(string fname){
             g->qs = qs;
             gens.push_back(g);
             node->_gen.push_back(g);
+//            g->print();
         }
-//        g->print();
 //        getline(file, word);
         file >> word;
     }
@@ -1097,15 +1099,19 @@ int Net::readFile(string fname){
     double c0 = 0, c1 = 0,c2 = 0;
     getline(file, word);
 //    cout<<"Number of generators = " << gens.size() << endl;
-    for (int i = 0; i < gens.size(); i++) {
+    int gen_counter = 0;
+    for (int i = 0; i < gen_status.size(); ++i) {
         file >> ws >> word >> ws >> word >> ws >> word >> ws >> word >> ws >> word;
         c2 = atof(word.c_str());
         file >> word;
         c1 = atof(word.c_str());
         file >> word;
         c0 = atof(word.c_str());
-        gens[i]->set_costs(c0, c1, c2);
-//        gens[i]->print();
+        if (gen_status[i]) {
+          gens[gen_counter]->set_costs(c0, c1, c2);
+//        gens[gen_counter]->print();
+          gen_counter++;
+        }
         getline(file, word);
     }
     file.seekg (0, file.beg);
