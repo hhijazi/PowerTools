@@ -190,5 +190,7 @@ public:
     
     /** sets all nodes to unexplored */
     void reset_nodeExplored();
+
+    void get_tree_decomp_bags_3d();
 };
 #endif

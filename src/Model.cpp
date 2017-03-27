@@ -178,10 +178,10 @@ void Model::addConstraint(Constraint c_){
     _cons.push_back(c);
     c->set_idx(_idx_con++);
     var_* vi = NULL;
-    int vid = 0;
+//    int vid = 0;
 //    Function* dfdx = NULL;
     for(auto it = c->_vars.cbegin(); it != c->_vars.end(); it++) {
-        vid = it->first;
+//        vid = it->first;
         vi = it->second;
         vi->addConstraint(c);
 //        if (c->get_ftype()==nlin_) {
@@ -212,7 +212,7 @@ void Model::addConstraint(Constraint c_){
     }
     _nnz_g+=c->get_nb_vars();
 
-//    c->print();
+    c->print();
 };
 
 void Model::addConstraint(Constraint* c){
@@ -253,7 +253,7 @@ void Model::addConstraint(Constraint* c){
     }
     _nnz_g+=c->get_nb_vars();
     
-//        c->print();
+        c->print();
 };
 
 
@@ -319,6 +319,7 @@ void Model::concretise(meta_Constraint& mc, int meta_link, string name){
     c->_ftype = mc._ftype;
     c->_rhs = mc._rhs;
     c->_meta_link = meta_link;
+    c-> is_cut = mc.is_cut;
     
     //    c += this->Function::concretise();
 //    int cid = 0;
@@ -885,6 +886,7 @@ void Model::fill_in_jac_nnz(int* iRow , int* jCol){
 void Model::fill_in_hess_nnz(int* iRow , int* jCol){
     int idx=0;
     int vid = 0, vjd = 0;
+    var_* vj = nullptr;
 //    var_* v = NULL;
     /* return the structure of the hessian */
     for(auto& v: _vars)
@@ -896,8 +898,19 @@ void Model::fill_in_hess_nnz(int* iRow , int* jCol){
             if (vjd <= vid) { // This is a symmetric matrix, fill the lower left triangle only.
                 iRow[idx] = vid;
                 jCol[idx] = vjd;
-                v->_hess_id.insert(pair<int, int>(vjd, idx));
-                getVar(vjd)->_hess_id.insert(pair<int, int>(vid, idx));
+                if(v->_hess_id.find(vjd)!=v->_hess_id.end()){
+                    v->_hess_id[vjd] = idx;
+                }
+                else {
+                    v->_hess_id.insert(pair<int, int>(vjd, idx));
+                }
+                vj = getVar(vjd);
+                if(vj->_hess_id.find(vid)!=vj->_hess_id.end()){
+                    vj->_hess_id[vid] = idx;
+                }
+                else {
+                    vj->_hess_id.insert(pair<int, int>(vid, idx));
+                }
 //                _hess_index.insert(pair<string, int>(to_string(vid)+','+to_string(vjd), idx));
                 idx++;
             }

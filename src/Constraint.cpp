@@ -42,6 +42,7 @@ Constraint::Constraint(const Constraint& c){
     _rparent = c._rparent;
     _meta_constr = c._meta_constr;
     _meta_link = c._meta_link;
+    is_cut = c.is_cut;
     for (auto &it:c._meta_coeff){
         _meta_coeff.insert(pair<int, double>(it.first, it.second));
     }

@@ -48,12 +48,15 @@ bool Net::rotation_bag(vector<Node*>* bag){
     Node* n2 = bag->at(1);
     Node* n3 = bag->at(2);
     if (_clone->has_directed_arc(n1, n2) &&  _clone->has_directed_arc(n1,n3)){
+        //cout << "\nTwo arcs from node " << n1->_name;
         return false;
     }
     if (_clone->has_directed_arc(n2, n1) &&  _clone->has_directed_arc(n2,n3)){
+        //cout << "\nTwo arcs from node " << n2->_name;
         return false;
     }
     if (_clone->has_directed_arc(n3, n1) &&  _clone->has_directed_arc(n3,n2)){
+        //cout << "\nTwo arcs from node " << n3->_name;
         return false;
     }
     
@@ -171,14 +174,16 @@ void Net::get_tree_decomp_bags(){
     while (_clone->nodes.size()>2) {
         sort(_clone->nodes.begin(), _clone->nodes.end(), node_compare);
         n = _clone->nodes.back();
+        cout << "\nnode " << n->_name << "\n";
         bag = new vector<Node*>();
-//        cout << "new bag = { ";
+        cout << "new bag = { ";
         for (auto a: n->branches) {
             nn = a->neighbour(n);
             bag->push_back(nn);
-//            cout << nn->_name << ", ";
+            cout << nn->_name << ", ";
         }
         _clone->remove_end_node();
+        if (bag->size()==2) cout << " Missing lines in bag: ";
         for (int i = 0; i<bag->size(); i++) {
             u = bag->at(i);
             for (int j = i+1; j<bag->size(); j++) {
@@ -187,7 +192,166 @@ void Net::get_tree_decomp_bags(){
                     continue;
                 }
                 id = (int)_clone->arcs.size() + 1;
-                //arc = new Arc(u->_name+nn->_name);
+                arc = new Arc(to_string(id));
+                arc->id = id;
+                arc->src = u;
+                arc->dest = nn;
+                arc->imaginary = true;
+                arc->tbound.min = -1.4999;
+                arc->tbound.max = 1.4999;
+                arc->status = 0;
+                //arc->tbound.min = m_theta_lb;
+                //arc->tbound.max = m_theta_ub;
+                arc->connect();
+                _clone->add_arc(arc);
+                if (bag->size()==2) cout << "(" << u->_name << "," << nn->_name << "); ";
+            }
+        }
+        bag->push_back(n);
+        cout << n->_name << "}\n";
+        _bags->push_back(bag);
+        if (bag->size()==3) {
+            nb3++;
+        }
+    }
+
+    int fixed = 1;
+    Arc *a12, *a13, *a32;
+    while (fixed != 0) {
+        fixed = 0;
+        cout << "\nNew iteration";
+        for (auto b: *_bags) {
+            if(b->size() != 3) continue;
+            a12 = _clone->get_arc(b->at(0), b->at(1));
+            a13 = _clone->get_arc(b->at(0), b->at(2));
+            a32 = _clone->get_arc(b->at(2), b->at(1));
+            if((a12->imaginary && a13->imaginary) || (a12->imaginary && a32->imaginary) || (a13->imaginary && a32->imaginary)) continue; //at least two missing lines
+            // check and modify *clone*
+            if(a12->imaginary) {
+                a12->imaginary = false;
+                cout << "\nFixing arc " << a12->_name;
+                a12->print();
+                fixed++;
+            }
+            if(a13->imaginary) {
+                a13->imaginary = false;
+                cout << "\nFixing arc " << a13->_name;
+                a13->print();
+                fixed++;
+            }
+            if(a32->imaginary) {
+                a32->imaginary = false;
+                cout << "\nFixing arc " << a32->_name;
+                a32->print();
+                fixed++;
+            }
+        }
+    }
+//    cout << "\nNumber of 3D bags = " << nb3 << endl;
+}
+
+void Net::get_tree_decomp_bags_3d(){
+    _bags = new vector<vector<Node*>*>();
+    vector<Node*>* bag = nullptr;
+    vector<Node*>* high_dim_bag = nullptr;
+    Node* n = nullptr;
+    Node* u = nullptr;
+    Node* nn = nullptr;
+    Arc* arc = nullptr;
+    Arc* a = nullptr;
+    int id = 0;
+    int nb3 = 0;
+    while (_clone->nodes.size()>2) {
+        sort(_clone->nodes.begin(), _clone->nodes.end(), node_compare);
+        n = _clone->nodes.back();
+        high_dim_bag = new vector<Node*>();
+        //cout << "\nnode " << n->_name << "\n";
+        for (int i = 0; i < n->branches.size(); i++) {
+            if(n->branches.size()-i < 3) break;//
+            //cout << "new bag = { ";
+            bag = new vector<Node*>();
+            a = n->branches[i];
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+            high_dim_bag->push_back(nn);
+            //cout << nn->_name << ", ";
+            a = n->branches[i+1];
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+            //cout << nn->_name << ", ";
+            a = n->branches[i+2];
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+            //cout << nn->_name << "}\n";
+            _bags->push_back(bag);
+        }
+
+        bag = new vector<Node*>();
+        //cout << "new bag = { ";
+
+        if(n->branches.size() >= 2) {
+            a = n->branches[n->branches.size() - 2];
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+            high_dim_bag->push_back(nn);
+            //cout << nn->_name << ", ";
+        }
+        if(n->branches.size() >= 1) {
+            a = n->branches[n->branches.size() - 1];
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+            high_dim_bag->push_back(nn);
+            //cout << nn->_name << ", ";
+        }
+
+        bag->push_back(n);
+        //cout << n->_name << "}\n";
+        _bags->push_back(bag);
+
+        if(n->branches.size() >= 3) {
+            bag = new vector<Node*>();
+            //cout << "new bag = { ";
+            a = n->branches[n->branches.size() - 1];
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+            //cout << nn->_name << ", ";
+
+            bag->push_back(n);
+            //cout << n->_name << ", ";
+
+            a = n->branches[0];
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+            //cout << nn->_name << "}\n";
+            _bags->push_back(bag);
+
+
+            bag = new vector<Node*>();
+            //cout << "new bag = { ";
+
+            bag->push_back(n);
+            //cout << n->_name << ", ";
+
+            a = n->branches[0];
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+            //cout << nn->_name << ", ";
+
+            a = n->branches[1];
+            nn = a->neighbour(n);
+            bag->push_back(nn);
+            //cout << nn->_name << "\n";
+            _bags->push_back(bag);
+        }
+
+        for (int i = 0; i<high_dim_bag->size(); i++) {
+            u = high_dim_bag->at(i);
+            for (int j = i+1; j<high_dim_bag->size(); j++) {
+                nn = high_dim_bag->at(j);
+                if (u->is_connected(nn)) {
+                    continue;
+                }
+                id = (int)_clone->arcs.size() + 1;
                 arc = new Arc(to_string(id));
                 arc->id = id;
                 arc->src = u;
@@ -198,12 +362,8 @@ void Net::get_tree_decomp_bags(){
                 _clone->add_arc(arc);
             }
         }
-        bag->push_back(n);
-//        cout << n->_name << "}\n";
-        _bags->push_back(bag);
-        if (bag->size()==3) {
-            nb3++;
-        }
+        _clone->remove_end_node();
+
     }
 //    cout << "\nNumber of 3D bags = " << nb3 << endl;
 }
@@ -1040,8 +1200,8 @@ int Net::readFile(string fname){
         vmax = atof(word.c_str());
         getline(file, word,';');
         vmin = atof(word.c_str());
-        node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
         node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
+        node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
         node->vs = vs;
         add_node(node);
         _clone->add_node(node_clone);
@@ -1193,6 +1353,7 @@ int Net::readFile(string fname){
 //        cout << "node" << n->ID << ": fill_in = " << n->fill_in << endl;
     }
     get_tree_decomp_bags();
+    cout << "\nm_theta_lb = " << m_theta_lb;
     return 0;
 }
 

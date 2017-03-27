@@ -41,7 +41,35 @@ Arc* Arc::clone(){
     copy->parallel = parallel;
     copy->in_cycle = in_cycle;
     copy->status = status;
+    copy->imaginary = imaginary;
     return copy;
+}
+
+void Arc::init_vars(PowerModelType t){
+    switch(t){
+        case SOCP:
+        case SDP:
+            //cout << "\nt bounds = " << tbound.min << ", " << tbound.max;
+            if (tbound.min < 0 && tbound.max > 0)
+                cs.init("cs("+_name+","+src->_name+","+dest->_name+")",min(cos(tbound.min), cos(tbound.max)), 1.);
+            else
+                cs.init("cs("+_name+","+src->_name+","+dest->_name+")",min(cos(tbound.min), cos(tbound.max)), max(cos(tbound.min),cos(tbound.max)));
+            vv.init("vv("+_name+","+src->_name+","+dest->_name+")",src->vbound.min*dest->vbound.min,src->vbound.max*dest->vbound.max);
+            wr.init("wr("+_name+","+src->_name+","+dest->_name+")",vv.get_lb()*cs.get_lb(), vv.get_ub()*cs.get_ub());
+            //cout << "\nvv bounds = " << vv.get_lb() << ", " << vv.get_ub();
+            //cout << "\nwi bounds0 = " << vv.get_ub()*sin(tbound.min) << ", " << vv.get_ub()*sin(tbound.max);
+            if(tbound.min < 0 && tbound.max > 0)
+                wi.init("wi("+_name+","+src->_name+","+dest->_name+")",vv.get_ub()*sin(tbound.min),sin(tbound.max), vv.get_ub()*sin(tbound.min),sin(tbound.max));
+            if (tbound.min >= 0)
+                wi.init("wi("+_name+","+src->_name+","+dest->_name+")",vv.get_lb()*sin(tbound.min), vv.get_ub()*sin(tbound.max));
+            if (tbound.max <= 0)
+                wi.init("wi("+_name+","+src->_name+","+dest->_name+")",vv.get_ub()*sin(tbound.min), vv.get_lb()*sin(tbound.max));
+            wr = 1;
+            //cout << "\nwi bounds = " << wi.get_lb() << ", " << wi.get_ub();
+            break;
+        default:
+            break;
+    }
 }
 
 
@@ -72,7 +100,7 @@ Node* Arc::neighbour(Node* n){
 }
 
 void Arc::print(){
-    std::cout << "( " << src->ID << ", " << dest->ID << " ): ";
+    std::cout << "( " << src->_name << ", " << dest->_name << " ): ";
     std::cout << "limit = " << limit;
     std::cout << "; charge = " << ch;
     std::cout << "; as = " << as;

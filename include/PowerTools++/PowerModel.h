@@ -17,8 +17,9 @@
 #include <PowerTools++/meta_constant.h>
 #include <PowerTools++/meta_var.h>
 #include <PowerTools++/meta_Constraint.h>
+#include <PowerTools++/Type.h>
 
-typedef enum { ACPOL, ACRECT, ACREF, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
+
 typedef enum { MinCost, MinLoss, MinDelta, MaxDelta } Obj;
 
 class PowerModel {
@@ -85,7 +86,18 @@ public:
     void max_var(var<> v);
     void min_cost_load();
     void print();
-    
+
+    void check_SDP();
+
+    bool SDP_satisfied(vector<Node *> *b, int id);
+
+    void add_SDP_cut(vector<Node *> *b, int id);
+
+    bool circles_intersect(double xc, double yc, double R1, double R2);
+
+    bool SDP_satisfied(vector<Node *> *b);
+
+    bool circles_intersect(double xc, double yc, double R1, double R2, Arc *a);
 };
 
 #endif /* defined(__PowerTools____PowerModel__) */

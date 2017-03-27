@@ -11,9 +11,11 @@
 #include <PowerTools++/Node.h>
 #include <PowerTools++/Path.h>
 #include <PowerTools++/Line.h>
+#include <PowerTools++/Type.h>
 
 class Arc : public Line{
 public:
+    bool imaginary = false;
     Node* src;
     Node* dest;
     bool in_cycle;
@@ -35,6 +37,8 @@ public:
     Arc(Node* s, Node* d);
     
     Arc* clone();
+
+    void init_vars(PowerModelType t);
     
     /* Connects the current arc to its source and destination, adding itself to the list of branches in these nodes */
     void connect();

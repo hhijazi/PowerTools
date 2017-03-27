@@ -49,10 +49,12 @@ void IpoptProgram::finalize_solution(    Ipopt::SolverReturn               statu
             case real:
                 real_var = (var<float>*)v;
                 real_var->set_val((float)x[i]);
+                //cout << "\n" << real_var->_name << " = " << x[i];
                 break;
             case longreal:
                 long_real_var = (var<>*)v;
                 long_real_var->set_val(x[i]);
+                //cout << "\n" << long_real_var->_name << " = " << x[i];
                 break;
             case integ:
                 int_var = (var<int>*)v;
@@ -68,6 +70,22 @@ void IpoptProgram::finalize_solution(    Ipopt::SolverReturn               statu
     }
 //    model->check_feasible(x);
     model->_opt = model->_obj->eval(x);
+    double active_cuts = 0; double cuts = 0;
+    double tol = 0.00015;
+//    for(auto& c: model->get_cons()){
+//        if (!c->is_cut) continue;
+//        cout << "\nConstr " << c->_name;
+//        cuts++;
+//        if(c->has_meta()) {
+//            cout << " = " << c->_meta_constr->eval_meta(x, c->_meta_coeff, c->_meta_vars, c->_meta_link);
+//            if (fabs(c->_meta_constr->eval_meta(x, c->_meta_coeff, c->_meta_vars, c->_meta_link)) < tol) active_cuts++;
+//        }
+//        else {
+//            cout << " = " << c->eval(x);
+//            if(fabs(c->eval(x)) < tol) active_cuts++;
+//        }
+//    }
+//    cout << "\nNumber of active cuts = " << active_cuts << ", total number of cuts = " << cuts << ", percentage active = " << active_cuts/cuts*100 << "%";
     cout << "\n************** Objective Function Value = " << model->_opt << " **************" << endl;
 }
 

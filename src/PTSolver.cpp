@@ -41,7 +41,7 @@ PTSolver::PTSolver(Model* model, SolverType stype){
 
 PTSolver::~PTSolver(){
     if (_stype == gurobi) delete prog.grb_prog;
-//    if (_stype == ipopt) delete prog.ipopt_prog;
+    if (_stype == ipopt) delete prog.ipopt_prog;
 }
 
 void PTSolver::set_model(Model* m) {
@@ -55,8 +55,9 @@ int PTSolver::run(int output, bool relax){
     // Initialize the IpoptApplication and process the options
 
     if (_stype==ipopt) {
-            IpoptApplication iapp;
-            ApplicationReturnStatus status = iapp.Initialize();
+            //IpoptApplication iapp;
+            SmartPtr<IpoptApplication> iapp = IpoptApplicationFactory();
+            ApplicationReturnStatus status = iapp->Initialize();
             if (status != Solve_Succeeded) {
                 std::cout << std::endl << std::endl << "*** Error during initialization!" << std::endl;
                 return (int) status;
@@ -67,13 +68,13 @@ int PTSolver::run(int output, bool relax){
             //            iapp.Options()->SetStringValue("hessian_constant", "yes");
 //                        iapp.Options()->SetStringValue("derivative_test", "second-order");
             //            iapp->Options()->SetNumericValue("tol", 1e-6);
-                        iapp.Options()->SetNumericValue("tol", 1e-6);
+                        iapp->Options()->SetNumericValue("tol", 1e-6);
             //            iapp->Options()->SetStringValue("derivative_test", "second-order");
             //            iapp.Options()->SetNumericValue("bound_relax_factor", 0);
-            //            iapp.Options()->SetIntegerValue("print_level", 5);
+            //            iapp->Options()->SetIntegerValue("print_level", 1);
             
             //            iapp.Options()->SetStringValue("derivative_test_print_all", "yes");
-            status = iapp.OptimizeTNLP(tmp);
+            status = iapp->OptimizeTNLP(tmp);
             
             if (status == Solve_Succeeded) {
                 // Retrieve some statistics about the solve

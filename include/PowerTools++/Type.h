@@ -15,4 +15,5 @@ typedef enum { constant_, lin_, quad_, nlin_ } Functiontype;  /* Function type i
 typedef enum { minimize, maximize } ObjectiveType;
 typedef enum { id_, plus_, minus_, product_, div_, power_, cos_, sin_, sqrt_} OperatorType;  /* Operation type in the expression tree */
 typedef enum { ipopt, gurobi, bonmin } SolverType;  /* Solver type */
+typedef enum { ACPOL, ACRECT, ACREF, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
 #endif

@@ -8,6 +8,24 @@
 
 #include "PowerTools++/PowerModel.h"
 
+//  Windows
+#ifdef _WIN32
+#include <Windows.h>
+
+//  Posix/Linux
+#else
+#include <time.h>
+#include <sys/time.h>
+double get_wall_time1(){
+    struct timeval time;
+    if (gettimeofday(&time,NULL)){
+        //  Handle error
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
+#endif
+
 PowerModel::PowerModel():PowerModel(ACPOL, new Net(), ipopt){};
 
 PowerModel::PowerModel(PowerModelType type, Net* net, SolverType stype):_type(type), _net(net), _stype(stype){
@@ -58,7 +76,8 @@ void PowerModel::build(){
         case SDP:
             add_AC_SOCP_vars();
             post_AC_SOCP();
-            add_SDP_cuts(3);
+            //addSOCP();
+            //add_SDP_cuts(3);
             break;
         case DC:
             add_DC_vars();
@@ -148,7 +167,6 @@ void PowerModel::run_grb_quad_test(){
     solve();
 }
 
-
 /** Accessors */
 Function* PowerModel::objective(){
     return _model->_obj;
@@ -165,7 +183,7 @@ void PowerModel::min_cost(){
     }
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-    //    obj->print(true);
+        obj->print(true);
     //    _solver->run();
 }
 
@@ -185,10 +203,30 @@ void PowerModel::max_var(var<> v){
     _model->setObjectiveType(maximize);
 }
 
-
-
 int PowerModel::solve(int output, bool relax){
-    return _solver->run(output,relax);
+    int status = _solver->run(output,relax);
+    if (_type == SDP) {
+        check_SDP();
+        //add_SDP_cuts(3);
+//        var<double>* vr = NULL;
+//        for (auto v: _model->_vars) {
+//            if (v->get_type() != longreal) continue;
+//            vr = (var<double>*)v;
+//            cout << "\n" << vr->_name << ": " << vr->get_lb() << ", " << vr->get_ub();
+//        }
+        double wall0 = get_wall_time1();
+        status = _solver->run(output,relax);
+        double wall1 = get_wall_time1();
+        cout << "\ntime = " << wall1-wall0 << "\n";
+//        for (auto b: *_net->_bags) {
+//            if (b->size() != 3) continue;
+//            if (SDP_satisfied(b)) cout << "\nCUT SATISFIED";
+//            else cout << "\n NOT SATISFIED!";
+//            cout << "\n" << b->at(0)->_name << ", " << b->at(1)->_name << ", " << b->at(2) ->_name;
+//        }
+//        check_SDP();
+    }
+    return status;
 }
 
 
@@ -577,7 +615,6 @@ void PowerModel::post_QC(){
     exit(-1);
 }
 
-
 void PowerModel::add_AC_SOCP_vars(){
     string key, src, dest;
     set<string> parallel;
@@ -601,10 +638,12 @@ void PowerModel::add_AC_SOCP_vars(){
 //            ap->wi.init("wi"+a->_name, -a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max), a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max));
 //            _model->addVar(ap->wi);
         if (!a->parallel) {
-            a->wr.init("wr"+a->_name, a->src->vbound.min*a->dest->vbound.min*cos(a->tbound.min), a->src->vbound.max*a->dest->vbound.max);
+            //a->wr.init("wr"+a->_name, a->src->vbound.min*a->dest->vbound.min*cos(a->tbound.min), a->src->vbound.max*a->dest->vbound.max);
+            a->wr.init("wr"+a->src->_name+a->dest->_name, a->src->vbound.min*a->dest->vbound.min*cos(a->tbound.min), a->src->vbound.max*a->dest->vbound.max);
             a->wr = 1;
             _model->addVar(a->wr);
-            a->wi.init("wi"+a->_name, -a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max), a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max));
+            //a->wi.init("wi"+a->_name, -a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max), a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max));
+            a->wi.init("wi"+a->src->_name+a->dest->_name, -a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max), a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max));
             _model->addVar(a->wi);
         }
 //        else {
@@ -722,7 +761,6 @@ void PowerModel::add_AC_thermal(Arc* a, bool switch_lines){
     }
 }
 
-
 void PowerModel::add_AC_Angle_Bounds(Arc* a, bool switch_lines){
     /** Adding phase angle difference bound constraint
      subject to Theta_Delta_LB{(l,i,j) in arcs_from}: t[i]-t[j] >= -theta_bound;
@@ -755,7 +793,6 @@ void PowerModel::add_AC_Angle_Bounds(Arc* a, bool switch_lines){
         _model->addConstraint(Theta_Delta_LB);
     }
 }
-
 
 void PowerModel::add_AC_Power_Flow(Arc *a, bool polar){
     
@@ -865,7 +902,6 @@ void PowerModel::add_AC_KCL(Node* n, bool switch_lines){
     KCL_Q = 0;
     _model->addConstraint(KCL_Q);
 }
-
 
 //void PowerModel::post_AC_Polar(){
 //    for (auto a:_net->arcs) {
@@ -1020,8 +1056,6 @@ void PowerModel::add_Cosine(Arc *a){
     }
 }
 
-
-
 void PowerModel::post_AC_Polar(){
     for (auto n:_net->nodes) {
         add_AC_Voltage_Bounds(n);
@@ -1142,7 +1176,6 @@ void PowerModel::post_AC_OTS(){
     }
 }
 
-
 void PowerModel::post_AC_SOCP(){
     Node* src = NULL;
     Node* dest = NULL;
@@ -1152,7 +1185,7 @@ void PowerModel::post_AC_SOCP(){
     Arc* ap = nullptr;
     
     for (auto a:_net->arcs) {
-        if (a->status==0) {
+        if (a->status == 0) {
             continue;
         }
         src = a->src;
@@ -1162,68 +1195,69 @@ void PowerModel::post_AC_SOCP(){
          + -g[l]*v[i]/tr[l]*v[j]*cos(t[i]-t[j]-as[l])
          + -b[l]*v[i]/tr[l]*v[j]*sin(t[i]-t[j]-as[l]);
          */
-        Constraint Flow_P_From("Flow_P_From"+a->pi._name);
+        Constraint Flow_P_From("Flow_P_From" + a->pi._name);
         Flow_P_From += a->pi;
 //        if(!a->src->_name.compare("9006") && !a->dest->_name.compare("9003")){
 //            cout << "ok";
 //            cout << endl;
 //        }
-        
-        Flow_P_From -= (a->g/(pow(a->cc,2)+pow(a->dd,2)))*src->w;
+
+        Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w;
         ap = _net->get_arc(a->src, a->dest);
-        Flow_P_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wr;
-        Flow_P_From -= (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wi;
+        Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr;
+        Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
         Flow_P_From = 0;
         _model->addConstraint(Flow_P_From);
-        
+
         /** subject to Flow_P_To {(l,i,j) in arcs_to}:
          p[l,i,j] = g[l]*v[i]^2
          + -g[l]*v[i]*v[j]/tr[l]*cos(t[i]-t[j]+as[l])
          + -b[l]*v[i]*v[j]/tr[l]*sin(t[i]-t[j]+as[l]);
          */
-        Constraint Flow_P_To("Flow_P_To"+a->pj._name);
+        Constraint Flow_P_To("Flow_P_To" + a->pj._name);
         Flow_P_To += a->pj;
-        Flow_P_To -= a->g*dest->w;
-        Flow_P_To -= (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wr;
-        Flow_P_To += (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wi;
+        Flow_P_To -= a->g * dest->w;
+        Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr;
+        Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
         Flow_P_To = 0;
         _model->addConstraint(Flow_P_To);
-        
+
         /** subject to Flow_Q_From {(l,i,j) in arcs_from}:
          q[l,i,j] = -(charge[l]/2+b[l])*(v[i]/tr[l])^2
          +  b[l]*v[i]/tr[l]*v[j]*cos(t[i]-t[j]-as[l])
          + -g[l]*v[i]/tr[l]*v[j]*sin(t[i]-t[j]-as[l]);
          */
-        Constraint Flow_Q_From("Flow_Q_From"+a->qi._name);
+        Constraint Flow_Q_From("Flow_Q_From" + a->qi._name);
         Flow_Q_From += a->qi;
-        Flow_Q_From += (a->ch/2+a->b)/(pow(a->cc,2)+pow(a->dd,2))*src->w;
-        Flow_Q_From += (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wr;
-        Flow_Q_From -= (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wi;
+        Flow_Q_From += (a->ch / 2 + a->b) / (pow(a->cc, 2) + pow(a->dd, 2)) * src->w;
+        Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr;
+        Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
         Flow_Q_From = 0;
         _model->addConstraint(Flow_Q_From);
-        
+
         /** subject to Flow_Q_To {(l,i,j) in arcs_to}:
          q[l,i,j] = -(charge[l]/2+b[l])*v[i]^2
          +  b[l]*v[i]*v[j]/tr[l]*cos(t[i]-t[j]+as[l])
          + -g[l]*v[i]*v[j]/tr[l]*sin(t[i]-t[j]+as[l]);
          */
-        Constraint Flow_Q_To("Flow_Q_To"+a->qj._name);
+        Constraint Flow_Q_To("Flow_Q_To" + a->qj._name);
         Flow_Q_To += a->qj;
-        Flow_Q_To += (a->ch/2+a->b)*dest->w;
-        Flow_Q_To += (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wr;
-        Flow_Q_To += (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*ap->wi;
+        Flow_Q_To += (a->ch / 2 + a->b) * dest->w;
+        Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr;
+        Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
         Flow_Q_To = 0;
         _model->addConstraint(Flow_Q_To);
-        
+
         /** subject to PSD {l in lines}: w[from_bus[l]]*w[to_bus[l]] >= wr[l]^2 + wi[l]^2;
          */
         Constraint SOCP("SOCP");
-        SOCP += a->src->w*a->dest->w;
-        SOCP -= ((ap->wr)^2);
-        SOCP -= ((ap->wi)^2);
+        SOCP += a->src->w * a->dest->w;
+        SOCP -= ((ap->wr) ^ 2);
+        SOCP -= ((ap->wi) ^ 2);
         SOCP >= 0;
+        SOCP.is_cut = true;
         _model->addConstraint(SOCP);
-        
+
         add_AC_thermal(a, false);
         add_Wr_Wi(a);
     }
@@ -1279,6 +1313,412 @@ int PowerModel::get_order(vector<Node*>* bag, int order){
     }
 }
 
+bool PowerModel::circles_intersect(double xc, double yc, double R1, double R2, Arc* a){
+    double tol = 0.000001;
+//    if (R1 > 0) {
+//        if(sqrt(xc*xc + yc*yc) <= sqrt(R1) + sqrt(R2)) {
+//            //cout << "\n Dist from 0 = " << sqrt(xc*xc + yc*yc);
+//            //cout << "\n Sum of radii = " << sqrt(R1) + sqrt(R2);
+//            //cout << "\nRadii ok.";
+//            //return true;
+//        }
+//        else {
+//            //cout << "\nRadii not ok.";
+//            //return false;
+//        }
+//    }
+    //cout << "\nR2 = " << R2;
+    if(fabs(R1) < tol) {
+        if (xc*xc + yc*yc <= R2 && xc >= a->wr.get_lb() && xc <= a->wr.get_ub() && yc >= a->wi.get_lb() && yc <= a->wi.get_ub()) {
+            //cout << "\nAn SDP completion exists!";
+            return true;
+        }else {
+            if (!(xc >= a->wr.get_lb() && xc <= a->wr.get_ub() && yc >= a->wi.get_lb() && yc <= a->wi.get_ub())) {
+                cout << "\nBounds are violated: (x,y) = (" << xc << ", " << yc << "), wr lb, ub = (" << a->wr.get_lb() << ", " << a->wr.get_ub() << "), wi lb, ub = (" << a->wi.get_lb() << ", " << a->wi.get_ub() << ")";
+            }//else cout << "\nR2 = " << R2;
+//            cout << "\n Squared dist from 0 = " << xc*xc + yc*yc;
+            //cout << "\nNo SDP completion exists!";
+            return false;
+        }
+    }else{
+        cout << "\nCircle with non-zero radius, not implemented!";
+        return false;
+    }
+}
+
+bool PowerModel::SDP_satisfied(vector<Node*>* b){
+    Arc* a12 = nullptr;
+    Arc* a13 = nullptr;
+    Arc* a32 = nullptr;
+
+    Node* n1 = nullptr;
+    Node* n2 = nullptr;
+    Node* n3 = nullptr;
+
+    double wr12, wi12;
+    double wr13, wi13;
+    double wr32, wi32;
+
+    double tol = 0.000001;
+    double xc, yc, R1, R2; // center of second circle and squared radii
+
+    bool rot_bag;
+    int n_i1, n_i2, n_i3 = 0;
+
+    Arc* new_arc = nullptr;
+
+    if (b->size()==3) {
+        rot_bag = _net->rotation_bag(b);
+        if (rot_bag) {
+                            //cout << " rot_bag ";
+            n1 = b->at(0);
+            if (_net->_clone->has_directed_arc(n1, b->at(1))) {
+                n2 = b->at(1);
+                n3 = b->at(2);
+            }
+            else {
+                n2 = b->at(2);
+                n3 = b->at(1);
+            }
+            a13 = _net->get_arc(n3, n1);
+            a32 = _net->get_arc(n2, n3);
+        }
+        else {
+            n_i1 = get_order(b, 1);
+            n1 = b->at(n_i1);
+            n_i2 = get_order(b, 2);
+            n2 = b->at(n_i2);
+            n_i3 = get_order(b, 3);
+            n3 = b->at(n_i3);
+            a13 = _net->get_arc(n1, n3);
+            a32 = _net->get_arc(n3, n2);
+        }
+        a12 = _net->get_arc(n1, n2);
+        cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+
+        if(!a13 || a13->status == 0) {
+            if (!a13) {
+                if(rot_bag) a13 = _net->_clone->get_arc(n3,n1)->clone();
+                else a13 = _net->_clone->get_arc(n1,n3)->clone();
+                a13->status = 0;
+                a13->src = _net->get_node(a13->src->_name);
+                a13->dest = _net->get_node(a13->dest->_name);
+//                a13->imaginary = true;
+                a13->connect();
+                _net->add_arc(a13);
+            }
+            a13->init_vars(SDP);
+            _model->addVar(a13->wr);
+            _model->addVar(a13->wi);
+            new_arc = a13;
+        }
+        if (a13->imaginary) {
+            new_arc = a13;
+            a13 = nullptr;
+        }
+
+        if(!a32 || a32->status == 0) {
+            if (!a32) {
+                if(rot_bag) a32 = _net->_clone->get_arc(n2,n3)->clone();
+                else a32 = _net->_clone->get_arc(n3,n2)->clone();
+                a32->status=0;
+                a32->src = _net->get_node(a32->src->_name);
+                a32->dest = _net->get_node(a32->dest->_name);
+//                a32->imaginary = true;
+                a32->connect();
+                _net->add_arc(a32);
+            }
+            a32->init_vars(SDP);
+            _model->addVar(a32->wr);
+            _model->addVar(a32->wi);
+            new_arc = a32;
+        }
+        if (a32->imaginary) {
+            new_arc = a32;
+            a32 = nullptr;
+        }
+
+        if(!a12 || a12->status == 0) {
+            if (!a12) {
+                a12 = _net->_clone->get_arc(n1,n2)->clone();
+                a12->status=0;
+                a12->src = _net->get_node(a12->src->_name);
+                a12->dest = _net->get_node(a12->dest->_name);
+//                a12->imaginary = true;
+                //if(!a12->imaginary) {cout << "\n12 !Imaginary"; a12->imaginary = true;}
+                a12->connect();
+                _net->add_arc(a12);
+            }
+            a12->init_vars(SDP);
+            _model->addVar(a12->wr);
+            _model->addVar(a12->wi);
+        }
+        if (a12->imaginary) {
+            new_arc = a12;
+            a12 = nullptr;
+        }
+
+        if (!a12 && !a13 && !a32) { //nothing to check for bags without lines
+            cout << "\nNo lines in bag, returning 'satisfied'.";
+            return true;
+        }
+
+        if (a12) {
+            //cout << "a12 real; ";
+            wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
+            wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
+        }
+        if (a13) {
+            //cout << "a13 real; ";
+            wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
+            wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
+        }
+        if (a32) {
+            //cout << "a32 real; ";
+            wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
+            wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
+        }
+        double w1 = _model->getVar_<double>(_net->get_node(n1->_name)->w.get_idx())->get_value();
+        double w2 = _model->getVar_<double>(_net->get_node(n2->_name)->w.get_idx())->get_value();
+        double w3 = _model->getVar_<double>(_net->get_node(n3->_name)->w.get_idx())->get_value();
+
+        if((!a12 && !a13) || (!a12 && !a32) || (!a13 && !a32)) {
+            cout << "\nTwo lines are missing. Return 'satisfied'.";
+            return true;
+        }
+
+        // if we get to here, at most one line is missing
+        if(!rot_bag) { // Calculate the parameters of the circles; not rot: 13, 32; rot: 31, 23. 12 same for both
+            if(!a12) {
+                xc = (wr32*wr13 - wi32*wi13)/w3;
+                yc = (wi32*wr13 + wr32*wi13)/w3;
+                R1 = (wr32*wr32*wr13*wr13 + wi32*wi32*wi13*wi13 + wi32*wi32*wr13*wr13 + wr32*wr32*wi13*wi13)/(w3*w3);
+                R1 -= ((wr13*wr13+wi13*wi13)*w2 + (wr32*wr32+wi32*wi32)*w1 - w1*w2*w3)/w3;
+                cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;
+                R2 = w1*w2;
+
+                cout << "\nSDP: wr12*" << 2*(wr32*wr13 - wi32*wi13) << " + wi12*" << 2*(wi32*wr13 + wr32*wi13);
+                cout << " - (wr12^2 + wi12^2)*" << w3 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr32*wr32 + wi32*wi32)*w1;
+            }
+            if(!a13) {
+                xc = (wr12*wr32 + wi12*wi32)/w2;//
+                yc = (wi12*wr32 - wr12*wi32)/w2;//
+                R1 = (wr12*wr12*wr32*wr32 + wi12*wi12*wi32*wi32 + wi12*wi12*wr32*wr32 + wr12*wr12*wi32*wi32)/(w2*w2);//
+                R1 -= ((wr32*wr32+wi32*wi32)*w1 + (wr12*wr12+wi12*wi12)*w3 - w1*w2*w3)/w2;//
+                cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;//
+                R2 = w1*w3;
+
+                cout << "\nSDP: wr13*" << 2*(wr12*wr32 + wi12*wi32) << " + wi13*" << 2*(wi12*wr32 - wr12*wi32);//
+                cout << " - (wr13^2 + wi13^2)*" << w2 << " + " << w1*w2*w3 - (wr32*wr32 + wi32*wi32)*w1 - (wr12*wr12 + wi12*wi12)*w3;//
+                cout << "\nSOCP: wr13^2 + wi13^2 <= " << R2;
+                cout << "\nFree vars: " << new_arc->wr._name << ", " << new_arc->wr._name;
+            }
+            if(!a32) {
+                xc = (wr12*wr13 + wi12*wi13)/w1;
+                yc = (wi12*wr13 - wr12*wi13)/w1;
+                R1 = (wr12*wr12*wr13*wr13 + wi12*wi12*wi13*wi13 + wi12*wi12*wr13*wr13 + wr12*wr12*wi13*wi13)/(w1*w1);
+                R1 -= ((wr13*wr13+wi13*wi13)*w2 + (wr12*wr12+wi12*wi12)*w3 - w1*w2*w3)/w1;
+                cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;
+                R2 = w3*w2;
+
+                cout << "\nSDP: wr32*" << 2*(wr12*wr13 + wi12*wi13) << " + wi12*" << 2*(wi12*wr13 - wr12*wi13);
+                cout << " - (wr32^2 + wi32^2)*" << w1 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr12*wr12 + wi12*wi12)*w3;
+            }
+        }else{
+            if(!a12) {
+                xc = (wr32*wr13 + wi32*wi13)/w3;
+                yc = (wi32*wr13 - wr32*wi13)/w3;
+                R1 = (wr32*wr32*wr13*wr13 + wi32*wi32*wi13*wi13 + wi32*wi32*wr13*wr13 + wr32*wr32*wi13*wi13)/(w3*w3);
+                R1 -= ((wr13*wr13+wi13*wi13)*w2 + (wr32*wr32+wi32*wi32)*w1 - w1*w2*w3)/w3; // stay the same because all wi are squared?
+                cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;
+                R2 = w1*w2;
+
+                cout << "\nSDPr: wr12*" << 2*(wr32*wr13 - wi32*wi13) << " - wi12*" << 2*(wi32*wr13 + wr32*wi13);
+                cout << " - (wr12^2 + wi12^2)*" << w3 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr32*wr32 + wi32*wi32)*w1;
+            }
+            if(!a13) {
+                //R2 = w1*w3;
+                cout << "\nNOT IMPLEMENTED ";
+            }
+            if(!a32) {
+                //R2 = w3*w2;
+                cout << "\nNOT IMPLEMENTED ";
+            }
+        }
+
+        // If a line is missing - check if the circles intersect and return
+        if (!a12 || !a13 || !a32) {
+            return circles_intersect(xc, yc, R1, R2, new_arc);
+        }
+
+        // If we get here, then all lines are in place. SOCP should already be satisfied.
+        if (!rot_bag) {
+            double SDP = wr12*(wr32*wr13 - wi32*wi13) + wi12*(wi32*wr13 + wr32*wi13);
+            SDP *= 2;
+            SDP -= (wr12*wr12 + wi12*wi12)*w3 + (wr13*wr13 + wi13*wi13)*w2 + (wr32*wr32 + wi32*wi32)*w1;
+            SDP += w1*w2*w3;
+            cout << "\nSDP = " << SDP;
+            if(SDP > -tol) return true;
+            else return false;
+        }else{
+            double SDPr = wr12*(wr32*wr13 - wi32*wi13) - wi12*(wi32*wr13 + wr32*wi13);
+            SDPr *= 2;
+            SDPr -= ((wr12*wr12 + wi12*wi12)*w3 + (wr13*wr13 + wi13*wi13)*w2 + (wr32*wr32 + wi32*wi32)*w1);
+            SDPr += w1*w2*w3;
+            cout << "\nSDPr = " << SDPr;
+            if(SDPr > -tol) return true;
+            else return false;
+        }
+
+    }else{
+        cout << "\nBag with more than 3 nodes, skipping.";
+        return true;
+    }
+}
+
+void PowerModel::check_SDP(){
+    meta_var* wr12 = new meta_var("wr12", _model);
+    meta_var* wr13 = new meta_var("wr13", _model);
+    meta_var* wr31 = new meta_var("wr31", _model);
+    meta_var* wr32 = new meta_var("wr32", _model);
+    meta_var* wr23 = new meta_var("wr23", _model);
+    meta_var* wi12 = new meta_var("wi12", _model);
+    meta_var* wi13 = new meta_var("wi13", _model);
+    meta_var* wi31 = new meta_var("wi31", _model);
+    meta_var* wi23 = new meta_var("wi23", _model);
+    meta_var* wi32 = new meta_var("wi32", _model);
+    meta_var* w1 = new meta_var("w1", _model);
+    meta_var* w2 = new meta_var("w2", _model);
+    meta_var* w3 = new meta_var("w3", _model);
+
+    meta_Constraint* SDP = new meta_Constraint();
+    *SDP = (*wr12)*((*wr32)*(*wr13) - (*wi32)*(*wi13));
+    *SDP += (*wi12)*((*wi32)*(*wr13) + (*wr32)*(*wi13));
+    *SDP *= 2;
+    *SDP -= (((*wr12)^2)+((*wi12)^2))*(*w3);
+    *SDP -= (((*wr13)^2)+((*wi13)^2))*(*w2);
+    *SDP -= (((*wr32)^2)+((*wi32)^2))*(*w1);
+    *SDP += (*w1)*(*w2)*(*w3);
+    *SDP >= 0;
+    SDP->is_cut = true;
+    _model->addMetaConstraint(*SDP);
+
+    meta_Constraint* SDPr = new meta_Constraint();
+    *SDPr = (*wr12)*((*wr23)*(*wr31) - (*wi23)*(*wi31));
+    *SDPr -= (*wi12)*((*wi23)*(*wr31) + (*wr23)*(*wi31));
+    *SDPr *= 2;
+    *SDPr -= (((*wr12)^2)+((*wi12)^2))*(*w3);
+    *SDPr -= (((*wr31)^2)+((*wi31)^2))*(*w2);
+    *SDPr -= (((*wr23)^2)+((*wi23)^2))*(*w1);
+    *SDPr += (*w1)*(*w2)*(*w3);
+    *SDPr >= 0;
+    SDPr->is_cut = true;
+    _model->addMetaConstraint(*SDPr);
+
+    _model->init_functions(_net->_bags->size());
+    _model->print_functions();
+
+    Node *n1, *n2, *n3;
+    Arc *a12, *a13, *a32;
+
+    int n_i1, n_i2, n_i3;
+    bool rot_bag;
+
+    int id = 0;
+    int i = 0;
+
+    for (auto b: *_net->_bags){
+        //cout << "\n\nBag number = " << i;
+        i++;
+        if(SDP_satisfied(b)){
+            //cout << "\nCUT ALREADY SATISFIED";
+        }else{
+            //cout << "\n bag id = " << id;
+            //if (id == 7) {id++; continue;}
+            cout << "\nADDING NEW CUT";
+            if(b->size()!=3) continue;
+
+            rot_bag = _net->rotation_bag(b);
+            if (rot_bag) {
+                n1 = b->at(0);
+                if (_net->_clone->has_directed_arc(n1, b->at(1))){
+                    n2 = b->at(1);
+                    n3 = b->at(2);
+                }
+                else {
+                    n2 = b->at(2);
+                    n3 = b->at(1);
+                }
+                a13 = _net->get_arc(n3,n1);
+                a32 = _net->get_arc(n2,n3);
+            }
+            else {
+                n_i1 = get_order(b,1);
+                n1 = b->at(n_i1);
+                n_i2 = get_order(b,2);
+                n2 = b->at(n_i2);
+                n_i3 = get_order(b,3);
+                n3 = b->at(n_i3);
+                a13 = _net->get_arc(n1,n3);
+                a32 = _net->get_arc(n3,n2);
+            }
+//            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+            a12 = _net->get_arc(n1,n2);
+
+            if(a12->imaginary && a12->status==0) {
+                a12->status = 1;
+                Constraint SOCP1("SOCP1_"+to_string(id));
+                SOCP1 += _net->get_node(n1->_name)->w*_net->get_node(n2->_name)->w;
+                SOCP1 -= ((a12->wr)^2);
+                SOCP1 -= ((a12->wi)^2);
+                SOCP1 >= 0;
+                SOCP1.is_cut = true;
+                _model->addConstraint(SOCP1);
+            }
+            if(a13->imaginary && a13->status==0) {
+                a13->status = 1;
+                Constraint SOCP2("SOCP2_"+to_string(id));
+                SOCP2 += _net->get_node(n1->_name)->w*_net->get_node(n3->_name)->w;
+                SOCP2 -= ((a13->wr)^2);
+                SOCP2 -= ((a13->wi)^2);
+                SOCP2 >= 0;
+                SOCP2.is_cut = true;
+                _model->addConstraint(SOCP2);
+            }
+            if(a32->imaginary && a32->status==0) {
+                a32->status = 1;
+                Constraint SOCP3("SOCP3_"+to_string(id));
+                SOCP3 += _net->get_node(n3->_name)->w*_net->get_node(n2->_name)->w;
+                SOCP3 -= ((a32->wr)^2);
+                SOCP3 -= ((a32->wi)^2);
+                SOCP3 >= 0;
+                SOCP3.is_cut = true;
+                _model->addConstraint(SOCP3);
+            }
+
+            *wr12 = a12->wr;
+            *wi12 = a12->wi;
+            *wr13 = a13->wr;
+            *wi13 = a13->wi;
+            *wr31 = a13->wr;
+            *wi31 = a13->wi;
+            *wr32 = a32->wr;
+            *wi32 = a32->wi;
+            *wr23 = a32->wr;
+            *wi23 = a32->wi;
+
+            *w1 = _net->get_node(n1->_name)->w;
+            *w2 = _net->get_node(n2->_name)->w;
+            *w3 = _net->get_node(n3->_name)->w;
+            if (rot_bag) _model->concretise(*SDPr, id, "SDP"+to_string(id));
+            else _model->concretise(*SDP, id, "SDP"+to_string(id));
+
+            id++;
+        }
+    }
+    cout << "\nNumber of added cuts = " << id << endl;
+}
+
 void PowerModel::add_SDP_cuts(int dim){
     assert(dim==3);
     /** subject to PSD {l in lines}: w[from_bus[l]]*w[to_bus[l]] >= wr[l]^2 + wi[l]^2;
@@ -1306,6 +1746,7 @@ void PowerModel::add_SDP_cuts(int dim){
     *SDP -= (((*wr32)^2)+((*wi32)^2))*(*w1);
     *SDP += (*w1)*(*w2)*(*w3);
     *SDP >= 0;
+    SDP->is_cut = true;
     _model->addMetaConstraint(*SDP);
     
     meta_Constraint* SDPr = new meta_Constraint();// Rotational SDP
@@ -1317,6 +1758,7 @@ void PowerModel::add_SDP_cuts(int dim){
     *SDPr -= (((*wr23)^2)+((*wi23)^2))*(*w1);
     *SDPr += (*w1)*(*w2)*(*w3);
     *SDPr >= 0;
+    SDPr->is_cut = true;
     _model->addMetaConstraint(*SDPr);
     
     Node* n1 = nullptr;
@@ -1325,21 +1767,22 @@ void PowerModel::add_SDP_cuts(int dim){
     Arc* a12 = nullptr;
     Arc* a13 = nullptr;
     Arc* a32 = nullptr;
+
     _model->init_functions(_net->_bags->size());
     _model->print_functions();
     
     int id = 0;
+    int id1 = 0;
     int n_i1, n_i2, n_i3 = 0;
-    bool rot_bag = false;
+    bool rot_bag;
     for (auto b: *_net->_bags){
-        //        if (id>=1) {
-        //            continue;
-        //        }
-        //        string ok;
+        cout << "\nid = " << id1;
+        id1++;
+        //cout << "\nSize of bag = " << b->size();
         if (b->size()==dim) {
             rot_bag = _net->rotation_bag(b);
             if (rot_bag) {
-                //                cout << "rot_bag: ";
+                                cout << "rot_bag: ";
                 n1 = b->at(0);
                 if (_net->_clone->has_directed_arc(n1, b->at(1))){
                     n2 = b->at(1);
@@ -1353,6 +1796,7 @@ void PowerModel::add_SDP_cuts(int dim){
                 a32 = _net->get_arc(n2,n3);
             }
             else {
+                cout << "not rot_bag: ";
                 n_i1 = get_order(b,1);
                 n1 = b->at(n_i1);
                 n_i2 = get_order(b,2);
@@ -1362,21 +1806,28 @@ void PowerModel::add_SDP_cuts(int dim){
                 a13 = _net->get_arc(n1,n3);
                 a32 = _net->get_arc(n3,n2);
             }
+            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
             a12 = _net->get_arc(n1,n2);
+
+            if ((!a12 && !a13) || (!a13 && !a32) || (!a12 && !a32)) cout << "\nJust one arc in bag!";
+
+            if (!a12 || !a13 || !a32) cout << "\nArc missing in bag!";
+            else {
+                cout << "\na12 = " << a12->_name << " a13 = " << a13->_name << " a32 = " << a32->_name << endl;
+                a12->print();
+            }
             
             if(!a12 || a12->status==0) {
-                //                continue;
+                cout << "\nadding a12\n";
                 if (!a12) {
                     a12 = _net->_clone->get_arc(n1,n2)->clone();
                     a12->status=1;
                     a12->src = _net->get_node(a12->src->_name);
                     a12->dest = _net->get_node(a12->dest->_name);
+                    a12->imaginary = true;
                     a12->connect();
                     _net->add_arc(a12);
                 }
-                //                else {
-                //                    assert(false);
-                //                }
                 if (a12->tbound.min < 0 && a12->tbound.max > 0)
                     a12->cs.init("cs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",min(cos(a12->tbound.min), cos(a12->tbound.max)), 1.);
                 else
@@ -1417,13 +1868,13 @@ void PowerModel::add_SDP_cuts(int dim){
                     SOCP1 -= ((a12->wi)^2);
                 }
                 SOCP1 >= 0;
+                SOCP1.is_cut = true;
                 _model->addConstraint(SOCP1);
-                //                SOCP1.print();
                 //                _net->_clone->remove_arc(a12);
             }
             if(!a13 || a13->status==0) {
+                cout << "\nadding a13\n";
                 if(!a13) {
-                    //                    continue;
                     if (rot_bag) {
                         a13 = _net->_clone->get_arc(n3,n1)->clone();
                     }
@@ -1433,12 +1884,10 @@ void PowerModel::add_SDP_cuts(int dim){
                     a13->status=1;
                     a13->src = _net->get_node(a13->src->_name);
                     a13->dest = _net->get_node(a13->dest->_name);
+                    a13->imaginary = true;
                     a13->connect();
                     _net->add_arc(a13);
                 }
-                //                else {
-                //                    assert(false);
-                //                }
                 if (a13->tbound.min < 0 && a13->tbound.max > 0)
                     a13->cs.init("cs("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",min(cos(a13->tbound.min), cos(a13->tbound.max)), 1.);
                 else
@@ -1480,12 +1929,13 @@ void PowerModel::add_SDP_cuts(int dim){
                     SOCP2 -= ((a13->wi)^2);
                 }
                 SOCP2 >= 0;
+                SOCP2.is_cut = true;
                 _model->addConstraint(SOCP2);
                 //                _net->_clone->remove_arc(a13);
             }
             if(!a32 || a32->status==0) {
+                cout << "\nadding a32\n";
                 if (!a32) {
-                    //                    continue;
                     if (rot_bag) {
                         a32 = _net->_clone->get_arc(n2,n3)->clone();
                     }
@@ -1495,12 +1945,10 @@ void PowerModel::add_SDP_cuts(int dim){
                     a32->status=1;
                     a32->src = _net->get_node(a32->src->_name);
                     a32->dest = _net->get_node(a32->dest->_name);
+                    a32->imaginary = true;
                     a32->connect();
                     _net->add_arc(a32);
                 }
-                //                else {
-                //                    assert(false);
-                //                }
                 if (a32->tbound.min < 0 && a32->tbound.max > 0)
                     a32->cs.init("cs("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",min(cos(a32->tbound.min), cos(a32->tbound.max)), 1.);
                 else
@@ -1542,6 +1990,7 @@ void PowerModel::add_SDP_cuts(int dim){
                     SOCP3 -= ((a32->wi)^2);
                 }
                 SOCP3 >= 0;
+                SOCP3.is_cut = true;
                 _model->addConstraint(SOCP3);
                 //                _net->_clone->remove_arc(a32);
             }
@@ -1583,8 +2032,288 @@ void PowerModel::add_SDP_cuts(int dim){
             }
         }
     }
-    cout << "total number of 3d SDP cuts added = " << id << endl;
-    
+    cout << "\ntotal number of 3d SDP cuts added = " << id << endl;
+}
+
+void PowerModel::add_SDP_cut(vector<Node*>* b, int id){
+    if(b->size()!=3) return;
+
+    meta_var* wr12 = new meta_var("wr12", _model);
+    meta_var* wr13 = new meta_var("wr13", _model);
+    meta_var* wr31 = new meta_var("wr31", _model);
+    meta_var* wr32 = new meta_var("wr32", _model);
+    meta_var* wr23 = new meta_var("wr23", _model);
+    meta_var* wi12 = new meta_var("wi12", _model);
+    meta_var* wi13 = new meta_var("wi13", _model);
+    meta_var* wi31 = new meta_var("wi31", _model);
+    meta_var* wi23 = new meta_var("wi23", _model);
+    meta_var* wi32 = new meta_var("wi32", _model);
+    meta_var* w1 = new meta_var("w1", _model);
+    meta_var* w2 = new meta_var("w2", _model);
+    meta_var* w3 = new meta_var("w3", _model);
+
+    meta_Constraint* SDP = new meta_Constraint();
+    *SDP = (*wr12)*((*wr32)*(*wr13) - (*wi32)*(*wi13));
+    *SDP += (*wi12)*((*wi32)*(*wr13) + (*wr32)*(*wi13));
+    *SDP *= 2;
+    *SDP -= (((*wr12)^2)+((*wi12)^2))*(*w3);
+    *SDP -= (((*wr13)^2)+((*wi13)^2))*(*w2);
+    *SDP -= (((*wr32)^2)+((*wi32)^2))*(*w1);
+    *SDP += (*w1)*(*w2)*(*w3);
+    *SDP >= 0;
+    _model->addMetaConstraint(*SDP);
+
+    meta_Constraint* SDPr = new meta_Constraint();// Rotational SDP
+    *SDPr = (*wr12)*((*wr23)*(*wr31) - (*wi23)*(*wi31));
+    *SDPr -= (*wi12)*((*wi23)*(*wr31) + (*wr23)*(*wi31));
+    *SDPr *= 2;
+    *SDPr -= (((*wr12)^2)+((*wi12)^2))*(*w3);
+    *SDPr -= (((*wr31)^2)+((*wi31)^2))*(*w2);
+    *SDPr -= (((*wr23)^2)+((*wi23)^2))*(*w1);
+    *SDPr += (*w1)*(*w2)*(*w3);
+    *SDPr >= 0;
+    _model->addMetaConstraint(*SDPr);
+
+    Node* n1 = nullptr;
+    Node* n2 = nullptr;
+    Node* n3 = nullptr;
+    Arc* a12 = nullptr;
+    Arc* a13 = nullptr;
+    Arc* a32 = nullptr;
+
+    int n_i1, n_i2, n_i3 = 0;
+    bool rot_bag;
+
+    rot_bag = _net->rotation_bag(b);
+    if (rot_bag) {
+        n1 = b->at(0);
+        if (_net->_clone->has_directed_arc(n1, b->at(1))){
+            n2 = b->at(1);
+            n3 = b->at(2);
+        }
+        else {
+            n2 = b->at(2);
+            n3 = b->at(1);
+        }
+        a13 = _net->get_arc(n3,n1);
+        a32 = _net->get_arc(n2,n3);
+    }
+    else {
+        n_i1 = get_order(b,1);
+        n1 = b->at(n_i1);
+        n_i2 = get_order(b,2);
+        n2 = b->at(n_i2);
+        n_i3 = get_order(b,3);
+        n3 = b->at(n_i3);
+        a13 = _net->get_arc(n1,n3);
+        a32 = _net->get_arc(n3,n2);
+    }
+    cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+    a12 = _net->get_arc(n1,n2);
+
+    if ((!a12 && !a13) || (!a13 && !a32) || (!a12 && !a32)) cout << "\nJust one arc in bag!";
+
+    if(!a12 || a12->status==0) {
+        cout << "\nadding a12\n";
+        if (!a12) {
+            a12 = _net->_clone->get_arc(n1,n2)->clone();
+            a12->status=1;
+            a12->src = _net->get_node(a12->src->_name);
+            a12->dest = _net->get_node(a12->dest->_name);
+            a12->imaginary = true;
+            a12->connect();
+            _net->add_arc(a12);
+        }
+        if (a12->tbound.min < 0 && a12->tbound.max > 0)
+            a12->cs.init("cs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",min(cos(a12->tbound.min), cos(a12->tbound.max)), 1.);
+        else
+            a12->cs.init("cs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",min(cos(a12->tbound.min), cos(a12->tbound.max)), max(cos(a12->tbound.min),cos(a12->tbound.max)));
+        a12->vv.init("vv("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->src->vbound.min*a12->dest->vbound.min,a12->src->vbound.max*a12->dest->vbound.max);
+        if (_type==QC_SDP) {
+            a12->vcs.init("vcs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*a12->cs.get_lb(), a12->vv.get_ub()*a12->cs.get_ub());
+            if(a12->tbound.min < 0 && a12->tbound.max > 0)
+                a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
+            if (a12->tbound.min >= 0)
+                a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
+            if (a12->tbound.max <= 0)
+                a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_lb()*sin(a12->tbound.max));
+            _model->addVar(a12->vcs);
+            a12->vcs = 1;
+            _model->addVar(a12->vsn);
+        }
+        else {
+            a12->wr.init("wr("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*a12->cs.get_lb(), a12->vv.get_ub()*a12->cs.get_ub());
+            if(a12->tbound.min < 0 && a12->tbound.max > 0)
+                a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
+            if (a12->tbound.min >= 0)
+                a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
+            if (a12->tbound.max <= 0)
+                a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_lb()*sin(a12->tbound.max));
+            a12->wr = 1;
+            _model->addVar(a12->wr);
+            _model->addVar(a12->wi);
+        }
+        Constraint SOCP1("SOCP1");
+        SOCP1 += _net->get_node(n1->_name)->w*_net->get_node(n2->_name)->w;
+        if (_type==QC_SDP) {
+            SOCP1 -= ((a12->vcs)^2);
+            SOCP1 -= ((a12->vsn)^2);
+        }
+        else{
+            SOCP1 -= ((a12->wr)^2);
+            SOCP1 -= ((a12->wi)^2);
+        }
+        SOCP1 >= 0;
+        _model->addConstraint(SOCP1);
+    }
+    if(!a13 || a13->status==0) {
+        cout << "\nadding a13\n";
+        if(!a13) {
+            if (rot_bag) {
+                a13 = _net->_clone->get_arc(n3,n1)->clone();
+            }
+            else {
+                a13 = _net->_clone->get_arc(n1,n3)->clone();
+            }
+            a13->status=1;
+            a13->src = _net->get_node(a13->src->_name);
+            a13->dest = _net->get_node(a13->dest->_name);
+            a13->imaginary = true;
+            a13->connect();
+            _net->add_arc(a13);
+        }
+        if (a13->tbound.min < 0 && a13->tbound.max > 0)
+            a13->cs.init("cs("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",min(cos(a13->tbound.min), cos(a13->tbound.max)), 1.);
+        else
+            a13->cs.init("cs("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",min(cos(a13->tbound.min), cos(a13->tbound.max)), max(cos(a13->tbound.min),cos(a13->tbound.max)));
+        a13->vv.init("vv("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->src->vbound.min*a13->dest->vbound.min,a13->src->vbound.max*a13->dest->vbound.max);
+
+        if (_type==QC_SDP) {
+            a13->vcs.init("vcs("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*a13->cs.get_lb(), a13->vv.get_ub()*a13->cs.get_ub());
+            if(a13->tbound.min < 0 && a13->tbound.max > 0)
+                a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
+            if (a13->tbound.min >= 0)
+                a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
+            if (a13->tbound.max <= 0)
+                a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_lb()*sin(a13->tbound.max));
+            _model->addVar(a13->vcs);
+            a13->vcs = 1;
+            _model->addVar(a13->vsn);
+        }
+        else {
+            a13->wr.init("wr("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*a13->cs.get_lb(), a13->vv.get_ub()*a13->cs.get_ub());
+            if(a13->tbound.min < 0 && a13->tbound.max > 0)
+                a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
+            if (a13->tbound.min >= 0)
+                a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
+            if (a13->tbound.max <= 0)
+                a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_lb()*sin(a13->tbound.max));
+            a13->wr = 1;
+            _model->addVar(a13->wr);
+            _model->addVar(a13->wi);
+        }
+        Constraint SOCP2("SOCP2");
+        SOCP2 += _net->get_node(n1->_name)->w*_net->get_node(n3->_name)->w;
+        if (_type==QC_SDP) {
+            SOCP2 -= ((a13->vcs)^2);
+            SOCP2 -= ((a13->vsn)^2);
+        }
+        else{
+            SOCP2 -= ((a13->wr)^2);
+            SOCP2 -= ((a13->wi)^2);
+        }
+        SOCP2 >= 0;
+        _model->addConstraint(SOCP2);
+    }
+    if(!a32 || a32->status==0) {
+        cout << "\nadding a32\n";
+        if (!a32) {
+            if (rot_bag) {
+                a32 = _net->_clone->get_arc(n2,n3)->clone();
+            }
+            else {
+                a32 = _net->_clone->get_arc(n3,n2)->clone();
+            }
+            a32->status=1;
+            a32->src = _net->get_node(a32->src->_name);
+            a32->dest = _net->get_node(a32->dest->_name);
+            a32->imaginary = true;
+            a32->connect();
+            _net->add_arc(a32);
+        }
+        if (a32->tbound.min < 0 && a32->tbound.max > 0)
+            a32->cs.init("cs("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",min(cos(a32->tbound.min), cos(a32->tbound.max)), 1.);
+        else
+            a32->cs.init("cs("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",min(cos(a32->tbound.min), cos(a32->tbound.max)), max(cos(a32->tbound.min),cos(a32->tbound.max)));
+        a32->vv.init("vv("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->src->vbound.min*a32->dest->vbound.min,a32->src->vbound.max*a32->dest->vbound.max);
+
+        if (_type==QC_SDP) {
+            a32->vcs.init("vcs("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*a32->cs.get_lb(), a32->vv.get_ub()*a32->cs.get_ub());
+            if(a32->tbound.min < 0 && a32->tbound.max > 0)
+                a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
+            if (a32->tbound.min >= 0)
+                a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
+            if (a32->tbound.max <= 0)
+                a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_lb()*sin(a32->tbound.max));
+            _model->addVar(a32->vcs);
+            a32->vcs = 1;
+            _model->addVar(a32->vsn);
+        }
+        else {
+            a32->wr.init("wr("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*a32->cs.get_lb(), a32->vv.get_ub()*a32->cs.get_ub());
+            if(a32->tbound.min < 0 && a32->tbound.max > 0)
+                a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
+            if (a32->tbound.min >= 0)
+                a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
+            if (a32->tbound.max <= 0)
+                a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_lb()*sin(a32->tbound.max));
+            a32->wr = 1;
+            _model->addVar(a32->wr);
+            _model->addVar(a32->wi);
+        }
+        Constraint SOCP3("SOCP3");
+        SOCP3 += _net->get_node(n3->_name)->w*_net->get_node(n2->_name)->w;
+        if (_type==QC_SDP) {
+            SOCP3 -= ((a32->vcs)^2);
+            SOCP3 -= ((a32->vsn)^2);
+        }
+        else{
+            SOCP3 -= ((a32->wr)^2);
+            SOCP3 -= ((a32->wi)^2);
+        }
+        SOCP3 >= 0;
+        _model->addConstraint(SOCP3);
+    }
+
+    if (_type==QC_SDP) {
+        *wr12 = a12->vcs;
+        *wi12 = a12->vsn;
+        *wr13 = a13->vcs;
+        *wi13 = a13->vsn;
+        *wr31 = a13->vcs;
+        *wi31 = a13->vsn;
+        *wr32 = a32->vcs;
+        *wi32 = a32->vsn;
+        *wr23 = a32->vcs;
+        *wi23 = a32->vsn;
+    }
+    else{
+        *wr12 = a12->wr;
+        *wi12 = a12->wi;
+        *wr13 = a13->wr;
+        *wi13 = a13->wi;
+        *wr31 = a13->wr;
+        *wi31 = a13->wi;
+        *wr32 = a32->wr;
+        *wi32 = a32->wi;
+        *wr23 = a32->wr;
+        *wi23 = a32->wi;
+    }
+    *w1 = _net->get_node(n1->_name)->w;
+    *w2 = _net->get_node(n2->_name)->w;
+    *w3 = _net->get_node(n3->_name)->w;
+    if (rot_bag) _model->concretise(*SDPr, id, "SDP"+to_string(id));
+    else _model->concretise(*SDP, id, "SDP"+to_string(id));
 }
 
 
