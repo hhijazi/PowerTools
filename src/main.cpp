@@ -137,7 +137,14 @@ int main (int argc, const char * argv[]) {
 //     PowerModelType pmt = ACPF_T; //no batt no PV
 //      PowerModelType pmt = SOCP;
 //      PowerModelType pmt = SOCP_T;
-       PowerModelType pmt = ACPF_PV_T;  //pv only
+//       PowerModelType pmt = ACPF_PV_T;  //pv only
+//    PowerModelType pmt = ACPF_PEAK;  //pv only
+//    PowerModelType pmt = NF_PEAK;  //pv only
+//    PowerModelType pmt = ACPF_PV_PEAK;
+    
+//    PowerModelType pmt = NF_PV_PEAK;
+//    PowerModelType pmt = FIXED_PV;  //pv only
+//    PowerModelType pmt = COMPACT_FIXED_PV;  //pv only
 //    PowerModelType pmt = ACPF_BATT_T_NO_GEN;
 //      PowerModelType pmt = SOCP_BATT_T_NO_GEN;
 //   PowerModelType pmt = ACPF_BATT_T;
@@ -194,15 +201,17 @@ int main (int argc, const char * argv[]) {
     
 //           string radiationfile="../data/radiationfile-24-july.csv";
 //        string radiationfile="../data/radiationfile-24-february.csv";
-        string radiationfile="../data/radiationfile-24-january.csv";
-//        string radiationfile="../data/radiationfile-24-june.csv";
+        string irradiancefile="../data/Blacktown_2015.csv";
+//        string irradiancefile="../data/radiationfile-24-january_june_inv.csv";
 //        string radiationfile="../data/radiationfile-24-september.csv";
-           string costfile = "../data/gencost-24.csv";
+           string costfile = "../data/gencost-24_no_peak.csv";
+//    string costfile = "../data/gencost-24_no_peak_June_15.csv";
+//    string costfile = "../data/gencost-24_no_peak_Dec_15.csv";
 #ifdef __APPLE__
     filename = "../" + filename;
     mapfile = "../" + mapfile;
     loadfile  = "../" + loadfile;
-    radiationfile = "../" + radiationfile;
+    irradiancefile = "../" + irradiancefile;
     costfile = "../" + costfile;
 #endif
 
@@ -223,6 +232,7 @@ int main (int argc, const char * argv[]) {
 //    string filename = "../../data/nesta_case14_ieee.m";
 //    string filename = "../../data/nesta_case162_ieee_dtc.m";
 //    string filename = "../../data/nesta_case5_pjm.m";
+    PowerModelType pmt = COPPER_PEAK;
     if (argc >= 2) {
         filename = argv[1];
 
@@ -263,7 +273,7 @@ int main (int argc, const char * argv[]) {
 
     }
 
-    cout << "############################## POWERTOOLS ##############################\n\n";
+//    cout << "############################## POWERTOOLS ##############################\n\n";
     Net net;
 
 
@@ -275,21 +285,34 @@ int main (int argc, const char * argv[]) {
     if (net.readmap(mapfile, timesteps) == -1)
         return -1;
 
-    if (net.readload(loadfile, timesteps) == -1) {
-        return -1;
-    };
+//    if (net.readload(loadfile, timesteps) == -1) {
+//        return -1;
+//    };
 
 
     if (net.readcost(costfile, timesteps) == -1)
         return -1;
 
-//    if(net.readpvmax(pvfile)==-1)
+//    if(net.readrad(irradiancefile, timesteps)==-1)
 //        return -1;
 //
 
-    if (net.readrad(radiationfile, timesteps) == -1)
+    if (net.read_agg_rad_all("/Users/hij001/Downloads/Solar_Data") == -1)
         return -1;
 
+//    if (net.read_agg_rad(irradiancefile) == -1)
+//        return -1;
+//    irradiancefile="../../data/Blacktown_2016.csv";
+//    if (net.read_agg_rad(irradiancefile) == -1)
+//        return -1;
+    
+    loadfile = "../../data/Campus_Load_2015_1hr.csv";
+    if (net.read_agg_load(loadfile) == -1)
+        return -1;
+    loadfile = "../../data/Campus_Load_2016_1hr.csv";
+    if (net.read_agg_load(loadfile) == -1)
+        return -1;
+//    return 0;
    
 //    if(net.choosetime()==-1)                 
 //        return -1;
@@ -306,18 +329,66 @@ int main (int argc, const char * argv[]) {
 //    net.readFile("../data/nesta/" + filename);
 //    PowerModel power_model(pmt,&net);
 
-    cout <<
-    "\nTo run PowerTools with a different input/power flow model, enter:\nPowerTools filename ACPOL/ACRECT/SOCP/QC/QC_SDP/SDPDC/OTS/SOCP_OTS ipopt/gurobi\n\n";
+//    cout <<
+//    "\nTo run PowerTools with a different input/power flow model, enter:\nPowerTools filename ACPOL/ACRECT/SOCP/QC/QC_SDP/SDPDC/OTS/SOCP_OTS ipopt/gurobi\n\n";
+    pmt = COPPER_PEAK;
     PowerModel power_model(pmt, &net, st);
+    double max_irr = *max_element(begin(power_model._net->_radiation), end(power_model._net->_radiation));
+//        cout << "Max irradiance = " + to_string(max_irr) << endl;
+          cout << "Number of weather data points = " + to_string(power_model._net->_radiation.size()) << endl;
+              cout << "Number of load data points = " + to_string(power_model._net->_load_kW.size()) << endl;
+    for (int i = 0; i < power_model._net->_radiation.size(); i++) {
+        power_model._net->_radiation[i] /= max_irr;
+        assert(power_model._net->_radiation[i]<=1);
+    }
+//    PowerModelType pmt2 = COPPER_PV_PEAK;
+//    PowerModel power_model_PV(pmt2, &net, st);
+    
     //power_model.propagate_bounds();
     double wall0 = get_wall_time();
     double cpu0 = get_cpu_time();
-    power_model.build(timesteps);
-    int status = power_model.solve();
-
+    power_model.add_COPPER_vars();
+    int nb_samples = 5000;
+    double diff[nb_samples];
+    double min_diff = __DBL_MAX__;
+    double max_diff = 0;
+    double tot = 0;
+    for (int i = 0; i<nb_samples; i++) {
+        power_model.random_generator();
+        power_model.post_COPPER_static(false);
+        double no_pv = power_model._optimal;
+//        printf("no_pv TOTAL = %f\n", no_pv);        
+        power_model._type = COPPER_PV_PEAK;
+        power_model.post_COPPER_static(true);
+        diff[i] = (no_pv - power_model._optimal)/power_model._nb_years;
+        min_diff = min(min_diff, diff[i]);
+        max_diff = max(max_diff, diff[i]);
+        tot += diff[i];
+        printf("%f, ", diff[i]);
+        power_model._random_load.clear();
+        power_model._random_weather.clear();
+        power_model._random_load_uncert.clear();
+        power_model._random_PV_uncert.clear();
+    }
+    printf("Min = %f\n", min_diff);
+    printf("Max = %f\n", max_diff);
+    double mean = tot/nb_samples;
+    printf("Mean = %f\n", mean);
+    double aver_dev = 0;
+    for (int i = 0; i<nb_samples; i++) {
+        aver_dev += abs(diff[i] - mean);
+    }
+    aver_dev /= nb_samples;
+    printf("Average deviation = %f\n", aver_dev);
+    
+//    printf("Yearly savings = %f.\n", (no_pv - power_model._optimal)/power_model._nb_years);
+    
+//    printf("Monthly savings = %f.\n", (no_pv - power_model._optimal)/(12*power_model._nb_years));
+//    int status = power_model.solve();
+//    power_model.compute_losses();
     //  Stop timers
-    double wall1 = get_wall_time();
-    double cpu1 = get_cpu_time();
+//    double wall1 = get_wall_time();
+//    double cpu1 = get_cpu_time();
 
 
 //    cout << "ALL_DATA, " << net._name << ", " << net.nodes.size() << ", " << net.arcs.size() << ", " <<
@@ -328,8 +399,8 @@ int main (int argc, const char * argv[]) {
 //    std::streambuf *oldbuf = std::cout.rdbuf();
 //    std::cout.rdbuf(fw.rdbuf());
 //    ///
- power_model._model->print_solution();
-    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
+// power_model._model->print_solution();
+//    cout << "OPTIMAL COST = " << power_model._model->_opt << endl;
 //    power_model._model->_obj->print(true); //obj->print(true);
     
     ///

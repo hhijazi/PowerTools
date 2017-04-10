@@ -32,39 +32,9 @@ template<typename Number> var<Number>::var(Model* model, string name, int idx, N
 template<typename Number> var<Number>::var(string name, Number lb, Number ub):var(NULL, name, -1, lb, ub){};
 template<typename Number> var<Number>::var(Model* model, string name, int idx, Number lb, Number ub):var(model,name,idx,lb,ub,lb,ub){};
 template<typename Number> var<Number>::var(Model* model, string name, int idx, Number lb, Number ub, Number lb_off, Number ub_off){
-    _name = name;
+    init(name, lb, ub, lb_off, ub_off);
     _model = model;
     _idx = idx;
-    if(typeid(Number)==typeid(bool)){
-        _type = binary;
-        _lb = false;
-        _ub = true;
-        // WARNING setting bounds of a binary variable!
-    }
-    else{
-        if(typeid(Number)==typeid(int))
-            _type = integ;
-        else{
-           if(typeid(Number)==typeid(float))
-               _type = real;
-            else
-               _type = longreal;
-        }
-    }
-    _bounded_down = true;
-    _bounded_up = true;
-    if (lb==-numeric_limits<Number>::infinity()) {
-        _bounded_down = false;
-    }
-    else
-    if (ub==numeric_limits<Number>::infinity()) {
-        _bounded_up = false;
-    }
-    _lb = lb;
-    _ub = ub;
-    _lb_off = lb_off;
-    _ub_off = ub_off;
-    _val = 0.0;
 };
 //@}
 

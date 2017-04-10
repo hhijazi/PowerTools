@@ -8,7 +8,7 @@
 
 #ifndef __PowerTools____PowerModel__
 #define __PowerTools____PowerModel__
-
+#include <ctime>
 #include <stdio.h>
 #include <PowerTools++/Model.h>
 #include "PowerTools++/PTSolver.h"
@@ -18,8 +18,9 @@
 #include <PowerTools++/meta_var.h>
 #include <PowerTools++/meta_Constraint.h>
 #include <vector>
+#include <random>
 
-typedef enum { SOCP_BATT_T_NO_GEN, ACPF_BATT_T_NO_GEN, SOCP_PV_BATT_T, SOCP_BATT_T, ACPF_T, SOCP_T, SOCP_PV_T, ACPF_BATT_T, ACPF_PV_BATT_T, ACPF_PV_T, ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
+typedef enum { COPPER_PEAK, COPPER_PV_PEAK, NF, NF_PEAK, NF_PV_PEAK, ACPF_PV_PEAK, ACPF_PEAK, COMPACT_FIXED_PV, FIXED_PV, SOCP_BATT_T_NO_GEN, ACPF_BATT_T_NO_GEN, SOCP_PV_BATT_T, SOCP_BATT_T, ACPF_T, SOCP_T, SOCP_PV_T, ACPF_BATT_T, ACPF_PV_BATT_T, ACPF_PV_T, ACPF,ACPF_PV, ACPOL, ACRECT, QC, QC_SDP, OTS, DF, SOCP, SDP, DC, QC_OTS_L, QC_OTS_N, QC_OTS_O, SOCP_OTS, GRB_TEST } PowerModelType;
 typedef enum { MinCostBatt_t, MinCostPv_T, MinCostPv,MinCostPvBatt, MinCost, MinCostTime,  MinLoss, MinDelta, MaxDelta } Obj;
 
 class PowerModel {
@@ -30,10 +31,32 @@ public:
     PTSolver *           _solver;
     Net*                _net;
     SolverType          _stype;
-    int                 _timesteps;
-    int                 _days = 3;
-
+    int                 _timesteps = 24; // number of time steps per day
+    double              _optimal;
+    double              _summer_power_factor = 0.96;
+    double              _winter_power_factor = 0.98;
+    double              _price_inflation = 1;
+//    double              _peak_tariff = 0.167*1.1;
+    double              _peak_tariff = 0.16952*1.1;
+//    double              _peak_tariff = 0.191*1.1;
+    double              _demand_growth = 1;
+    int                 _nb_days = 31;
+    int                 _nb_years = 15;
+    double              _pv_cost = 1800;// $ per Watt for PV rooftop installation
+    time_t              _rawtime;
+    struct tm*          _start_date;// First day in simulation
+    vector<int>         _random_load;
+    vector<int>         _random_weather;
+    vector<double>      _random_load_uncert;
+    vector<double>      _random_PV_uncert;
     
+    std::random_device       _rd; // obtain a random number from hardware
+    std::mt19937             _eng; // seed the generator
+    uniform_int_distribution<> _distr_year_load; // randomly pick a year for load historical data
+    uniform_int_distribution<> _distr_year_PV; // randomly pick a year for PV historical data
+    uniform_int_distribution<> _distr_uncert; // +-5% uncertainty on PV and load data
+    uniform_int_distribution<> _distr_day; // randomly pick a day in month
+
     
     
     PowerModel();
@@ -41,6 +64,7 @@ public:
     ~PowerModel();
     void reset();
     void build(int time_steps=1);
+    void random_generator();
     void run_grb_lin_test();
     void run_grb_quad_test();
     /** Accessors */
@@ -54,9 +78,16 @@ public:
     void add_AC_Pol_vars();
     void add_AC_Rect_vars();
     void add_AC_Rect_vars_Time();
+    void add_AC_Rect_vars_Peak();
+    void add_AC_Rect_PV_vars_Peak();
+    void add_AC_Rect_vars_Time_fixed();
+    void add_AC_Rect_vars_Time_fixed_compact();
     
     void add_AC_Rect_PV_vars();
     void add_AC_Rect_PV_vars_Time();
+    void add_NF_vars(bool PV = false);
+    void add_NF_Peak_vars(bool PV = false);
+    void add_COPPER_vars(bool PV = false);    
     void add_AC_Rect_Batt_vars_Time();
     void add_AC_Rect_PV_Batt_vars_Time();
     void add_SOCP_Rect_PV_Batt_vars_Time();
@@ -90,8 +121,11 @@ public:
     void add_AC_Power_Flow_Time(Arc* a);
 
     void add_AC_KCL_Time(Node *n);
+    void add_AC_KCL_NF(Node *n, bool PV = false);
+    void add_AC_KCL_NF_PV(Node *n);
     void add_AC_KCL_SOCP_Time(Node *n);
     void add_AC_KCL_PV_Time(Node* n);
+    void add_AC_KCL_PV_Time_Compact(Node* n);
     void add_AC_KCL_Batt_Time(Node* n);
     void add_AC_KCL_PV_Batt_Time(Node* n);
     void add_AC_link_Batt_Time(Node* n);
@@ -115,15 +149,26 @@ public:
     Function sum(vector<Gen*> vec, string var);
 
     Function sum_Time(vector<Arc*> vec, string var, int time);
+    Function sum_Time_Compact(vector<Arc*> vec, string var, int time);
     Function sum_Time(vector<Gen*> vec, string var, int time);
 
-    
+    int random_weather(tm time_c, int start_year, int end_year);
+    int random_load(tm time_c, int start_year, int end_year);
+    int get_week_day_of_1st(tm time_c);
     /** Models */
     void post_AC_Polar();
     void post_AC_PF();
+    void post_NF(bool PV = false);
+    void post_NF_Peak(bool PV = false);
     void post_AC_PF_Time();
+    void post_AC_PF_Peak();
     void post_AC_PF_PV();
     void post_AC_PF_PV_Time();
+    void post_AC_PF_PV_Peak();
+    void post_COPPER(bool PV = false);
+    void post_COPPER_static(bool PV = false);
+    void post_AC_PF_Time_Fixed();
+    void post_AC_PF_Time_Fixed_Compact();
     void post_AC_PF_PV_Batt_Time();
     void post_AC_PF_Batt_Time_No_Gen();
     void post_AC_PF_Batt_Time();
@@ -147,13 +192,17 @@ public:
     int solve(int output = 1,bool relax = false);
     void min_cost();
     void min_cost_time();
+    void min_cost_peak();
     void min_cost_pv();
+    void min_cost_pv_fixed();
     void min_cost_batt();
     void min_cost_pv_batt();
 
     void min_var(var<>& v);
     void max_var(var<>& v);
     void min_cost_load();
+    void compute_losses();
+    int get_nb_days_in_month(const tm& timeinfo) const;
     void print();
 
     void add_SineCutsPos(Arc *a);

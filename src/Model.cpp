@@ -1662,12 +1662,15 @@ void Model::print_solution() const {
     var<bool> *bin_var = NULL;
     var<float> *real_var = NULL;
     var<double> *long_real_var = NULL;
-    int idx = 0;
+//    int idx = 0;
     int vid = 0;
 
     for (auto &v: _vars) {
-        vid = v->get_idx();
 //        assert(vid==idx);
+        if (!v->_print) {
+            continue;
+        }
+        vid = v->get_idx();
         switch (v->get_type()) {
             case real:
                 real_var = (var<float> *) v;
@@ -1688,7 +1691,7 @@ void Model::print_solution() const {
             default:
                 break;
         };
-        idx++;
+//        idx++;
     }
 
 /*    double sum_power_loss = 0;

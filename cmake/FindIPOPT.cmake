@@ -1,4 +1,5 @@
 ##set(IPOPT_ROOT_DIR "$ENV{IPOPT_ROOT_DIR}" CACHE PATH "IPOPT root directory.")
+#set(IPOPT_ROOT_DIR "~/Utils/Bonmin-1.8.4/build" CACHE PATH "IPOPT root directory.")
 set(IPOPT_ROOT_DIR "~/Utils/Bonmin-1.8/build" CACHE PATH "IPOPT root directory.")
 message("Looking for Ipopt in ${IPOPT_ROOT_DIR}")
 

@@ -25,18 +25,31 @@ class Net{
 public:
 
     int _bus_count; // buses are i
-    int _time_count; //time instances are j
+//    int _time_count; //time instances are j
 
 
     double bMVA;
+    
 
-
+    /** Max PV capacity in kW */
+    double PV_CAP = 945;
+    
+    /** Max PV capacity in kW */
+    double PV_EFF = 0.92;
+    
     std::vector<double> c0;
     std::vector<double> c1;
     std::vector<double> c2;
     std::vector<double> c3;
     
-    std::map<std::string, string> busmap;  //mapping between code and building number
+//    var<> max_kVa;//Max demand for the last 13 months
+    
+    vector<var<>> max_kVas_month; // Max demands for each billing period
+    vector<var<>> max_kVas_year; // Max demands for the last 13 months
+    vector<var<>> pv_gen; // Global PV generation in network, time dependant
+    vector<var<>> gen; // Global generation from utility, time dependant
+    
+    std::map<string, int> busmap;  //mapping between building names in load file and bus ids.
     
     string _name;
     
@@ -51,6 +64,19 @@ public:
     
     /**radiation limit time dependent*/
     std::vector<double>      _radiation;
+    
+    /**Power factor time dependent*/
+    std::vector<double>      _power_factor;
+    
+    /**Overall apparent power demand, time dependent*/
+    std::vector<double>      _load_kVA;
+    
+    /**Overall real power demand, time dependent*/
+    std::vector<double>      _load_kW;
+    
+    /**Date represented as a tuple <Year,Month,Day,hour>*/
+    vector<tuple<int,int,int,int>>           _date;
+
     
     /* tag the weekdays */
     vector<int> tag;
@@ -141,6 +167,11 @@ public:
     //int readFile_direct(std::string fname);
     //vector<int> weekday_tag();
     int readload(std::string ffname, int _timesteps);
+    
+    int read_agg_load(std::string fname); // Read aggregated load
+    int read_agg_rad(std::string fname); // Read aggregated radiation
+    int read_agg_rad_all(std::string path); // Read aggregated radiation form all files stored in path
+    
     int readpvmax(std::string ffname);
     int readcost(std::string ffname, int _timesteps);
     int choosetime();

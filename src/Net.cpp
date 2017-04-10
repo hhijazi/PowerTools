@@ -1,4 +1,4 @@
-//
+    //
 //  Net.cpp
 //  Cycle_Basis_PF
 //
@@ -12,7 +12,11 @@
 #include "PowerTools++/Path.h"
 #include <algorithm>
 #include <map>
+#include <string>
 #include "PowerTools++/PowerModel.h"
+#include <dirent.h>
+#include <iostream>
+#include <iterator>
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -29,6 +33,20 @@
 #include <time.h>
 #include <sstream>
 #include <cstdlib>
+//#define USEDEBUG
+#ifdef USEDEBUG
+#define Debug(x) cout << x
+#else
+#define Debug(x)
+#endif
+#define USEDEBUG2
+#ifdef USEDEBUG2
+#define Debug2(x) cout << x
+#else
+#define Debug2(x)
+#endif
+
+
 
 using namespace std;
 
@@ -92,7 +110,7 @@ bool Net::add_arc(Arc* a){
         if(lineID.find(inv_key)!=lineID.end())
             s = lineID[inv_key];
         s->insert(a);
-//        cout << "\nWARNING: adding another line between same nodes!\n";
+//        Debug( "\nWARNING: adding another line between same nodes!\n";
         a->parallel = true;
         parallel = true;
         
@@ -179,11 +197,11 @@ void Net::get_tree_decomp_bags(){
         sort(_clone->nodes.begin(), _clone->nodes.end(), node_compare);
         n = _clone->nodes.back();
         bag = new vector<Node*>();
-//        cout << "new bag = { ";
+//        Debug( "new bag = { ";
         for (auto a: n->branches) {
             nn = a->neighbour(n);
             bag->push_back(nn);
-//            cout << nn->_name << ", ";
+//            Debug( nn->_name << ", ";
         }
         _clone->remove_end_node();
         for (int i = 0; i<bag->size(); i++) {
@@ -206,13 +224,13 @@ void Net::get_tree_decomp_bags(){
             }
         }
         bag->push_back(n);
-//        cout << n->_name << "}\n";
+//        Debug( n->_name << "}\n";
         _bags->push_back(bag);
         if (bag->size()==3) {
             nb3++;
         }
     }
-//    cout << "\nNumber of 3D bags = " << nb3 << endl;
+//    Debug( "\nNumber of 3D bags = " << nb3 << endl;
 }
 
 
@@ -453,7 +471,7 @@ void Net::write(ofstream &myfile, Path* p, int cycle_index){
     }
     n--;
     (*n)->cycle = true;
-    myfile << (*n)->ID << ")\n;" << std::endl;
+    myfile << (*n)->ID << ")\n;" << endl;
 }
 
 /* Compare function for Dijkstra's pripority queue based on the distance from the source */
@@ -833,7 +851,7 @@ void Net::precise(ofstream &myfile, float f){
 }
 
 //void Net::writeDAT(string name){
-//    cout<<"function running"<<endl;
+//    Debug("function running"<<endl;
 //    ofstream myfile;
 //    myfile.open (name);
 //    myfile << "######### Automatically generated DAT file #########\n";
@@ -942,7 +960,7 @@ void Net::precise(ofstream &myfile, float f){
 //            myfile << " , " << (*n).arr[i];
 //        }
 //        myfile << " )" << endl;
-//        cout << (*n).cnst << endl;
+//        Debug( (*n).cnst << endl;
 //        n++;
 //    }
 //    new_constraints.clear();
@@ -988,23 +1006,23 @@ void Net::precise(ofstream &myfile, float f){
 //            c++;
 //        }
 //    }
-//    cout<< "not in cycles " << c <<endl;
+//    Debug( "not in cycles " << c <<endl;
 //}
 
 
 
 int Net::readrad(string fname, int _timesteps){
-    cout << "Loading file " << fname << endl;
+    Debug( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){
-        cout << "Could not open file\n";
+        Debug( "Could not open file\n");
         return -1;
     }
     
     
     
     if(file.peek()==EOF)
-    {cout << "File is empty" <<endl;
+    {Debug( "File is empty" <<endl);
         return 999;
     }
     
@@ -1020,54 +1038,335 @@ int Net::readrad(string fname, int _timesteps){
     {
             getline(file,line);                          //second line store in 'line'
 
-            std::stringstream copy(line);                 //store the whole line into copy
+            stringstream copy(line);                 //store the whole line into copy
             getline(copy, word, ',');                       //first column to ignore
 
             getline(copy, word, ',');
             _radiation.push_back(atof(word.c_str()));
-
+            Debug2("radiation at time " << _time_count << " : " << _radiation[_time_count] << endl);
             _time_count++;
 
     }
-    int sub_time_count = _time_count/_timesteps; //time count of each division
-    float sum_rad_;
-    float avg_sub_time_rad;
-    vector<double> av_rad;
+//    int sub_time_count = _time_count/_timesteps; //time count of each division
+//    float sum_rad_;
+//    float avg_sub_time_rad;
+//    vector<double> av_rad;
+//    
+//    for (int t = 1; t <= _time_count; t++) {
+//        sum_rad_ = 0;
+////        for (int stc = (t - 1) * sub_time_count; stc < (t - 1) * sub_time_count + sub_time_count; stc++) {
+////            sum_rad_ += _radiation[stc]; //sum for each division
+////        }
+////        avg_sub_time_rad = sum_rad_ / sub_time_count;
+////        av_rad.push_back(avg_sub_time_rad);
+//        Debug( "rad at time " << t << " : " << _radiation[_time_count] << endl);
+//        
+//    }
+//    Debug( endl);
+//    _radiation = av_rad;
     
-    for (int t = 1; t <= _timesteps; t++) {
-        sum_rad_ = 0;
-        for (int stc = (t - 1) * sub_time_count; stc < (t - 1) * sub_time_count + sub_time_count; stc++) {
-            sum_rad_ += _radiation[stc]; //sum for each division
-        }
-        avg_sub_time_rad = sum_rad_ / sub_time_count;
-        av_rad.push_back(avg_sub_time_rad);
-        cout << "average rad " << " ; " << avg_sub_time_rad << endl;
-        
-    }
-    cout << endl;
-    _radiation = av_rad;
-    
-    av_rad.clear();
+//    av_rad.clear();
 
     return 0;
 }
 
+int Net::read_agg_load(string fname){
+    Debug( "Loading file " << fname << endl);
+    ifstream file(fname.c_str());
+    if(!file.is_open()){
+        Debug( "Could not open file\n");
+        return -1;
+    }
+    
+    
+    
+    if(file.peek()==EOF)
+    {Debug( "File is empty" <<endl);
+        return 999;
+    }
+    
+    
+    string line;
+    string word;
+    string date;
+    double pf = 0;
+    int year, month, day, hour;
+    getline(file,line);                               //first line to ignore
+    int _time_count = 0;
+    while(file.peek()!=EOF)
+    {
+        getline(file,line);                          //second line store in 'line'
+        
+        stringstream copy(line);                 //store the whole line into copy
+        getline(copy, word, ',');                       //first column to ignore
+        Debug("date = " << word << endl);
+        auto strBegin = 0;
+        auto strEnd = word.find_first_of("/");
+        auto strRange = strEnd - strBegin + 1;
+        day = atof(word.substr(strBegin, strRange).c_str());
+        Debug("day = " << to_string(day) << endl);
+        word = word.substr(strEnd+1, word.size()-strRange);
+        Debug("date = " << word << endl);
+        strEnd = word.find_first_of("/");
+        strRange = strEnd - strBegin + 1;
+        month = atof(word.substr(strBegin, strRange).c_str());
+        Debug("month = " << to_string(month) << endl);
+        word = word.substr(strEnd+1, word.size()-strRange);
+        Debug("date = " << word << endl);
+        strEnd = word.size()-1;
+        strRange = strEnd - strBegin + 1;
+        year = atof(word.substr(strBegin, strRange).c_str());
+        Debug("year = " << to_string(year) << endl);
+        
+//        _date.push_back(make_tuple<>(year,month,day));
+//        exit(-1);
+        getline(copy, word, ',');
+        strEnd = word.find_first_of(":");
+        strBegin = 0;
+        strRange = strEnd - strBegin + 1;
+        word = word.substr(strBegin, strRange);
+        hour = atof(word.c_str());
+        _time_count = _power_factor.size();
+        Debug("hour = " << to_string(hour) << endl);
+//        if (hour!=24) {
+//            assert(_date[_time_count]==(make_tuple<>(year,month,day,hour)));
+//        }
+        getline(copy, word, ',');
+        pf = atof(word.c_str());
+        if(pf < 0.8 && pf >1){
+            if (_power_factor.empty()) {
+                pf = 0.98;
+            }
+            else {
+                pf = _power_factor.back();
+            }
+        }
+        _power_factor.push_back(pf);
+        Debug("Date = " << get<2>(_date[_time_count]) << "/" << get<1>(_date[_time_count]) << "/" << get<0>(_date[_time_count]) << " " <<get<3>(_date[_time_count]) << "h" << endl);
+        Debug("power factor at time " << _time_count << " : " << _power_factor[_time_count] << endl);
+        getline(copy, word, ',');
+        _load_kVA.push_back(atof(word.c_str()));
+        Debug("kVA demand at time " << _time_count << " : " << _load_kVA[_time_count] << endl);
+        getline(copy, word, ',');
+        _load_kW.push_back(atof(word.c_str()));
+        Debug("kW demand at time " << _time_count << " : " << _load_kW[_time_count] << endl);
+    }
+    return 0;
+}
 
+
+vector<string> open(string path = ".") {
+    
+    DIR*    dir;
+    dirent* pdir;
+    vector<string> files;
+    
+    dir = opendir(path.c_str());
+    
+    while ((pdir = readdir(dir))) {
+        files.push_back(pdir->d_name);
+    }
+    
+    return files;
+}
+
+int Net::read_agg_rad_all(string path){
+    
+    
+    string fname(path+"/all_radiations.out");
+    ifstream infile(fname, ios::in | ios::binary);
+    if (infile.is_open()) {
+        double v = 0;
+        while (infile >> v) {
+            _radiation.push_back(v);
+        }
+//        istream_iterator<double> iter(infile);
+//        copy(iter,istream_iterator<double>{},back_inserter(_radiation));//
+//        infile.read(reinterpret_cast<char*>(&_radiation[0]), infile.tellg());
+//        for (auto &rad : _radiation) {
+//            cout << rad << endl;
+//        }
+        infile.close();
+        return 0;
+    }
+
+    
+    vector<string> files;
+    
+    files = open(path); // or pass which dir to open
+    
+    ifstream file;
+    string date;
+    int year, month, day, hour;
+    double rad = 0, totRad = 0;
+    string line;
+    string word;
+    int time_count = 0;
+    for (auto & name: files) {
+        if (name.find("sl") == string::npos) {
+            continue;
+        }
+        string ab_name = path+"/"+name;
+        file.open(ab_name);
+        if(!file.is_open()){
+            Debug2( "Could not open file\n");
+            return -1;
+        }
+        else {
+            Debug2( "Opening file " << name << endl);
+        }
+        if(file.peek()==EOF)
+        {Debug2( ab_name << ": File is empty!" <<endl);
+            return 999;
+        }
+        stringstream copy;
+        getline(file,line);                               //first line to ignore
+        //    int _time_count = 0;
+        while(file.peek()!=EOF)
+        {
+            rad = 0;
+            totRad = 0;
+            for (int i = 0; i<60; i++) {
+                getline(file,line);
+                copy = stringstream(line);                 //store the whole line into copy
+                getline(copy, word, ',');                       //First column to ignore
+                getline(copy, word, ',');                       //Second column to ignore
+                getline(copy, word, ',');
+                year = atof(word.c_str());
+                Debug ("year = " << to_string(year) << endl);
+                getline(copy, word, ',');
+                month = atof(word.c_str());
+                Debug("month = " << to_string(month) << endl);
+                getline(copy, word, ',');
+                day = atof(word.c_str());
+                Debug("day = " << to_string(day) << endl);
+                getline(copy, word, ',');
+                hour = atof(word.c_str());
+                Debug("hour = " << to_string(hour) << endl);
+                getline(copy, word, ','); //ignore minutes
+                if (i==0) {
+                    _date.push_back(make_tuple<>(year,month,day,hour));
+                }
+                getline(copy, word, ',');
+                auto strBegin = word.find_first_not_of(" ");
+                if (strBegin<word.length()) {
+                    auto strEnd = word.find_last_not_of(" ");
+                    auto strRange = strEnd - strBegin + 1;
+                    word = word.substr(strBegin, strRange);
+                    rad = atof(word.c_str());
+                }
+//                else {
+//                    rad = _radiation[time_count-1]/2.;
+//                }
+                totRad += rad;
+            }
+            _radiation.push_back(totRad/60.);
+            Debug("Irradiance at time " << time_count << " : " << _radiation[time_count] << endl);
+            time_count++;
+        }
+        file.close();
+//        break;
+    }
+    ofstream outfile(fname, ios::out | ios::binary);
+    for (auto v: _radiation) {
+        outfile << v << " ";
+    }
+//    copy(_radiation.begin(),_radiation.end(),ostreambuf_iterator<char>(outfile));
+    outfile.close();
+    return 0;
+}
+
+int Net::read_agg_rad(string fname){
+    
+    
+    
+    Debug( "Loading file " << fname << endl);
+    ifstream file(fname.c_str());
+    if(!file.is_open()){
+        Debug( "Could not open file\n");
+        return -1;
+    }
+    
+    
+    
+    if(file.peek()==EOF)
+    {Debug( "File is empty" <<endl);
+        return 999;
+    }
+    
+    string date;
+    int year, month, day, hour;
+    string line;
+    string word;
+    int time_count = 0;
+    getline(file,line);                               //first line to ignore
+//    int _time_count = 0;
+    while(file.peek()!=EOF)
+    {
+        getline(file,line);                          //second line store in 'line'
+        
+        stringstream copy(line);                 //store the whole line into copy
+        getline(copy, word, ',');                       //first column to ignore
+        getline(copy, word, ',');
+        auto strBegin = word.find_first_not_of(" ");
+        auto strEnd = word.find_last_not_of(" ");
+        auto strRange = strEnd - strBegin + 1;
+        date = word.substr(strBegin, strRange);
+        Debug("date = " << date << endl);
+        year = atof(date.substr(0,4).c_str());
+        Debug("year = " << to_string(year) << endl);
+        month = atof(date.substr(5,7).c_str());
+        Debug("month = " << to_string(month) << endl);
+        day = atof(date.substr(8,10).c_str());
+        Debug("day = " << to_string(day) << endl);
+        strEnd = word.find_first_of(":");
+        strBegin = strEnd-2;
+        strRange = strEnd - strBegin + 1;
+        word = word.substr(strBegin, strRange);
+        hour = atof(word.c_str());
+        Debug("hour = " << to_string(hour) << endl);
+        _date.push_back(make_tuple<>(year,month,day,hour));
+        getline(copy, word, ',');
+        _radiation.push_back(atof(word.c_str()));
+        Debug("Irradiance at time " << time_count << " : " << _radiation[time_count] << endl);
+        time_count++;
+    }
+    
+    
+    return 0;
+}
+
+void write_vector_to_file(const std::vector<double>& myVector,std::string filename)
+{
+    std::ofstream ofs(filename,std::ios::out | std::ofstream::binary);
+    std::ostream_iterator<char> osi{ofs};
+    std::copy(myVector.begin(),myVector.end(),osi);
+}
+
+std::vector<char> read_vector_from_file(std::string filename)
+{
+    std::vector<char> newVector{};
+    std::ifstream ifs(filename,std::ios::in | std::ifstream::binary);
+    std::istreambuf_iterator<char> iter(ifs);
+    std::istreambuf_iterator<char> end{};
+    std::copy(iter,end,std::back_inserter(newVector));
+    return newVector;
+}
 
 
 
 //int Net::readpvmax(string fname){
-//    cout << "Loading file " << fname << endl;
+//    Debug( "Loading file " << fname << endl;
 //    ifstream file(fname.c_str());
 //    if(!file.is_open()){
-//        cout << "Could not open file\n";
+//        Debug( "Could not open file\n";
 //        return -1;
 //    }
 //    
 //    
 //    
 //    if(file.peek()==EOF)
-//    {cout << "File is empty" <<endl;
+//    {Debug( "File is empty" <<endl;
 //        return 999;
 //    }
 //    
@@ -1090,7 +1389,7 @@ int Net::readrad(string fname, int _timesteps){
 //        getline(file,line);                           //second line store in 'line'
 //        
 //        i=0;                                          //initialize i, new line
-//        std::stringstream copy(line);                 //store the whole line into copy
+//        stringstream copy(line);                 //store the whole line into copy
 //        getline(copy,word,',');                       //first column to ignore
 //        
 //        while(getline(copy,word,','))                 //start with the second column
@@ -1112,17 +1411,17 @@ int Net::readrad(string fname, int _timesteps){
 
 
 int Net::readcost(string fname, int _timesteps){
-    cout << "Loading file " << fname << endl;
+    Debug( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){
-        cout << "Could not open file\n";
+        Debug( "Could not open file\n");
         return -1;
     }
     
     
     
     if(file.peek()==EOF)
-    {cout << "File is empty" <<endl;
+    {Debug( "File is empty" <<endl);
         return 999;
     }
     
@@ -1147,7 +1446,7 @@ int Net::readcost(string fname, int _timesteps){
         getline(file,line);                           //second line store in 'line'
         
       
-        std::stringstream copy(line);                 //store the whole line into copy
+        stringstream copy(line);                 //store the whole line into copy
         getline(copy,word,',');                       //first column to ignore
         getline(copy,word,',');                       //c0 original unit:$/kWh
         c0.push_back(atof(word.c_str()));
@@ -1203,11 +1502,11 @@ int Net::readcost(string fname, int _timesteps){
         av_gen_1.push_back(avg_sub_time_gen_1);
         av_gen_2.push_back(avg_sub_time_gen_2);
         av_gen_3.push_back(avg_sub_time_gen_3);
-//        cout << "average cost c0" << " ; " << avg_sub_time_gen_0 << endl;
-        cout << "average cost c1" << " ; " << avg_sub_time_gen_1 << endl;
-//        cout << "average cost c2 " << " ; " << avg_sub_time_gen_2 << endl;
+//        Debug( "average cost c0" << " ; " << avg_sub_time_gen_0 << endl;
+        Debug( "average cost c1" << " ; " << avg_sub_time_gen_1 << endl);
+//        Debug( "average cost c2 " << " ; " << avg_sub_time_gen_2 << endl;
     }
-    cout << endl;
+    Debug( endl);
     c0 = av_gen_0;
     c1 = av_gen_1;
     c2 = av_gen_2;
@@ -1221,7 +1520,23 @@ int Net::readcost(string fname, int _timesteps){
     return 0;
 
 }
+// trim from start (in place)
+static inline void ltrim(string &s) {
+    s.erase(s.begin(), find_if(s.begin(), s.end(),
+                                    not1(ptr_fun<int, int>(isspace))));
+}
 
+// trim from end (in place)
+static inline void rtrim(string &s) {
+    s.erase(find_if(s.rbegin(), s.rend(),
+                         not1(ptr_fun<int, int>(isspace))).base(), s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(string &s) {
+    ltrim(s);
+    rtrim(s);
+}
 /*vector<int> Net::weekday_tag(){
     vector<int>  wkd_tag;
     for(int i=0; i<24; i++){
@@ -1230,15 +1545,15 @@ int Net::readcost(string fname, int _timesteps){
     return wkd_tag;
 }*/
 int Net::readmap(string fname, int timesteps){
-    cout << "Loading file " << fname << endl;
+    Debug( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){          // if file is not opened
-        cout << "Could not open file\n";
+        Debug( "Could not open file\n");
         return -1;
     }
     
     if(file.peek()==EOF)          // if peek naxt char is at the end
-    {cout << "File is empty" <<endl;
+    {Debug( "File is empty" <<endl);
         return 999;
     }
     
@@ -1249,63 +1564,70 @@ int Net::readmap(string fname, int timesteps){
     //busmap[test] = "23";
     // check if key is present
     //if (busmap.find("world") != busmap.end())
-        //std::cout << "map contains key world!\n";
+        //Debug( "map contains key world!\n";
     // retrieve
-    //std::cout << "Value is !!!"<<busmap[test] << "; "<<'\n';
-   // std::map<std::string, string>::iterator i;
+    //Debug( "Value is !!!"<<busmap[test] << "; "<<'\n';
+   // map<string, string>::iterator i;
    // i = busmap.find("hello");
     //assert(i != busmap.end());
-    //std::cout << "Key: " << i->first << " Value: " << i->second << '\n';
+    //Debug( "Key: " << i->first << " Value: " << i->second << '\n';
     /*for (map<string, string>::iterator iter = busmap.begin();
          iter != busmap.end();
          ++iter) {
-        cout <<"!!! "<< iter->first<<" "<< iter->second << endl;
+        Debug("!!! "<< iter->first<<" "<< iter->second << endl;
     }*/
 
-   // std::cout << "Key: " << test << " Value: " <<     busmap[test] << '\n';
+   // Debug( "Key: " << test << " Value: " <<     busmap[test] << '\n';
     
     
     
     /*getline(file,line);                           //third line store in 'line'
     
     // int i=0;                                          //initialize i when starting each new line
-    std::stringstream copy(line);                 //store the whole line into copy, copy is the string stream
-    cout<<"line is "<<line <<"; "<<endl;
+    stringstream copy(line);                 //store the whole line into copy, copy is the string stream
+    Debug("line is "<<line <<"; "<<endl;
     getline(copy,word,',');                       //first column to ignore
     getline(copy,word,',');                       //get the code in the second column
     string code = word;
-    cout<<"key is "<<code<<"; "<<endl;
+    Debug("key is "<<code<<"; "<<endl;
     getline(copy,word,',');                       //get the building number in the third column
-    cout<<"value is "<< word<<"; "<<endl;
+    Debug("value is "<< word<<"; "<<endl;
     //string building = word.substr(1,word.end());
     //int bn= atoi(building.c_str());
     busmap[code] = word;
-    std::cout << "Key: " <<code<<" Value: "<<busmap[code] << "; "<<'\n';
+    Debug( "Key: " <<code<<" Value: "<<busmap[code] << "; "<<'\n';
 */
-    
+    int idx = 0;
    while(file.peek()!=EOF){         //peek next char is not the end
         getline(file,line);                           //third line store in 'line'
         
        // int i=0;                                          //initialize i when starting each new line
-        std::stringstream copy(line);                 //store the whole line into copy, copy is the string stream
-        //cout<<"line is "<<line <<"; "<<endl;
+        stringstream copy(line);                 //store the whole line into copy, copy is the string stream
+        Debug("line is "<<line <<"; "<<endl);
         getline(copy,word,',');                       //first column to ignore
         //string code = word;// atoi(word.c_str());
-        getline(copy,word,',');                       //get the code in the second column
-        if(word.length()>3){
-            string code = word.substr(1, word.length()-3);
-            cout<<"key is "<<code<<"; "<<endl;
-            getline(copy,word,',');                       //get the building number in the third column
-            cout<<"value is "<< word<<"; "<<endl;
+        getline(copy,word,',');
+       getline(copy,word,',');
+       Debug("word is "<< word<<"; "<<endl);//get the code in the second column
+        if(word.length()>1){
+//            string code = word.substr(1, word.length()-3);
+//            Debug2("key is "<<code<<"; "<<endl);
+                                //get the building number in the third column
+            Debug("value is "<< word<<"; "<<endl);
             //string building = word.substr(1,word.end());
             //int bn= atoi(building.c_str());
-            busmap[code] = word;
-            std::cout << "Key: " <<code<<" Value: "<<busmap[code] << "; "<<'\n';
+            Debug("Key: " <<word<<" Value: "<<idx << "; "<<'\n');
+            busmap[word] = idx;
+            getline(copy,word,',');  // get bus name
+            trim(word);
+            nodes[idx]->_name = word;
+            Debug("bus name = " << word << endl);
        }
+       idx++;
     }
-    cout<<"!!!"<<endl;
+    Debug("!!!"<<endl);
    /* for (auto n: busmap) {
-        cout <<"Key!!! "<< n.first<<" Value!!!"<< n.second << endl;
+        Debug("Key!!! "<< n.first<<" Value!!!"<< n.second << endl;
     }*/
     
     return 0;
@@ -1315,21 +1637,21 @@ int Net::readmap(string fname, int timesteps){
 
 
 int Net::readload(string fname, int _timesteps){
-    cout << "Loading file " << fname << endl;
+    Debug( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){          // if file is not opened
-        cout << "Could not open file\n";
+        Debug( "Could not open file\n");
         return -1;
     }
     
     if(file.peek()==EOF)          // if peek naxt char is at the end
-    {cout << "File is empty" <<endl;
+    {Debug( "File is empty" <<endl);
         return 999;
     }
     
     for (auto n : nodes) {         //for all nodes
         n->_cond[0]->_pl.pop_back();                  //_pl: Conductor active power load. remove last element ??????
-//        cout << "pl size = " << n->_cond[0]->_pl.size() << endl;
+//        Debug( "pl size = " << n->_cond[0]->_pl.size() << endl;
     }
     
     int i=0;                                         //number of bus, or number of buildings
@@ -1341,22 +1663,22 @@ int Net::readload(string fname, int _timesteps){
     vector<string> b_num; //building number
     
     getline(file,line);                               //first line
-   cout<<" !!!!line is "<<line;
-  //  cout<<"line is "<<line<<endl;
-    std::stringstream building_num(line);
+   Debug(" !!!!line is "<<line);
+  //  Debug("line is "<<line<<endl;
+    stringstream building_num(line);
     
     getline(building_num, word, ',');          //ignore first column
-    getline(building_num, word, ',');          //ignore second column
+//    getline(building_num, word, ',');          //ignore second column
     //string building1;
     while(getline(building_num, word, ',')){
-        //cout<<"the second char is "<<word.substr(1,1)<<" "<<word.substr(2,1)<<endl;
+        //Debug("the second char is "<<word.substr(1,1)<<" "<<word.substr(2,1)<<endl;
         if((word.substr(1,1)=="0")&&(word.substr(2,1)=="0")){
             word.erase(word.begin()+1,word.begin()+3);
-            //cout <<"222222"<<endl;
+            //Debug("222222"<<endl;
         }
         if((word.substr(1,1)=="0")&&(word.substr(2,1)!="0")){
             word.erase(word.begin()+1,word.begin()+2);
-            //cout << "1111111"<<endl;
+            //Debug( "1111111"<<endl;
         }
         for(int i=0; i<word.length(); i++){
             if (word.substr(i,2)==" B"){
@@ -1365,7 +1687,7 @@ int Net::readload(string fname, int _timesteps){
             }
         }
         //if((word.substr(0,1)>="A")&&(word.substr(0,1)<="Z")){
-        cout<<"word is "<<word<<"; "<<endl;
+        Debug("word is "<<word<<"; "<<endl);
         b_num.push_back(word);
         //}else{
         //    break;
@@ -1373,7 +1695,7 @@ int Net::readload(string fname, int _timesteps){
     }
     
     for(auto n: b_num){
-        cout<<"b_num is "<<n<<endl;
+        Debug("b_num is "<<n<<endl;)
     }
     
     
@@ -1385,41 +1707,41 @@ int Net::readload(string fname, int _timesteps){
     int _time_count = 0;            //counts all time instances
     
     
-    map<string,string>::iterator result;
+//    map<string,string>::iterator result;
     //map<string,CAgent>::iterator iter=m_AgentClients.find(strAgentName);
-    vector<int> position; //record the position of the building number
-    for (auto k: busmap) {
-       // cout <<"Key!!! "<< k.first<<" Value!!!"<< k.second << endl;
-        //if(n.second!=""){
-        int tag=0;
-        if(k.second!=""){
-            for (int i=0; i < b_num.size(); i++){
-                if(b_num[i]==k.second){
-                    position.push_back(i);
-                    cout<<"The position is "<<i<<endl;
-                    tag=1;
-                    break;
-                    
-                }
-            }
-            if(tag!=1){
-                cout<<"value exists but not in the csv file."<<endl;
-                position.push_back(-1);
-            }else{
-                cout<<"value exists and in the csv."<<endl;
-            }
-            
-        }else{
-            cout<<"value does not exist."<<endl;
-            position.push_back(-1);
-        }
-            //cout<<find(busmap.begin() , busmap.end() , n.second)<<"!!!!!"<<endl;
-            //if(vector<int>::const_iterator result = find(vec.begin() , vec.end() , search_value);)
-    }
+//    vector<int> position; //record the position of the building number
+//    for (auto k: busmap) {
+//       // Debug("Key!!! "<< k.first<<" Value!!!"<< k.second << endl;
+//        //if(n.second!=""){
+//        int tag=0;
+//        if(k.second!=""){
+//            for (int i=0; i < b_num.size(); i++){
+//                if(b_num[i]==k.second){
+//                    position.push_back(i);
+//                    Debug2("The position is "<<i<<endl);
+//                    tag=1;
+//                    break;
+//                    
+//                }
+//            }
+//            if(tag!=1){
+//                Debug("value exists but not in the csv file."<<endl);
+//                position.push_back(-1);
+//            }else{
+//                Debug("value exists and in the csv."<<endl);
+//            }
+//            
+//        }else{
+//            Debug("value does not exist."<<endl);
+//            position.push_back(-1);
+//        }
+//            //Debug(find(busmap.begin() , busmap.end() , n.second)<<"!!!!!"<<endl;
+//            //if(vector<int>::const_iterator result = find(vec.begin() , vec.end() , search_value);)
+//    }
 
-    //cout<<"!!! value is "<<busmap["1008B1T1"]<<"; "<<endl;
+    //Debug("!!! value is "<<busmap["1008B1T1"]<<"; "<<endl;
     /*for(auto n: position){
-        cout<<"the position vector is "<<n<<endl;
+        Debug("the position vector is "<<n<<endl;
     }*/
    
     while(file.peek()!=EOF)         //peek next char is not the end
@@ -1427,11 +1749,11 @@ int Net::readload(string fname, int _timesteps){
         getline(file,line);                           //second line store in 'line'
         
         //i=0;                                          //initialize i when starting each new line
-        std::stringstream copy(line);                 //store the whole line into copy, copy is the string stream
+        stringstream copy(line);                 //store the whole line into copy, copy is the string stream
         getline(copy,word,',');                       //first column to ignore
-        getline(copy,word,',');
+//        getline(copy,word,',');
         tag.push_back(atoi(word.c_str()));
-        // cout<<"tag is "<< atoi(word.c_str()) <<"; ";
+        // Debug("tag is "<< atoi(word.c_str()) <<"; ";
         tot = 0;                    //initialize total power when starting each new line
         tot_Kw = 0;                 //initialize filtered total power when starting each new line
         //int n =0;
@@ -1443,66 +1765,113 @@ int Net::readload(string fname, int _timesteps){
             if(word==""){
                 pl = 0;
             }else{
-                
+                Debug("word = " << word << endl);
+                const auto strBegin = word.find_first_not_of("\r");
+                const auto strEnd = word.find_last_not_of("\r");
+                const auto strRange = strEnd - strBegin + 1;
+                word = word.substr(strBegin, strRange);
                 int len=word.length()-2;                  //erase 'kW'
+                Debug("word length = " << len << endl);
                 string c=word.substr(0,len);              //new string, only power value
-            
-                tot_Kw +=  atof(c.c_str());               //convert string to float
-                pl = atof(c.c_str())/(1000*bMVA);         //power demand for one building, baseMVA: max power. bMVA=100
+                Debug("c = " << c << endl);
+                pl = atof(c.c_str());
+                if (_time_count>11 && _time_count<15) {
+                    pl *= 1.2;
+                }
+                tot_Kw +=  pl;               //convert string to float
+                pl /= 1000.*bMVA;         //power demand for one building, baseMVA: max power. bMVA=100
             }
+            
             pl_one_line.push_back(pl);
-            //cout<<"sdkflals "<< pl<<endl;
+            //Debug("sdkflals "<< pl<<endl;
             
             /*if (pl <= 0.05) {                                  //filter buildings with power >5000kW
-                cout <<  "pl is " << pl*1000*bMVA << " ;";
+                Debug(  "pl is " << pl*1000*bMVA << " ;";
                 nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW, push the remaining buildings to nodes
                 i++;
                 n++;
             }*/
             
-            //cout <<"number of node is " << n <<" ;" ;
+            //Debug("number of node is " << n <<" ;" ;
             //tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];  //*MW. calculate the filtered total power for each
         }
         
-        for(auto n: pl_one_line){
-            cout<<"kkk "<<n<<" ; "<<endl;
-        }
+//        for(auto n: pl_one_line){
+//            Debug("kkk "<<n<<" ; "<<endl;
+//        }
         
-        int i = 0;
-        for(auto k: position){
-            //cout<<"888position is "<<pl_one_line[k]<<" ; "<<endl;
-            if((k==-1)|(pl_one_line[k]>0.05)){
-                nodes[i]->_cond[0]->_pl.push_back(0);
-            }else{
-                nodes[i]->_cond[0]->_pl.push_back(pl_one_line[k]);
+//        int i = 0;
+//        for(auto k: position){
+//            //Debug("888position is "<<pl_one_line[k]<<" ; "<<endl;
+//            if((k==-1)||(pl_one_line[k]>0.05)){
+//                nodes[i]->_cond[0]->_pl.push_back(0);                
+//            }else{
+//                nodes[i]->_cond[0]->_pl.push_back(pl_one_line[k]);
+//            }
+//            tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];  //*MW. calculate the filtered total power for each
+//            i++;
+//        }
+        int nb_knowns=0;
+        int idx = 0, id = 0;
+        for (auto & b_name: b_num) {
+            auto iter = busmap.find(b_name);
+            if (iter!= busmap.end()) {
+                id = iter->second;
+                Debug("Bus: " << id << " name = " << nodes[id]->_name << "id in load file = " << b_name << " load = " << pl_one_line[idx] << endl << endl);
+                tot += pl_one_line[idx];
+                nodes[id]->_cond[0]->_pl.push_back(pl_one_line[idx]);
+                nodes[id]->_has_load = true;
+                nb_knowns++;
             }
-            i++;
-            tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];  //*MW. calculate the filtered total power for each
+            idx++;
         }
-        
-        //cout << "Original TOTAL Kw = " << tot_Kw << endl;  //cout for each line (each timestep)
-        cout << "TOTAL Kw = " << tot*1000*bMVA << endl;
-        
-        remain = fmax(0, 0.1 - tot);              //assumed limit=10MW  (which is the average total consumption (power)...making sure no bus gets negative power
+//        exit(-1);
+//        if (i==259|| i==258) {
+            Debug(nodes[i]->_name << endl);
+            Debug("i = " << i << endl);
+            Debug( "Original TOTAL Kw = " << tot_Kw << endl);  //cout for each line (each timestep)
+            Debug( "TOTAL Kw = " << tot*1000*bMVA << endl);
+//        }
+//        exit(-1);
+        remain = fmax(0, tot_Kw/(1000*bMVA) - tot);              //assumed limit=10MW  (which is the average total consumption (power)...making sure no bus gets negative power
         //shouble be changed again when the loadfile is accurate*
+//
         
-        double tot2 = tot;
-        
-        av = remain/(nodes.size() - i);          //fill the remaining part buildings for average values
-        for (int j = i; j < nodes.size(); j++)
+//        for (int i=0; i<nodes.size(); i++){
+//            Debug2("pl size = " << nodes[i]->_cond[0]->_pl.size() << endl);
+//            //        for(int j=0; j<nodes[i]->_cond[0]->_pl.size(); j++){
+//            //            Debug("node is "<<nodes[i]->_cond[0]->_pl[j]<<" ;");
+//            //        }
+//            //}
+//        }
+        Debug( "Remain = " << remain << endl);
+        double tot2 = tot*1000*bMVA;
+        int nb_unknown = nodes.size() - nb_knowns;
+        Debug("nb_unknowns = " << nb_unknown << endl);
+        Debug("Percentage of unknown loads = " << (float)nb_unknown/nodes.size()*100. << endl);
+        av = remain/(nb_unknown);          //fill the remaining part buildings for average values
+        Debug(" av = " << av << endl);
+        nb_unknown = 0;
+        for (auto& n: nodes)
         {
-            nodes[j]->_cond[0]->_pl.push_back(av);
-            tot2 += av;
+            if (!n->_has_load) {
+                n->_cond[0]->_pl.push_back(av);
+                tot2 += av*1000*bMVA;
+                nb_unknown++;
+            }
         }
-        
+        Debug("nb unknown = "<< nb_unknown << endl);
+        assert(abs(tot2-tot_Kw)<0.000001);
         _time_count++;
     }
     
     for (int i=0; i<nodes.size(); i++){
-        for(int j=0; j<nodes[i]->_cond[0]->_pl.size(); j++){
-            cout<<"node is "<<nodes[i]->_cond[0]->_pl[j]<<" ;";
-        }
-        cout<<endl;
+        assert(nodes[i]->_cond[0]->_pl.size()==72);
+        Debug("Bus: " << i << " name = " << nodes[i]->_name << " | pl size = " << nodes[i]->_cond[0]->_pl.size() << endl);
+//        for(int j=0; j<nodes[i]->_cond[0]->_pl.size(); j++){
+//            Debug("node is "<<nodes[i]->_cond[0]->_pl[j]<<" ;");
+//        }
+//        Debug(endl);
     }
 
 
@@ -1512,11 +1881,11 @@ int Net::readload(string fname, int _timesteps){
         getline(file,line);                           //second line store in 'line'
         
         i=0;                                          //initialize i when starting each new line
-        std::stringstream copy(line);                 //store the whole line into copy, copy is the string stream
+        stringstream copy(line);                 //store the whole line into copy, copy is the string stream
         getline(copy,word,',');                       //first column to ignore
         getline(copy,word,',');
         tag.push_back(atoi(word.c_str()));
-        // cout<<"tag is "<< atoi(word.c_str()) <<"; ";
+        // Debug("tag is "<< atoi(word.c_str()) <<"; ";
         tot = 0;                    //initialize total power when starting each new line
         tot_Kw = 0;                 //initialize filtered total power when starting each new line
         int n =0;
@@ -1529,18 +1898,18 @@ int Net::readload(string fname, int _timesteps){
             tot_Kw +=  atof(c.c_str());               //convert string to float
             pl = atof(c.c_str())/(1000*bMVA);         //power demand for one building, baseMVA: max power. bMVA=100
             if (pl <= 0.05) {                                  //filter buildings with power >5000kW
-                cout <<  "pl is " << pl*1000*bMVA << " ;";
+                Debug(  "pl is " << pl*1000*bMVA << " ;";
                 nodes[i]->_cond[0]->_pl.push_back(pl);         //*MW, push the remaining buildings to nodes
                 i++;
                 n++;
             }
             
-            cout <<"number of node is " << n <<" ;" ;
+            Debug("number of node is " << n <<" ;" ;
             tot += nodes[i]->_cond[0]->_pl[nodes[i]->_cond[0]->_pl.size()-1];  //*MW. calculate the filtered total power for each
         }
         
-        cout << "Original TOTAL Kw = " << tot_Kw << endl;  //cout for each line (each timestep)
-        cout << "TOTAL Kw = " << tot*1000*bMVA << endl;
+        Debug( "Original TOTAL Kw = " << tot_Kw << endl;  //cout for each line (each timestep)
+        Debug( "TOTAL Kw = " << tot*1000*bMVA << endl;
         
         remain = fmax(0, 0.1 - tot);              //assumed limit=10MW  (which is the average total consumption (power)...making sure no bus gets negative power
         //shouble be changed again when the loadfile is accurate*
@@ -1557,14 +1926,14 @@ int Net::readload(string fname, int _timesteps){
         _time_count++;
     }*/
    
-    cout << "total number of timesteps = " << _time_count << endl;
+    Debug( "total number of timesteps = " << _time_count << endl);
     int sub_time_count = _time_count/_timesteps; //time count of each division
-    cout << "subtime = " << sub_time_count << endl;
+    Debug( "subtime = " << sub_time_count << endl);
     vector<float> sum_load_days;
     float sum_load_;
     float avg_sub_time_load;
     vector<double> av_loads;
-    typedef std::pair<int, double> myPair_type;
+    typedef pair<int, double> myPair_type;
     
     struct mypair_comp{
         bool operator()(myPair_type const& lhs, myPair_type const& rhs){
@@ -1572,117 +1941,168 @@ int Net::readload(string fname, int _timesteps){
         }
     };
     vector<myPair_type> pairs;//order decreasing average load
-    double tot_aver = 0;
-    for (int i = 0; i < nodes.size(); i++) {
-        tot_aver = 0;
-        cout << "av load for bus " << i << " = ";
-        for (int t = 1; t <= _timesteps; t++) {
-            sum_load_ = 0;
-            for (int stc = (t-1)*sub_time_count; stc < (t-1)*sub_time_count + sub_time_count; stc++) {
-                sum_load_ += nodes[i]->_cond[0]->_pl[stc]; //sum for each division
-            }
-            avg_sub_time_load = sum_load_/sub_time_count;
-            av_loads.push_back(avg_sub_time_load);
-            cout << " ; " << avg_sub_time_load;
-            tot_aver += avg_sub_time_load;
-        }
-        tot_aver /= _timesteps;
-        pairs.push_back(make_pair(i, tot_aver));
-        cout << endl;
-        nodes[i]->_cond[0]->_pl = av_loads;
-        av_loads.clear();
-    }
+//    double tot_aver = 0;
+//    for (int i = 0; i < nodes.size(); i++) {
+//        tot_aver = 0;
+//        Debug( "av load for bus " << i << " = ");
+//        for (int t = 1; t <= _timesteps; t++) {
+//            sum_load_ = 0;
+//            for (int stc = (t-1)*sub_time_count; stc < (t-1)*sub_time_count + sub_time_count; stc++) {
+//                sum_load_ += nodes[i]->_cond[0]->_pl[stc]; //sum for each division
+//            }
+//            avg_sub_time_load = sum_load_/sub_time_count;
+//            av_loads.push_back(avg_sub_time_load);
+//            Debug( " ; " << avg_sub_time_load);
+//            tot_aver += avg_sub_time_load;
+//        }
+//        tot_aver /= _timesteps;
+//        pairs.push_back(make_pair(i, tot_aver));
+//        Debug( endl);
+//        nodes[i]->_cond[0]->_pl = av_loads;
+//        Debug("pl size = " << av_loads.size() << endl);
+//        av_loads.clear();
+//    }
+//
+//    sort(pairs.begin(), pairs.end(), mypair_comp());
     
-    std::sort(pairs.begin(), pairs.end(), mypair_comp());
-    
-    for (int i = 0; i < 20; i++) { //first 20 buidling install
-        //cout <<"pairs" << pairs[i].first << "  " << pairs[i].second << endl;
-        nodes[pairs[i].first]->_cand = true;
-    }
+//    for (int i = 0; i < 20; i++) { //first 20 buidling install
+//        //Debug("pairs" << pairs[i].first << "  " << pairs[i].second << endl;
+//        nodes[pairs[i].first]->_cand = true;
+//    }
     
     for (auto n:nodes){
         
-        if (n->ID==155){ //Concessions Building Students' Association (ANUSA)
+        if (n->ID==154){ //Concessions Building Students' Association (ANUSA)
             n->_inst = true;
-            n->max_pv_size = (14.28)/(0.218);
+            n->max_pv_size = (14.28);
         }
         
-        else if (n->ID==185){ //Lennox House Block F University Preschool
+        else if (n->ID==184){ //Lennox House Block F University Preschool
             n->_inst = true;
-            n->max_pv_size = (5.32+4.94)/(0.218); //using lowest radiation,to get max pv size
+            n->max_pv_size = (5.32+4.94); //using lowest radiation,to get max pv size
         }
         
-        else if (n->ID==5){ //Frank Fenner
+        else if (n->ID==4){ //Frank Fenner
             n->_inst = true;
-            n->max_pv_size = 115;
+            n->max_pv_size = 34.08;
         }
-        
+
+        else if (n->ID==5){ //D.A. Brown
+            n->_cand = true;
+            n->max_pv_size = 40;
+        }
+
         else if (n->ID==66){ //Sir Roland Wilson Building
-            n->_inst = true;
-            n->max_pv_size = 109;
+            n->_cand = true;
+            n->max_pv_size = 20;
         }
         else if (n->ID==83){ //John Curtin School of Medical Research
-            n->_inst = true;
-            n->max_pv_size = 178;
+            n->_cand = true;
+            n->max_pv_size = 35;
         }
-        else if (n->ID==64){ //Chifley Library
-            n->_inst = true;
-            n->max_pv_size = 351;
-        }
+//        else if (n->ID==64){ //Chifley Library
+//            n->_cand = true;
+//            n->max_pv_size = 75;
+//        }
         else if (n->ID==55){ //Research School of Information Sciences and Engineering
-            n->_inst = true;
-            n->max_pv_size = 176;
+            n->_cand = true;
+            n->max_pv_size = 35;
         }
         else if (n->ID==110){ //Law Building / Library
-            n->_inst = true;
-            n->max_pv_size = 304;
+            n->_cand = true;
+            n->max_pv_size = 65;
         }
         else if (n->ID==11){ //Chancelry Annex Buildings
-            n->_inst = true;
-            n->max_pv_size = 192;
+            n->_cand = true;
+            n->max_pv_size = 40;
         }
-        else if (n->ID==27){ //Toad Hall
-            n->_inst = true;
-            n->max_pv_size = (15)/(0.218);
-        }
-        else if (n->ID==32){ //University House
-            n->_inst = true;
-            n->max_pv_size = (45)/(0.218);
-        }
+//        else if (n->ID==27){ //Toad Hall
+//            n->_cand = true;
+//            n->max_pv_size = (15);
+//        }
+//        else if (n->ID==32){ //University House
+//            n->_cand = true;
+//            n->max_pv_size = (45);
+//        }
         else if (n->ID==7){ //Laurus Wing – Ursula Hall
-            n->_inst = true;
-            n->max_pv_size = (50)/(0.218);
+            n->_cand = true;
+            n->max_pv_size = (50);
         }
-        else if (n->ID==58){ //Menzies Library
-            n->_inst = true;
-            n->max_pv_size = (60)/(0.218);
-        }
+//        else if (n->ID==58){ //Menzies Library
+//            n->_cand = true;
+//            n->max_pv_size = (60);
+//        }
         else if (n->ID==62){ //Graduate House
-            n->_inst = true;
-            n->max_pv_size = (30)/(0.218);
+            n->_cand = true;
+            n->max_pv_size = (30);
         }
         else if (n->ID==3){ //Gould Wing, Botany and Zoology
-            n->_inst = true;
-            n->max_pv_size = (10)/(0.218);
+            n->_cand = true;
+            n->max_pv_size = (10);
         }
         else if (n->ID==71){ //Hugh Ennor Building (APF)
-            n->_inst = true;
-            n->max_pv_size = (10)/(0.218);
+            n->_cand = true;
+            n->max_pv_size = (10);
         }
         else if (n->ID==22){ //Melville Hall
-            n->_inst = true;
-            n->max_pv_size = (30)/(0.218);
+            n->_cand = true;
+            n->max_pv_size = (30);
         }
         else if (n->ID==51){ //Computer science & Information Technology Building
-            n->_inst = true;
-            n->max_pv_size = (45)/(0.218);
+            n->_cand = true;
+            n->max_pv_size = (45);
         }
         else if (n->ID==75){ //John Curtin Building (Old)
-            n->_inst = true;
-            n->max_pv_size = (50)/(0.218);
+            n->_cand = true;
+            n->max_pv_size = (50);
+        }
+        else if (n->ID==237){ //Linnaeus Building
+            n->_cand = true;
+            n->max_pv_size = (35);
+        }
+        else if (n->ID==16){ //R.N. Robertson Building
+            n->_cand = true;
+            n->max_pv_size = (35);
+        }
+        else if (n->ID==258){ //NCI
+            n->_cand = true;
+            n->max_pv_size = (50);
+            Debug2( "NCI load = " << n->_cond[0]->_pl[0] << endl);
+        }
+//        else if (n->ID==115){ // Burton and Garran Hall
+//            n->_cand = true;
+//            n->max_pv_size = (50);
+//        }
+//        else if (n->ID==20){ // Haydon-Allen
+//            n->_cand = true;
+//            n->max_pv_size = (200);
+//        }
+        else if (n->ID==5){ // D.A. Brown
+            n->_cand = true;
+            n->max_pv_size = (40);
+        }
+        else if (n->ID==54){ // Brian Anderson
+            n->_cand = true;
+            n->max_pv_size = (25);
+        }
+        else if (n->ID==45){ // Cockroft
+            n->_cand = true;
+            n->max_pv_size = (60);
+        }
+        else if (n->ID==78){ // Leonard Huxley
+            n->_cand = true;
+            n->max_pv_size = (60);
+        }
+        else if (n->ID==89){ // JG Crawford Building
+            n->_cand = true;
+            n->max_pv_size = (120);
+        }
+        else if (n->ID==38){ // Centre for Gravitational Physics
+            n->_cand = true;
+            n->max_pv_size = (100);
         }
         else {
-            n->max_pv_size =  300;
+            n->max_pv_size =  0;
         }
         
     }
@@ -1695,13 +2115,13 @@ int Net::readload(string fname, int _timesteps){
 //    
 //int Net::choosetime(){
 //    string time;
-//    cout<<"type in time interval number"<<endl;
+//    Debug("type in time interval number"<<endl;
 //    cin>>time;
 //    int t=atoi(time.c_str());
-////    cout<<t<<endl;
+////    Debug(t<<endl;
 //    
 //    if (t> (nodes[0]->_cond[0]->_pl.size()))
-//    { cout<<"invalid time shot"<<endl;
+//    { Debug("invalid time shot"<<endl;
 //        return -1;}
 //    else {
 //    
@@ -1709,9 +2129,9 @@ int Net::readload(string fname, int _timesteps){
 //    for (auto &n: nodes)
 //    {
 //        n->_cond[0]->_pl[0]=n->_cond[0]->_pl[t];
-////        cout<<n->_cond[0]->_pl[0]<<endl;
+////        Debug(n->_cond[0]->_pl[0]<<endl;
 ////        n->_cond[0]->_pvmax[0]=n->_cond[0]->_pvmax[t];
-////        cout<<n->_cond[0]->_pvmax[0]<<endl;
+////        Debug(n->_cond[0]->_pvmax[0]<<endl;
 //    }
 //        
 ////    for (auto &n: gens){
@@ -1732,10 +2152,10 @@ int Net::readFile(string fname){
     vector<string> bus_name;
     double pl = 0, ql = 0, gs = 0, bs = 0, kvb = 0, vmin = 0, vmax = 0, vs = 0;
     int id = 0;
-    cout << "Loading file " << fname << endl;
+    Debug( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){
-        cout << "Could not open file\n";
+        Debug( "Could not open file\n");
         return -1;
     }
     _clone = new Net();
@@ -1747,14 +2167,14 @@ int Net::readFile(string fname){
     file >> word;
 //    getline(file, word);
     _name = word;
-//    cout <<"name is "<< _name << endl;
+//    Debug("name is "<< _name << endl;
     while (word.compare("mpc.baseMVA")){
         file >> word;
     }
     file.ignore(3);
     getline(file, word,';');
     bMVA = atoi(word.c_str());
-//    cout << "BaseMVA = " << bMVA << endl;
+//    Debug( "BaseMVA = " << bMVA << endl;
     
     /* Bus name */
     while (word.compare("mpc.bus_name")){
@@ -1764,7 +2184,7 @@ int Net::readFile(string fname){
     while(word.compare("};")){
         file >> word;
         bus_name.push_back(word.substr(1,(word.length()-3)));
-        //cout<<"Bus name is "<<name <<"; "<<"\n";
+        //Debug("Bus name is "<<name <<"; "<<"\n";
     }
     file.seekg (0, file.beg);
     
@@ -1779,9 +2199,9 @@ int Net::readFile(string fname){
     int i=0;
     while(word.compare("];")){
         name = word.c_str();
-        //cout<<"Bus name is "<<name<<"; ";
+        //Debug("Bus name is "<<name<<"; ";
         id = atoi(name.c_str());
-        //cout<<"Bus name is "<<id<<"; ";
+        //Debug("Bus name is "<<id<<"; ";
         file >> ws >> word >> ws >> word;
         pl = atof(word.c_str())/bMVA;
         file >> word;
@@ -1796,15 +2216,15 @@ int Net::readFile(string fname){
         kvb = atof(word.c_str());
         file >> ws >> word >> ws >> word;
 //        vmax = atof(word.c_str());
-        vmax = 1.06;
+        vmax = 1.05;
         getline(file, word,';');
 //        vmin = atof(word.c_str());
-        vmin = 0.94;
+        vmin = 0.95;
         node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
         node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
-        //cout<<"Bus name is "<<bus_name[id-1] <<"; "<<"\n";
+        //Debug("Bus name is "<<bus_name[id-1] <<"; "<<"\n";
         i++;
-        cout<<"times is "<<i<<"; ";
+        Debug("times is "<<i<<"; ");
         node->vs = vs;
         add_node(node);
         _clone->add_node(node_clone);
@@ -1858,7 +2278,7 @@ int Net::readFile(string fname){
     }
     double c0 = 0, c1 = 0,c2 = 0;
     getline(file, word);
-    //cout<<"Number of generators = " << gens.size() << endl;
+    //Debug("Number of generators = " << gens.size() << endl;
     for (int i = 0; i < gens.size(); i++) {
         file >> ws >> word >> ws >> word >> ws >> word >> ws >> word >> ws >> word;
         c2 = atof(word.c_str());
@@ -1927,12 +2347,12 @@ int Net::readFile(string fname){
         arc_clone->status = arc->status;
         file >> word;
 //        arc->tbound.min = atof(word.c_str())*M_PI/180;
-        arc->tbound.min = -35*M_PI/180.;
+        arc->tbound.min = -45*M_PI/180.;
         arc_clone->tbound.min = arc->tbound.min;
         m_theta_lb += arc->tbound.min;
         file >> word;
 //        arc->tbound.max = atof(word.c_str())*M_PI/180;
-        arc->tbound.max = 35*M_PI/180.;
+        arc->tbound.max = 45*M_PI/180.;
         arc_clone->tbound.max = arc->tbound.max;
         m_theta_ub += arc->tbound.max;
         arc->smax = max(pow(arc->src->vbound.max,2)*(arc->g*arc->g+arc->b*arc->b)*(pow(arc->src->vbound.max,2) + pow(arc->dest->vbound.max,2)), pow(arc->dest->vbound.max,2)*(arc->g*arc->g+arc->b*arc->b)*(pow(arc->dest->vbound.max,2) + pow(arc->src->vbound.max,2)));
@@ -1957,7 +2377,7 @@ int Net::readFile(string fname){
     file.close();
 //    for (auto n:nodes) {
 //        n->print();
-//        cout << "node" << n->ID << ": fill_in = " << n->fill_in << endl;
+//        Debug( "node" << n->ID << ": fill_in = " << n->fill_in << endl;
 //    }
     get_tree_decomp_bags();
     return 0;

@@ -29,6 +29,9 @@ public:
     
     /** @brief Indicates if bus has integrated generation */
     bool _has_gen;
+    
+    /** @brief Indicates if bus has load */
+    bool _has_load;
 
     /** @brief Indicates the number of generators installed on this bus */
     int _nb_gen;

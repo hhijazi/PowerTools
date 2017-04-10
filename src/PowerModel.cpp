@@ -11,11 +11,30 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <ctime>
+#include <stdlib.h>
+#include <iomanip>
+
 
 PowerModel::PowerModel():PowerModel(ACPOL, new Net(), ipopt){};
 
 PowerModel::PowerModel(PowerModelType type, Net* net, SolverType stype):_type(type), _net(net), _stype(stype){
     _model = NULL;
+    time ( &_rawtime );
+    _start_date = localtime ( &_rawtime );
+    _start_date->tm_year = 2018 - 1900;
+    _start_date->tm_mon = 0;
+    _start_date->tm_mday = 1;
+    _start_date->tm_hour = 0;
+    _start_date->tm_min = 0;
+    _start_date->tm_sec = 0;
+//    _timeinfo->tm_isdst = 0;
+    mktime ( _start_date );
+    _eng = mt19937(_rd()); // seed the generator
+    _model = new Model();
+    _solver = new PTSolver(_model, _stype);
+
+    printf ( "Starting date is: %s", asctime (_start_date) );
 };
 
 
@@ -28,15 +47,76 @@ PowerModel::~PowerModel(){
 
 
 void PowerModel::build(int time_steps){
+    double max_irr = *max_element(begin(_net->_radiation), end(_net->_radiation));
+    cout << "Max irradiance = " + to_string(max_irr) << endl;
+    for (int i = 0; i < _net->_radiation.size(); i++) {
+        _net->_radiation[i] /= max_irr;
+        assert(_net->_radiation[i]<=1);
+    }
+    //setenv("TZ", "/usr/share/zoneinfo/America/New_York", 1); // POSIX-specific
+    
+//    cout << "Nb days in current month = " << get_nb_days_in_month() << endl;
+    
     _timesteps = time_steps;
-    _model = new Model();
-    _solver = new PTSolver(_model, _stype);
     switch (_type) {
 
+            
+        case COMPACT_FIXED_PV:  //no pv no battery
+            add_AC_Rect_vars_Time_fixed_compact();
+            post_AC_PF_Time_Fixed_Compact();
+            min_cost_pv_fixed();
+            break;
+            
+        case FIXED_PV:  //no pv no battery
+            add_AC_Rect_vars_Time_fixed();
+            post_AC_PF_Time_Fixed();
+            min_cost_pv_fixed();
+            break;
+            
         case ACPF_T:  //no pv no battery
             add_AC_Rect_vars_Time();
             post_AC_PF_Time();
             min_cost_time();
+            break;
+            
+        case NF:  //no pv no battery
+            add_NF_vars();
+            post_NF();
+            min_cost_time();
+            break;
+            
+        case NF_PEAK:  //no pv no battery
+            add_NF_Peak_vars(false);
+            post_NF_Peak(false);
+            min_cost_peak();
+            break;
+            
+        case NF_PV_PEAK:  //no pv no battery, modelling peak demand cost
+            add_NF_Peak_vars(true);
+            post_NF_Peak(true);
+            min_cost_peak();
+            break;
+        case ACPF_PV_PEAK:  //no pv no battery, modelling peak demand cost
+            add_AC_Rect_PV_vars_Peak();
+            post_AC_PF_PV_Peak();
+            min_cost_peak();
+            break;
+            
+        case COPPER_PV_PEAK:  //no pv no battery, modelling peak demand cost
+            add_COPPER_vars(true);
+            post_COPPER_static(true);
+            break;
+            
+        case COPPER_PEAK:  //no pv no battery, modelling peak demand cost
+            add_COPPER_vars();
+            post_COPPER_static();
+            break;
+
+            
+        case ACPF_PEAK:  //no pv no battery, modelling peak demand cost
+            add_AC_Rect_vars_Peak();
+            post_AC_PF_Peak();
+            min_cost_peak();
             break;
 
         case ACPF_PV_T: //pv only
@@ -100,7 +180,7 @@ void PowerModel::build(int time_steps){
             break;
         case ACPF:
             add_AC_Rect_vars();
-            post_AC_PF();
+//            post_AC_PF();
             min_cost();
             break;
         case ACPOL:
@@ -525,28 +605,126 @@ void PowerModel::post_AC_PF_Time(){
 
     for (auto a:_net->arcs) {
         add_AC_Power_Flow_Time(a);     //done
-        add_AC_thermal_Time(a);        //done
-        add_AC_Angle_Bounds_Time(a);
+//        add_AC_thermal_Time(a);        //done
+//        add_AC_Angle_Bounds_Time(a);
     }
     
 };
+
+void PowerModel::post_NF(bool PV){
+    /*  double tot_pl =0;*/
+    for (auto n:_net->nodes) {
+        add_AC_KCL_NF(n,PV);         //sdone
+        if (n->inst()|| (PV && n->candidate())) {
+            add_link_PV_fixed_Rate(n);
+        }
+        
+        /*tot_pl += n->pl();*/
+    }
+    /*  cout << "Total pl = " << tot_pl << endl;*/
+};
+
+void PowerModel::post_AC_PF_Peak() {
+    
+    post_AC_PF_Time();
+    for (int y = 0; y < _nb_years; y++) {
+        for (int t = 0; t < _timesteps*_nb_days; t++) {
+            for (int g = 0; g < _net->gens.size(); g++) {
+                Constraint kVa_MAX("kVa_MAX_"+to_string(g)+"_"+to_string(t));
+                kVa_MAX += _net->max_kVas_year[y];
+                if (t<24) {
+                    kVa_MAX -= (1/_summer_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                }
+                else {
+                    kVa_MAX -= (1/_winter_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                }
+                kVa_MAX >= 0;
+                _model->addConstraint(kVa_MAX);
+                kVa_MAX.print();
+            }
+        }
+    }
+    
+}
+
+
+void PowerModel::post_AC_PF_PV_Peak() {
+    
+    post_AC_PF_PV_Time();
+    for (int y = 0; y < _nb_years; y++) {
+        for (int t = 0; t < _timesteps*_nb_days; t++) {
+            for (int g = 0; g < _net->gens.size(); g++) {
+                Constraint kVa_MAX("kVa_MAX_"+to_string(g)+"_"+to_string(t));
+                kVa_MAX += _net->max_kVas_year[y];
+                if (t<24) {
+                    kVa_MAX -= (1/_summer_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                }
+                else {
+                    kVa_MAX -= (1/_winter_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                }
+                kVa_MAX >= 0;
+                _model->addConstraint(kVa_MAX);
+                kVa_MAX.print();
+            }
+        }
+    }
+    
+}
+
+void PowerModel::post_NF_Peak(bool PV) {
+    
+    post_NF(PV);
+    for (int y = 0; y < _nb_years; y++) {
+        for (int t = 0; t < _timesteps*_nb_days; t++) {
+            for (int g = 0; g < _net->gens.size(); g++) {
+                Constraint kVa_MAX("kVa_MAX_"+to_string(g)+"_"+to_string(t));
+                kVa_MAX += _net->max_kVas_year[y];
+                if (t<24) {
+                    kVa_MAX -= (1/_summer_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                }
+                else {
+                    kVa_MAX -= (1/_winter_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                }
+                kVa_MAX >= 0;
+                _model->addConstraint(kVa_MAX);
+                kVa_MAX.print();
+            }
+        }
+    }
+    
+}
+
+
+
+//void PowerModel::post_COPPER_PV_Peak() {
+//    
+////    post_CO
+//    for (int y = 0; y < _nb_years; y++) {
+//        for (int t = 0; t < _timesteps*_nb_days; t++) {
+//            for (int g = 0; g < _net->gens.size(); g++) {
+//                Constraint kVa_MAX("kVa_MAX_"+to_string(g)+"_"+to_string(t));
+//                kVa_MAX += _net->max_kVas_year[y];
+//                if (t<24) {
+//                    kVa_MAX -= (1/_summer_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+//                }
+//                else {
+//                    kVa_MAX -= (1/_winter_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+//                }
+//                kVa_MAX >= 0;
+//                _model->addConstraint(kVa_MAX);
+//                kVa_MAX.print();
+//            }
+//        }
+//    }
+//    
+//}
+
 
 void PowerModel::post_AC_PF_PV_Time() {
 
     double tot_pl = 0;
 
-//    for (int t = 0; t < _timesteps; t++) {
-//        if (_net->_radiation[t]==0) {
-//            Constraint All_zero("All_zero_pv_if_no_radiation_t" + to_string(t));
-//            for (auto n: _net->nodes) {
-//
-//                //        Link_PV_Rate += n->pv_t[t]-(_net->_radiation[t])*(n->pv_rate);
-//                All_zero += n->pv_t[t];
-//                All_zero = 0;
-//                _model->addConstraint(All_zero);
-//            }
-//        }
-//    }
+
     for (auto n:_net->nodes) {
         //cout<<"n is "<< n<<" ;";
         add_AC_KCL_PV_Time(n);         //sdone
@@ -581,6 +759,40 @@ void PowerModel::post_AC_PF_PV_Time() {
 
     }
 }
+
+void PowerModel::post_AC_PF_Time_Fixed() {
+    
+    for (auto n:_net->nodes) {
+        add_AC_KCL_PV_Time(n);         //sdone
+        add_AC_Voltage_Bounds_Time(n);
+         if(n->inst() || n->candidate()){
+            add_link_PV_fixed_Rate(n);
+        }
+    }
+    
+    for (auto a:_net->arcs) {
+        
+        add_AC_Power_Flow_Time(a);     //done
+        add_AC_thermal_Time(a);        //done
+        add_AC_Angle_Bounds_Time(a);
+        
+    }
+}
+
+
+void PowerModel::post_AC_PF_Time_Fixed_Compact() {
+    
+    for (auto n:_net->nodes) {
+        add_AC_KCL_PV_Time_Compact(n);         //sdone
+        add_AC_Voltage_Bounds_Time(n);
+    }
+    
+//    for (auto a:_net->arcs) {
+//        add_AC_thermal_Time_Compact(a);        //done
+//    }
+}
+
+
 
 
 
@@ -977,21 +1189,6 @@ void PowerModel::post_SOCP_PF_PV_Time() {
 
 
 
-void PowerModel::post_AC_PF(){
-    
-    for (auto n:_net->nodes) {
-        add_AC_KCL(n, false);
-    }
-    for (auto a:_net->arcs) {
-        add_AC_Power_Flow(a, false);
-//        add_AC_thermal(a, false);
-    }
-//   for (auto g: _net->gens){
-//        add_fixed_V(g);
-////        add_fixed_Pg(g);
-//   }
-    
-}
 
 void PowerModel::add_fixed_V(Gen* g){
     Constraint Fixed_v("Fixed_v"+g->_name);
@@ -1086,27 +1283,102 @@ void PowerModel::min_cost(){
     }
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-        obj->print(true);
+//        obj->print(true);
     //    _solver->run();
 }
 
 void PowerModel::min_cost_time() {
     _objective = MinCostTime;
     Function* obj = new Function();
-    for (int t = 0; t < _timesteps; t++) {
-        for (auto g:_net->gens) {
-            /*if (!g->_active)
-                continue;*/
-            if(_net->tag[t]==1){
-                *obj += _net->bMVA*_net->c1[t]*1000*g->pg_t[t]*1.3;
-            }else{
-                *obj += _net->bMVA*_net->c3[t]*1000*g->pg_t[t]*1.3;
+    for (int y = 0; y < _nb_years; y++) {
+        for (int t = 0; t < _timesteps*_nb_days; t++) {
+            for (auto g:_net->gens) {
+                if ((t>=0)&&(t<24)){ //summer Feb
+                    *obj += 20*6*_net->bMVA*(_net->c1[t])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                }
+                if ((t>=24)&&(t<48)){ //spring or autumn Sep
+                    *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                }
+                if ((t>=48)&&(t<72)){ //weekends
+                    *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                }
             }
             
         }
-
     }
-    //*obj = (*obj/_timesteps);
+    *obj /=1000000;    //millions
+    _model->setObjective(obj);
+    _model->setObjectiveType(minimize);
+}
+
+void PowerModel::min_cost_peak() {
+    _objective = MinCostTime;
+    Function* obj = new Function();
+    for (int y = 0; y < _nb_years; y++) {
+        for (int t = 0; t < _timesteps*_nb_days; t++) {
+            for (auto g:_net->gens) {
+                if ((t>=0)&&(t<24)){ //summer Feb
+                    *obj += 20*6*_net->bMVA*(_net->c1[t])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                }
+                if ((t>=24)&&(t<48)){ //spring or autumn Sep
+                    *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                }
+                if ((t>=48)&&(t<72)){ //weekends
+                    *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                }
+            }
+            
+        }
+        *obj += 12*_net->bMVA*1000*30*1.8*0.16952*_net->max_kVas_year[y];
+    }
+    
+    *obj /=1000000;
+    obj->print(true);
+    _model->setObjective(obj);
+    _model->setObjectiveType(minimize); // currently for gurobi
+}
+
+
+/** Objective Functions */
+void PowerModel::min_cost_pv(){
+    _objective = MinCostPv;
+    Function* obj = new Function();
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
+        for (auto g:_net->gens) {
+            //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
+            //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+            if ((t>=0)&&(t<24)){ //summer Feb
+                *obj += 20*6*_net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;
+            }
+            if ((t>=24)&&(t<48)){ //spring or autumn Sep
+                *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(g->pg_t[t])*1000*1.3;
+            }
+            
+            //*obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            if ((t>=48)&&(t<72)){ //weekend
+                *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(g->pg_t[t])*1000*1.3;
+            }
+            //*obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            
+            
+            //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+        }
+        
+    }
+    
+    *obj *= _nb_years;   // 10 years
+//    for (auto n:_net->nodes){
+//        if (n->candidate()) {
+//            //                *obj += 0.0000001*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+//            //                *obj += n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
+//            *obj += 1.04*_pv_cost*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+////            *obj += (350.*_net->bMVA*1000)*n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
+//            
+//        }
+//    }
+    *obj /=1000000;    //120//    *obj = (*obj/_timesteps);
+//    *obj = *obj/24;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
 //    obj->print(true);
@@ -1114,38 +1386,51 @@ void PowerModel::min_cost_time() {
 }
 
 /** Objective Functions */
-void PowerModel::min_cost_pv(){
+void PowerModel::min_cost_pv_fixed(){
     _objective = MinCostPv;
     Function* obj = new Function();
-    for (int t = 0; t < _timesteps; t++) {
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
         for (auto g:_net->gens) {
-//          *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
-         // *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
-        //*obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
-            if(_net->tag[t]==1){
-                *obj += _net->bMVA*1000*_net->c1[t]*g->pg_t[t]*1.3;          //$c1/kwh*pg(Mw)*1000 =cost  $/h
-
-            }else{
-                *obj += _net->bMVA*1000*_net->c3[t]*g->pg_t[t]*1.3;          //$c1/kwh*pg(Mw)*1000 =cost  $/h
+            //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
+            //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+            if ((t>=0)&&(t<24)){ //summer Feb
+                *obj += 20*6*_net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;
             }
+            if ((t>=24)&&(t<48)){ //spring or autumn Sep
+                *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(g->pg_t[t])*1000*1.3;
+            }
+            
+            //*obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            if ((t>=48)&&(t<72)){ //weekend
+                *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(g->pg_t[t])*1000*1.3;
+            }
+            //*obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            
+            
+            //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
-
-            //*obj += 2.5*1000000*0.01*n->pv_rate*_net->bMVA/(365*24*6) + 2.5*1000000*n->pv_rate*_net->bMVA/(10*365*24*6); // 1% of investment cost of 2.5$/W, divided by the number of days in a year.(10min simulation)
-            //*obj += 0.15*1000*n->pv_t[t]*_net->bMVA; // $0.15/kWh * pv_t(MW) * 1000 [multiply by 1000 to convert to kWh] = $/h
+        
     }
-    for (auto n:_net->nodes) {
-        if (n->candidate()) {
-            *obj += 2000./(10*365.)*n->pv_rate; /* 2 dollars per W = 2000 dollars per square meter divided by ten years */
-
-        }
-    }
-//    *obj = (*obj/_timesteps);
-//    *obj = *obj/24;
+    
+    *obj *= _nb_years;   // 10 years
+//    for (auto n:_net->nodes){
+//        if (n->candidate()) {
+//            //                *obj += 0.0000001*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+//            //                *obj += n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
+//            *obj += 1.04*_pv_cost*n->max_pv_size; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+//            //            *obj += (350.*_net->bMVA*1000)*n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
+//            
+//        }
+//    }
+    *obj /=1000000;    //120//    *obj = (*obj/_timesteps);
+    //    *obj = *obj/24;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-//    obj->print(true);
+    obj->print(true);
     //    _solver->run();
 }
+
 
 void PowerModel::min_cost_batt(){
     _objective = MinCostBatt_t;
@@ -1175,7 +1460,7 @@ void PowerModel::min_cost_batt(){
         if (n->candidate()) {
             //                *obj += 0.0000001*n->pv_rate; /* 2 dollars per W = 2000 dollars per square meter divided by ten years */
             //                *obj += n->batt_cap; /* 3500 dollars per 10kW battery divided by ten years */
-//            *obj += 2000./(10*365.)*n->pv_rate; /* 2 dollars per W = 2000 dollars per square meter divided by ten years */
+//            *obj += _pv_cost/(10*365.)*n->pv_rate; /* 2 dollars per W = 2000 dollars per square meter divided by ten years */
             *obj += (350.*_net->bMVA*1000)/(10*365)*n->batt_cap; /* 3500 dollars per 10kW battery divided by ten years */
             
         }
@@ -1209,16 +1494,16 @@ void PowerModel::min_cost_batt(){
             
         }
    // }
-   // *obj *=10;   // 10 years
+   // *obj *= _nb_years;   // 10 years
     for (auto n:_net->nodes){
         if (n->candidate()) {
-            *obj += 2000.*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+            *obj += _pv_cost*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
             *obj += (350.*_net->bMVA*1000)*n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
             
         }
     }
-    //*obj /=1000000;    //120
-    //*obj = *obj/_timesteps;
+    // *obj /=1000000;    //120
+    // *obj = *obj/_timesteps;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
     obj->print(true);
@@ -1230,7 +1515,7 @@ void PowerModel::min_cost_batt(){
 void PowerModel::min_cost_pv_batt(){
     _objective = MinCostPvBatt;
     Function* obj = new Function();
-        for (int t = 0; t < _timesteps*_days; t++) {
+        for (int t = 0; t < _timesteps*_nb_days; t++) {
             for (auto g:_net->gens) {
                 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
                 //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
@@ -1238,12 +1523,12 @@ void PowerModel::min_cost_pv_batt(){
                         *obj += 20*6*_net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;
                     }
                     if ((t>=24)&&(t<48)){ //spring or autumn Sep
-                        *obj += 20*6*_net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;
+                        *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(g->pg_t[t])*1000*1.3;
                     }
                 
                     //*obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
                     if ((t>=48)&&(t<72)){ //weekend
-                        *obj += 2*4*12*_net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;
+                        *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(g->pg_t[t])*1000*1.3;
                     }
                     //*obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
                 
@@ -1254,12 +1539,12 @@ void PowerModel::min_cost_pv_batt(){
             
         }
     
-    *obj *=10;   // 10 years
+    *obj *= _nb_years;   // 10 years
         for (auto n:_net->nodes){
             if (n->candidate()) {
 //                *obj += 0.0000001*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
 //                *obj += n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
-                *obj += 2000.*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+                *obj += _pv_cost*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
                 *obj += (350.*_net->bMVA*1000)*n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
                 
             }
@@ -1268,7 +1553,7 @@ void PowerModel::min_cost_pv_batt(){
     //*obj = *obj/_timesteps;
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-    obj->print(true);
+    //obj->print(true);
     //    _solver->run();
 }
 
@@ -1353,6 +1638,26 @@ void PowerModel::add_AC_Pol_vars(){
         _model->addVar(a->qi);
         _model->addVar(a->qj);
         a->init_complex();
+    }
+}
+
+void PowerModel::compute_losses(){
+    vector<double> losses;
+    double loss_t = 0;
+    double gen = 0, ratio = 0;
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
+        loss_t = 0;
+        gen = (*_net->gens.begin())->pg_t[t].get_value();
+        for (auto a:_net->arcs) {
+            if (a->status==0) {
+                continue;
+            }
+            loss_t += a->pi_t[t].get_value() + a->pj_t[t].get_value();
+        }
+        losses.push_back(loss_t);
+        cout << "Losses at time step " << t << " = " << loss_t*1000*_net->bMVA << endl;
+        ratio = (gen - loss_t)/gen;
+        cout << "Relative losses at time step " << t << " = " << ratio*100 << "%" << endl;
     }
 }
 
@@ -1495,14 +1800,14 @@ void PowerModel::add_AC_Rect_Batt_vars_Time(){
 void PowerModel::add_Battery_vars(){
     for (auto n:_net->nodes) {  //for all nodes
         if(n->candidate()) {  //if this node is a candidate for PV installation
-            n->pch_t.resize(_timesteps*_days);  //active power charging value, reserve mem to variables
-            n->pdis_t.resize(_timesteps*_days);  //active power discharging value
-            n->soc_t.resize(_timesteps*_days);  //state of charge
+            n->pch_t.resize(_timesteps*_nb_days);  //active power charging value, reserve mem to variables
+            n->pdis_t.resize(_timesteps*_nb_days);  //active power discharging value
+            n->soc_t.resize(_timesteps*_nb_days);  //state of charge
             n->batt_cap.init("battery capacity"+n->_name, 0, 500./(_net->bMVA*1000.));  //battery capacity, give name to variable
             _model->addVar(n->batt_cap);   //add battery capacity to model
         }
     }
-    for (int t = 0; t < _timesteps*_days; t++) {  //for each time step, initialize and add 3 variables dependent on time
+    for (int t = 0; t < _timesteps*_nb_days; t++) {  //for each time step, initialize and add 3 variables dependent on time
         for (auto n:_net->nodes) {
             if(n->candidate()) {  //if this node is a candidate for PV installation
                 n->pch_t[t].init("pcharge"+n->_name+"_" + to_string(t), 0, 500./(_net->bMVA*1000.));
@@ -1529,29 +1834,29 @@ void PowerModel::add_AC_Rect_vars_Time() {
         if (a->status==0) {
             continue;
         }
-        a->pi_t.resize(_timesteps);
-        a->pj_t.resize(_timesteps);
-        a->qi_t.resize(_timesteps);
-        a->qj_t.resize(_timesteps);
+        a->pi_t.resize(_timesteps*_nb_days);
+        a->pj_t.resize(_timesteps*_nb_days);
+        a->qi_t.resize(_timesteps*_nb_days);
+        a->qj_t.resize(_timesteps*_nb_days);
 
     }
 
     for (auto n:_net->nodes) {
-        n->vr_t.resize(_timesteps);
-        n->vi_t.resize(_timesteps);
+        n->vr_t.resize(_timesteps*_nb_days);
+        n->vi_t.resize(_timesteps*_nb_days);
         if (n->inst()) {
-            n->pv_t.resize(_timesteps);
+            n->pv_t.resize(_timesteps*_nb_days);
         }
 
     }
 
     for (auto g:_net->gens) {
-        g->pg_t.resize(_timesteps);
-        g->qg_t.resize(_timesteps);
+        g->pg_t.resize(_timesteps*_nb_days);
+        g->qg_t.resize(_timesteps*_nb_days);
     }
 
 
-    for (int t = 0; t < _timesteps; t++) {
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
 
         for (auto a:_net->arcs) {
             if (a->status==0) {
@@ -1590,9 +1895,636 @@ void PowerModel::add_AC_Rect_vars_Time() {
             g->qg_t[t].init("qg"+g->_name+":"+g->_bus->_name+")_" + to_string(t), g->qbound.min, g->qbound.max);
             _model->addVar(g->pg_t[t]);
             _model->addVar(g->qg_t[t]);
+            g->pg_t[t]._print = true;
+            g->qg_t[t]._print = true;
 
-             }
+        }
 
+    }
+}
+
+void PowerModel::add_NF_vars(bool PV) {
+    for (auto a:_net->arcs) {
+        if (a->status==0) {
+            continue;
+        }
+        a->pi_t.resize(_timesteps*_nb_days);
+        a->qi_t.resize(_timesteps*_nb_days);
+    }
+    
+    for (auto n:_net->nodes) {
+        if (n->inst()|| (PV && n->candidate())) {
+            n->pv_t.resize(_timesteps*_nb_days);
+        }
+    }
+    
+    for (auto g:_net->gens) {
+        g->pg_t.resize(_timesteps*_nb_days);
+        g->qg_t.resize(_timesteps*_nb_days);
+    }
+    
+    
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
+        
+        for (auto a:_net->arcs) {
+            if (a->status==0) {
+                continue;
+            }
+            a->pi_t[t].init("p("+a->_name+","+a->src->_name+","+a->dest->_name+")_" + to_string(t));
+            _model->addVar(a->pi_t[t]);
+            a->qi_t[t].init("q("+a->_name+","+a->src->_name+","+a->dest->_name+")_" + to_string(t));
+            _model->addVar(a->qi_t[t]);
+            
+            a->init_complex();
+            
+        }
+        
+        for (auto n:_net->nodes) {
+            if(n->inst() || (PV && n->candidate())){
+                n->pv_t[t].init("pv" + n->_name + "_" + to_string(t), 0, 1);
+                _model->addVar(n->pv_t[t]);
+            }
+        }
+        for (auto g:_net->gens) {
+            g->pg_t[t].init("pg"+g->_name+":"+g->_bus->_name+")" + to_string(t), 0, g->pbound.max);
+            g->qg_t[t].init("qg"+g->_name+":"+g->_bus->_name+")" + to_string(t), g->qbound.min, g->qbound.max);
+            _model->addVar(g->pg_t[t]);
+            _model->addVar(g->qg_t[t]);
+            g->pg_t[t]._print = true;
+            g->qg_t[t]._print = true;
+            
+        }
+        
+    }
+}
+
+void PowerModel::add_AC_Rect_vars_Peak() {
+    add_AC_Rect_vars_Time();
+    _net->max_kVas_year.resize(_nb_years);
+    for (int y = 0; y<_nb_years; y++) {
+        _net->max_kVas_year[y].init("max_kVA_"+to_string(y), 0, 1);
+        _model->addVar(_net->max_kVas_year[y]);
+        _net->max_kVas_year[y]._print = true;
+    }
+}
+
+
+
+void PowerModel::add_AC_Rect_PV_vars_Peak() {
+    add_AC_Rect_PV_vars_Time();
+    _net->max_kVas_year.resize(_nb_years);
+    for (int y = 0; y<_nb_years; y++) {
+        _net->max_kVas_year[y].init("max_kVA_"+to_string(y), 0, 1);
+        _model->addVar(_net->max_kVas_year[y]);
+        _net->max_kVas_year[y]._print = true;
+    }
+    
+}
+
+int PowerModel::get_nb_days_in_month(const tm& timeinfo) const{
+    int numberOfDays;
+    if (timeinfo.tm_mon == 3 || timeinfo.tm_mon == 5 || timeinfo.tm_mon == 8 || timeinfo.tm_mon == 10)
+        numberOfDays = 30;
+    else if (timeinfo.tm_mon == 1)
+    { bool isLeapYear = ((timeinfo.tm_year+1900) % 4 == 0 && (timeinfo.tm_year+1900) % 100 != 0) || ((timeinfo.tm_year+1900) % 400 == 0);
+        if (isLeapYear)
+            numberOfDays = 29;
+        else
+            numberOfDays = 28;
+    }  
+    else  
+        numberOfDays = 31;
+    return numberOfDays;
+}
+
+
+
+void PowerModel::add_COPPER_vars(bool PV) {
+    int nb_days = 0;
+    int idx = 0;
+    auto copy_time = *_start_date;
+    _net->max_kVas_month.resize(_nb_years*12);// 1 per month
+    _net->max_kVas_year.resize(_nb_years*12);
+    for (int y = 0; y<_nb_years; y++) {
+        for (int m = 0; m<12; m++) {
+            _net->max_kVas_year[y*12+m].init("max_kVA_year_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year), 0, 10e10);
+//            _model->addVar(_net->max_kVas_year[y*12+m]);
+            _net->max_kVas_year[y]._print = true;
+            _net->max_kVas_year[y*12+m] = 0;
+            _net->max_kVas_month[y*12+m].init("max_kVA_month_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year), 0, 10e10);
+//            _model->addVar(_net->max_kVas_month[y*12+m]);
+            _net->max_kVas_month[y*12+m]._print = true;
+            _net->max_kVas_month[y*12+m] = 0;
+            nb_days = get_nb_days_in_month(copy_time);
+            _net->gen.resize(_net->gen.size()+nb_days*24);
+//            if (PV) {
+                _net->pv_gen.resize(_net->pv_gen.size()+nb_days*24);
+//            }
+            for (int d = 0; d<nb_days; d++) {
+                for (int h = 0; h<24; h++) {
+//                    if (PV) {
+                        _net->pv_gen[idx].init("pv_gen_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year)+" : "+to_string(copy_time.tm_hour)+ "h", 0, _net->PV_CAP);
+                        (_net->pv_gen[idx])._print = true;
+                        _net->pv_gen[idx] = 0;
+//                        _model->addVar(_net->pv_gen[idx]);
+//                    }
+                    _net->gen[idx].init("gen_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon+1)+"_"+to_string(1900+copy_time.tm_year)+" : "+to_string(copy_time.tm_hour)+ "h", 0, 50000);// Max set to 50 MW
+                    _net->gen[idx]._print = true;
+                    _net->gen[idx] = 0;
+//                    _model->addVar(_net->gen[idx]);
+                    copy_time.tm_hour += 1;
+                    idx++;
+                }
+                copy_time.tm_mday = (copy_time.tm_mday + 1)%nb_days;
+            }
+            mktime(&copy_time);
+
+        }
+    }
+//    cout << "idx = " << idx << endl;
+    
+}
+
+
+
+void PowerModel::post_COPPER(bool PV){
+    _objective = MinCostTime;
+    Function* obj = new Function();
+    int nb_days = 0;
+    auto copy_time = *_start_date;
+    int idx = 0;
+    _net->max_kVas_month.resize(_nb_years*12);
+    _net->max_kVas_year.resize(_nb_years*12);
+    for (int y = 0; y<_nb_years; y++) {
+        for (int m = 0; m<12; m++) {
+            if (y==0 || (y==1 && m==1)) {
+                Constraint Max_kVA_year("Max_kVA_year_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year));
+                Max_kVA_year += _net->max_kVas_year[12*y+m];
+                Max_kVA_year >= 17738.130;
+                _model->addConstraint(Max_kVA_year);
+            }
+            else {
+                for (int i = 1; i<=13; i++) {
+                    Constraint Max_kVA_year("Max_kVA_year_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year)+"_"+to_string(i));
+                    Max_kVA_year += _net->max_kVas_year[12*y+m];
+                    Max_kVA_year -= _net->max_kVas_month[12*y+m-i];
+                    Max_kVA_year >= 0;
+                    _model->addConstraint(Max_kVA_year);
+                }
+                
+            }
+            *obj += 0.16952*pow(_price_inflation,y)*(_net->max_kVas_year[12*y+m] + _net->max_kVas_month[12*y+m]);
+            nb_days = get_nb_days_in_month(copy_time);
+            for (int d = 0; d<nb_days; d++) {
+                Constraint Max_kVA_month("Max_kVA_month_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year));
+                Max_kVA_month += _net->max_kVas_month[12*y+m];
+                for (int h = 0; h<24; h++) {
+                    if (copy_time.tm_wday==0||copy_time.tm_wday==6) {//Weekend
+                        *obj += _net->c3[copy_time.tm_hour]*pow(_price_inflation,y)*(_net->gen[idx]);
+                    }
+                    else{
+                        *obj += _net->c1[copy_time.tm_hour]*pow(_price_inflation,y)*(_net->gen[idx]);
+                    }
+                    Constraint Demand("Demand_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year)+" : "+to_string(copy_time.tm_hour)+ "h");
+                    Demand += _net->gen[idx];
+                    Max_kVA_month -= (1/_net->_power_factor[copy_time.tm_hour])*_net->gen[idx];
+                    if (PV) {
+                        Demand += _net->pv_gen[idx];
+                    }
+                    Demand -= pow(_demand_growth, y)*_net->_load_kW[idx];
+                    Demand >= 0;
+                    _model->addConstraint(Demand);
+                    if (PV) {
+                        Constraint PV_gen("PV_gen_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year)+" : "+to_string(copy_time.tm_hour)+ "h");
+                        PV_gen += _net->pv_gen[idx];
+                        PV_gen -= pow(_demand_growth, y)*_net->_load_kW[idx%_net->_load_kW.size()];
+                        PV_gen >= 0;
+                        _model->addConstraint(PV_gen);
+                    }
+                    copy_time.tm_hour += 1;
+                    mktime(&copy_time);
+                    idx++;
+                }
+                Max_kVA_month *= nb_days;
+                Max_kVA_month >= 0;
+                _model->addConstraint(Max_kVA_month);
+            }
+            
+        }
+    }
+//    *obj /=1000000;
+    obj->print(true);
+    _model->setObjective(obj);
+    _model->setObjectiveType(minimize);    
+}
+
+int PowerModel::get_week_day_of_1st(tm time_c){
+    auto copy_time = time_c;
+    int year = copy_time.tm_year +1900;
+    int month = copy_time.tm_mon;
+    int wday = 1;// The first day of 1900 was a monday
+    int curr_year = 1900;
+    for (int i = 0; i<year-1900; i++) {
+        wday = (wday + 1)%7;
+        if(((curr_year%4) == 0) && (((curr_year%100)!=0) || ((curr_year%400) == 0))){   //leap year
+            wday = (wday + 1)%7;
+        }
+        curr_year++;
+    }
+    copy_time.tm_mon = 0;
+    for (int m = 0; m<month; m++) {
+        wday = (wday + (get_nb_days_in_month(copy_time)%7))%7;
+        copy_time.tm_mon += 1;
+    }
+    return wday;
+}
+
+
+/* Randomly pick a day that matches the weekday, week number and month stored in time_c in the years between start_year and end_year */
+int PowerModel::random_load(tm time_c, int start_year, int end_year) {
+    auto copy_time = time_c;
+    int year = time_c.tm_year+1900;
+    if ( year < start_year || year > end_year) { // No uncertainty for past events
+        year = _distr_year_load(_eng);
+        copy_time.tm_year = year - 1900;// tm_year starts counting at 1900
+        int week_nb = floor(time_c.tm_mday/7.);
+        copy_time.tm_yday -= (copy_time.tm_mday - 1);// back to first day in month
+        copy_time.tm_wday = get_week_day_of_1st(copy_time);
+        copy_time.tm_mday = 1;
+    //    copy_time.tm_isdst=0;
+        
+        int i = 0;
+        while (i<week_nb) {
+            if (copy_time.tm_wday==time_c.tm_wday || copy_time.tm_yday==364) {
+                i++;
+            }
+            if (i<week_nb) {
+                if (copy_time.tm_yday<364) {
+                    copy_time.tm_yday++;
+                    copy_time.tm_mday++;
+                    copy_time.tm_wday = (copy_time.tm_wday + 1)%7;
+                }
+            }
+        }
+    }
+//    mktime(&copy_time);
+//    cout << "Load random:" << endl;
+//    cout << "input time = " << asctime(&time_c) << endl;
+//    cout << "output time = " << asctime(&copy_time) << endl;
+//    cout << "yday = " << copy_time.tm_yday << endl;
+    
+    int new_idx = 0;
+    int curr_year = start_year;
+    for (int i=0; i<year - start_year; i++) {
+        if(((curr_year%4) == 0) && (((curr_year%100)!=0) || ((curr_year%400) == 0))){   //leap year
+            new_idx += 366*_timesteps;
+        }
+        else{
+         new_idx += 365*_timesteps;
+        }
+        curr_year += 1;
+    }
+    new_idx += copy_time.tm_yday*_timesteps;
+    return new_idx;
+}
+
+/* Randomly pick a day that matches the month stored in time_c in the years between start_year and end_year */
+int PowerModel::random_weather(tm time_c, int start_year, int end_year) {
+    auto copy_time = time_c;
+//    if (copy_time.tm_isdst!=0) {
+//        throw invalid_argument("is dst");
+//        exit(-1);
+//    }
+    int year = time_c.tm_year+1900;
+    if ( year < start_year || year > end_year) { // No uncertainty for past events
+        year = _distr_year_PV(_eng);
+        copy_time.tm_year = year - 1900;// tm_year starts counting at 1900
+        int nb_days = get_nb_days_in_month(copy_time);
+        int day = _distr_day(_eng)%nb_days;
+        copy_time.tm_yday = copy_time.tm_yday - (copy_time.tm_mday - 1) + day;
+        copy_time.tm_mday = day+1;
+    }
+//    mktime(&copy_time);
+//        cout << "Weather random:" << endl;
+//        cout << "input time = " << asctime(&time_c) << endl;
+//        cout << "output time = " << asctime(&copy_time) << endl;
+    int new_idx = 0;
+    int curr_year = start_year;
+    for (int i=0; i<year - start_year; i++) {
+        if(((curr_year%4) == 0) && (((curr_year%100)!=0) || ((curr_year%400) == 0))){   //leap year
+            new_idx += 366*_timesteps;
+        }
+        else{
+            new_idx += 365*_timesteps;
+        }
+        curr_year += 1;
+    }
+    new_idx += copy_time.tm_yday*_timesteps;
+    return new_idx;
+}
+
+
+void PowerModel::random_generator(){
+    int nb_days;
+    auto copy_time = *_start_date;
+    mktime(&copy_time);
+    _distr_uncert = uniform_int_distribution<>(-5, 5); // randomly pick a percentage
+    _distr_year_PV = uniform_int_distribution<>(2005, 2015); // randomly pick a year
+    _distr_year_load = uniform_int_distribution<>(2015, 2016); // randomly pick a year
+    _distr_day = uniform_int_distribution<>(0, 31); // randomly pick a day
+//    copy_time.tm_isdst = 0;
+    int idx = 0, new_idx;
+    for (int y = 0; y<_nb_years; y++) {
+        copy_time.tm_mon = 0;
+        copy_time.tm_yday = 0;
+        for (int m = 0; m<12; m++) {
+            copy_time.tm_mday = 1;
+             nb_days = get_nb_days_in_month(copy_time);
+            for (int d = 0; d<nb_days; d++) {
+                    new_idx = random_load(copy_time, 2015, 2016);
+                    assert(new_idx>=0);
+                    _random_load.push_back(new_idx);
+//                    _random_load_uncert.push_back((1 + _distr_uncert(_eng)/100.));
+                    _random_load_uncert.push_back(1);
+                    new_idx = random_weather(copy_time, 2005, 2015);
+                    assert(new_idx>=0);
+                    _random_weather.push_back(new_idx);
+//                    _random_PV_uncert.push_back((1 + _distr_uncert(_eng)/100.));
+                    _random_PV_uncert.push_back(1);
+                copy_time.tm_wday = (copy_time.tm_wday + 1)%7;
+                copy_time.tm_mday++;
+                copy_time.tm_yday++;
+                idx++;
+            }
+            copy_time.tm_mon++;
+        }
+        copy_time.tm_year++;
+    }
+}
+
+void PowerModel::post_COPPER_static(bool PV){
+    double tot_off_peak = 0, tot_peak = 0, tot_ev = 0;
+    double objective = 0;
+    double tot_kw = 0, tot_PV = 0;
+    double monthly_bill = 0;
+    int nb_days = 0;
+    int d_idx = 0;
+    int r_load = 0;
+    int r_weather = 0;
+    auto copy_time = *_start_date;
+    int idx = 0;
+    _net->max_kVas_month.resize(_nb_years*12);
+    _net->max_kVas_year.resize(_nb_years*12);
+    vector<double> c1 = _net->c1;
+    vector<double> c3 = _net->c3;
+    double peak_tariff = _peak_tariff;
+    for (int y = 0; y<_nb_years; y++) {
+//        if (y > 1 && y%3==0) {
+//            if (y == 3) {
+//            for (int h = 0; h<24; h++) {
+//                c1[h] *= 1.2;
+//                c3[h] *= 1.2;
+//            }
+//            peak_tariff *= 1.05;
+//        }
+
+        tot_PV = 0;
+        for (int m = 0; m<12; m++) {
+            tot_kw = 0;
+            monthly_bill = 0;
+            nb_days = get_nb_days_in_month(copy_time);
+            _net->max_kVas_month[12*y+m].set_val(0);
+            _net->max_kVas_year[12*y+m].set_val(0);
+//            if (y==2 && m==0) {
+//                cout << "here";
+//            }
+            tot_off_peak = 0;
+            tot_ev = 0;
+            tot_peak = 0;
+            for (int d = 0; d<nb_days; d++) {
+                r_load = _random_load[d_idx];
+                r_weather = _random_weather[d_idx];
+
+
+                for (int h = 0; h<24; h++) {
+                    if (PV) {
+//                        _net->pv_gen[idx].set_val(_net->_radiation[idx%(_net->_radiation.size()-1)] * _net->PV_CAP * _net->PV_EFF);
+                        
+                        _net->pv_gen[idx].set_val(_net->_radiation[r_weather+h] * _net->PV_CAP * _net->PV_EFF*pow(0.99, y) *_random_PV_uncert[d_idx]);
+//                        _net->pv_gen[idx].set_val(_net->_radiation[r_idx] * _net->PV_CAP * _net->PV_EFF);
+                        _net->gen[idx].set_val(1.*(pow(_demand_growth, y)*_net->_load_kW[r_load+h]*_random_load_uncert[d_idx] - (_net->pv_gen[idx].get_value())));
+//                        _net->gen[idx].set_val((pow(_demand_growth, y+1)*_net->_load_kW[idx%(_net->_load_kW.size()-1)] - 1.01*(_net->pv_gen[idx].get_value())));
+                        tot_PV += _net->pv_gen[idx].get_value();
+                    }
+                    else{
+                        double val = _net->_load_kW[r_load+h]*_random_load_uncert[d_idx];
+//                        cout << " Original val = " << _net->_load_kW[r_load+h] << endl;
+//                        cout << "h = " << h << " | Load = " << val;
+//                        double val = _net->_load_kW[(d_idx%731)*24+h];
+//                        double val = _net->_load_kW[idx%(_net->_load_kW.size()-1)];
+                        _net->gen[idx].set_val(1.*(pow(_demand_growth, y)*val));
+                    }
+                    tot_kw += _net->gen[idx].get_value();
+                    assert(tot_kw>=0);
+                    _net->max_kVas_month[12*y+m].set_val(max(_net->max_kVas_month[12*y+m].get_value(), (1/_winter_power_factor)*_net->gen[idx].get_value()));
+//                    if(y>0){
+                        if (copy_time.tm_wday==0||copy_time.tm_wday==6) {//Weekend
+//                            cout << "tariff = " << c3[copy_time.tm_hour] << endl;
+                            objective += c3[h]*pow(_price_inflation,y)*(_net->gen[idx].get_value());
+                            monthly_bill +=c3[h]*pow(_price_inflation,y)*(_net->gen[idx].get_value());;
+                            tot_off_peak += _net->gen[idx].get_value();
+                        }
+                        else{
+//                            cout << "h = " << h << " | tariff = " << c1[h] << endl;
+                            objective += c1[h]*pow(_price_inflation,y)*(_net->gen[idx].get_value());
+                            monthly_bill += c1[h]*pow(_price_inflation,y)*(_net->gen[idx].get_value());
+                            if (h<7) {
+                                tot_off_peak += _net->gen[idx].get_value();
+                            }
+                            if (h>=7 && h<17) {
+                                tot_peak += _net->gen[idx].get_value();
+                            }
+                            if (h>=17 && h<22) {
+                                tot_ev += _net->gen[idx].get_value();
+                            }
+                            if(h >= 22){
+                                tot_off_peak += _net->gen[idx].get_value();
+                            }
+                        }
+//                    }
+                    copy_time.tm_hour = (copy_time.tm_hour + 1)%24;
+                    idx++;
+                }
+                copy_time.tm_wday = (copy_time.tm_wday + 1)%7;
+                d_idx++;
+            }
+//            if(y>0){
+//            printf("Monthly bill before max charges for %d/%d = %f\n",m+1,1900+copy_time.tm_year,monthly_bill);
+                _net->max_kVas_month[12*y+m].set_val(_net->max_kVas_month[12*y+m].get_value()*nb_days);
+//            printf("Monthly max charges for %d/%d = %f\n",m+1,1900+copy_time.tm_year,peak_tariff*_net->max_kVas_month[12*y+m].get_value());
+                objective += peak_tariff*pow(_price_inflation,y)*(_net->max_kVas_month[12*y+m].get_value());
+                monthly_bill += peak_tariff*pow(_price_inflation,y)*(_net->max_kVas_month[12*y+m].get_value());
+
+//                printf("Monthly total demand = %f\n",tot_kw);
+//                printf("Monthly peak demand = %f\n",_net->max_kVas_month[12*y+m].get_value());
+//                printf("Monthly peak kWh = %f\n",tot_peak);
+//                printf("Monthly shoulder kWh = %f\n",tot_ev);
+//                printf("Monthly off_peak kWh = %f\n",tot_off_peak);
+//            }
+            if (y==0 || (y==1 && m<=1)) {
+                _net->max_kVas_year[12*y+m].set_val(600000);
+//                _net->max_kVas_year[12*y+m].set_val(504112);
+            }
+            else {
+                for (int i = 0; i<13; i++) {
+                    _net->max_kVas_year[12*y+m].set_val(max(_net->max_kVas_year[12*y+m].get_value(), _net->max_kVas_month[12*y+m-i].get_value()));
+                }
+                
+            }
+//            if(y>0){
+//            printf("Monthly yearly max charges for %d/%d = %f\n",m+1,1900+copy_time.tm_year,peak_tariff*_net->max_kVas_year[12*y+m].get_value());
+                objective += peak_tariff*pow(_price_inflation,y)*(_net->max_kVas_year[12*y+m].get_value());
+            monthly_bill +=peak_tariff*pow(_price_inflation,y)*(_net->max_kVas_year[12*y+m].get_value());
+            monthly_bill += 30.13698 * nb_days; // Metering charges
+            monthly_bill += 19 * nb_days *3; // Supply charge
+            
+//                printf("Yearly peak demand = %f\n",_net->max_kVas_year[12*y+m].get_value());
+//            }
+//            printf("Monthly bill for %d/%d = %f\n",m+1,1900+copy_time.tm_year,monthly_bill);
+            copy_time.tm_mon = (copy_time.tm_mon + 1)%12;
+        }
+//        printf("Yearly kWh generation = %f\n",tot_PV);
+        copy_time.tm_year+=1;
+    }
+//    cout << "idx =" << idx << endl;
+//    printf("Optimal cost = %f\n",objective);
+    _optimal = objective;
+    
+}
+
+void PowerModel::add_NF_Peak_vars(bool PV) {
+    add_NF_vars(PV);
+    _net->max_kVas_year.resize(_nb_years);
+    for (int y = 0; y<_nb_years; y++) {
+        _net->max_kVas_year[y].init("max_kVA_"+to_string(y), 0, 1);
+        _model->addVar(_net->max_kVas_year[y]);
+        _net->max_kVas_year[y]._print = true;
+    }
+    
+}
+
+
+
+void PowerModel::add_AC_Rect_vars_Time_fixed_compact() {
+    
+    for (auto n:_net->nodes) {
+        n->vr_t.resize(_timesteps*_nb_days);
+        n->vi_t.resize(_timesteps*_nb_days);
+    }
+    
+    for (auto g:_net->gens) {
+        g->pg_t.resize(_timesteps*_nb_days);
+        g->qg_t.resize(_timesteps*_nb_days);
+    }
+    
+    
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
+        
+        
+        for (auto n:_net->nodes) {
+            n->vr_t[t].init("vr"+n->_name+"_" + to_string(t), -n->vbound.max, n->vbound.max);
+            n->vr_t[t] = n->vs;
+            //                n->vr = 1;
+            _model->addVar(n->vr_t[t]);
+            n->vi_t[t].init("vi"+n->_name+"_" + to_string(t), -n->vbound.max, n->vbound.max);
+            _model->addVar(n->vi_t[t]);
+        }
+        for (auto g:_net->gens) {
+            g->pg_t[t].init("pg"+g->_name+":"+g->_bus->_name+")_" + to_string(t), 0, g->pbound.max);
+            g->qg_t[t].init("qg"+g->_name+":"+g->_bus->_name+")_" + to_string(t), g->qbound.min, g->qbound.max);
+            _model->addVar(g->pg_t[t]);
+            _model->addVar(g->qg_t[t]);
+            g->pg_t[t]._print = true;
+            g->qg_t[t]._print = true;
+            
+        }
+        
+    }
+}
+
+
+void PowerModel::add_AC_Rect_vars_Time_fixed() {
+    for (auto a:_net->arcs) {
+        if (a->status==0) {
+            continue;
+        }
+        a->pi_t.resize(_timesteps*_nb_days);
+        a->pj_t.resize(_timesteps*_nb_days);
+        a->qi_t.resize(_timesteps*_nb_days);
+        a->qj_t.resize(_timesteps*_nb_days);
+        
+    }
+    
+    for (auto n:_net->nodes) {
+        n->vr_t.resize(_timesteps*_nb_days);
+        n->vi_t.resize(_timesteps*_nb_days);
+        if (n->candidate() || n->inst()) {
+            n->pv_t.resize(_timesteps*_nb_days);
+        }
+        
+    }
+    
+    for (auto g:_net->gens) {
+        g->pg_t.resize(_timesteps*_nb_days);
+        g->qg_t.resize(_timesteps*_nb_days);
+    }
+    
+    
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
+        
+        for (auto a:_net->arcs) {
+            if (a->status==0) {
+                continue;
+            }
+            a->pi_t[t].init("p("+a->_name+","+a->src->_name+","+a->dest->_name+")_" + to_string(t));
+            _model->addVar(a->pi_t[t]);
+            a->pj_t[t].init("p("+a->_name+","+a->dest->_name+","+a->src->_name+")_" + to_string(t));
+            _model->addVar(a->pj_t[t]);
+            a->qi_t[t].init("q("+a->_name+","+a->src->_name+","+a->dest->_name+")_" + to_string(t));
+            _model->addVar(a->qi_t[t]);
+            a->qj_t[t].init("q("+a->_name+","+a->dest->_name+","+a->src->_name+")_" + to_string(t));
+            _model->addVar(a->qj_t[t]);
+            
+            a->init_complex();
+            
+        }
+        
+        for (auto n:_net->nodes) {
+            n->vr_t[t].init("vr"+n->_name+"_" + to_string(t), -n->vbound.max, n->vbound.max);
+            n->vr_t[t] = n->vs;
+            //                n->vr = 1;
+            _model->addVar(n->vr_t[t]);
+            n->vi_t[t].init("vi"+n->_name+"_" + to_string(t), -n->vbound.max, n->vbound.max);
+            _model->addVar(n->vi_t[t]);
+            if(n->candidate() || n->inst()){
+                n->pv_t[t].init("pv" + n->_name + "_" + to_string(t), 0, 1);
+                _model->addVar(n->pv_t[t]);
+                n->pv_t[t]._print = true;
+            }
+            
+            
+            
+        }
+        for (auto g:_net->gens) {
+            g->pg_t[t].init("pg"+g->_name+":"+g->_bus->_name+")_" + to_string(t), 0, g->pbound.max);
+            g->qg_t[t].init("qg"+g->_name+":"+g->_bus->_name+")_" + to_string(t), g->qbound.min, g->qbound.max);
+            _model->addVar(g->pg_t[t]);
+            _model->addVar(g->qg_t[t]);
+            g->pg_t[t]._print = true;
+            g->qg_t[t]._print = true;
+            
+        }
+        
     }
 }
 
@@ -1601,31 +2533,32 @@ void PowerModel::add_AC_Rect_PV_vars_Time(){
         if (a->status==0) {  //if disconnect
             continue;
         }
-        a->pi_t.resize(_timesteps*_days);  //active power src, resize: reserve mem for variable
-        a->pj_t.resize(_timesteps*_days);  //active power dest
-        a->qi_t.resize(_timesteps*_days);  //reactive power src
-        a->qj_t.resize(_timesteps*_days);  //reactive power dest
+        a->pi_t.resize(_timesteps*_nb_days);  //active power src, resize: reserve mem for variable
+        a->pj_t.resize(_timesteps*_nb_days);  //active power dest
+        a->qi_t.resize(_timesteps*_nb_days);  //reactive power src
+        a->qj_t.resize(_timesteps*_nb_days);  //reactive power dest
 
     }
 
     for (auto n:_net->nodes) {  //nodes in network
-        n->vr_t.resize(_timesteps*_days);  //Re(voltage)
-        n->vi_t.resize(_timesteps*_days);  //Im(voltage)
+        n->vr_t.resize(_timesteps*_nb_days);  //Re(voltage)
+        n->vi_t.resize(_timesteps*_nb_days);  //Im(voltage)
         if (n->candidate() || n->inst()) {  //
-            n->pv_t.resize(_timesteps*_days);  //Active power from PV pannels (time dependent)
+            n->pv_t.resize(_timesteps*_nb_days);  //Active power from PV pannels (time dependent)
             if (n->candidate()) {  //if this node is a candidate for PV installation
-                n->pv_rate.init("pv_rate_node_"+n->_name, 0, 0.218*n->max_pv_size);  //initiate pv_rate: Size for PV pannels (sq.m). give name to it, give lower bound and upper bound to the function.
+                n->pv_rate.init("pv_rate_node_"+n->_name, 0, n->max_pv_size);  //initiate pv_rate: Size for PV pannels (sq.m). give name to it, give lower bound and upper bound to the function.
                 _model->addVar(n->pv_rate);  //add Variable to model
+                n->pv_rate._print = true;
             }
         }
     }
     
     for (auto g:_net->gens) {  //generators
-        g->pg_t.resize(_timesteps*_days);  //Active power generation variable (time dependent)
-        g->qg_t.resize(_timesteps*_days);  //Reactive power generation variable (time dependent)
+        g->pg_t.resize(_timesteps*_nb_days);  //Active power generation variable (time dependent)
+        g->qg_t.resize(_timesteps*_nb_days);  //Reactive power generation variable (time dependent)
     }
 
-    for (int t = 0; t < _timesteps*_days; t++) {   //for each time step, initialise variables and add them to model
+    for (int t = 0; t < _timesteps*_nb_days; t++) {   //for each time step, initialise variables and add them to model
 
         for (auto a:_net->arcs) {
             if (a->status==0) {
@@ -1659,10 +2592,52 @@ void PowerModel::add_AC_Rect_PV_vars_Time(){
             g->qg_t[t].init("qg"+g->_name+":"+g->_bus->_name+")_" + to_string(t), g->qbound.min, g->qbound.max);
             _model->addVar(g->pg_t[t]);
             _model->addVar(g->qg_t[t]);
+            g->pg_t[t]._print = true;
+            g->qg_t[t]._print = true;
+
         }
     }
 }
 
+
+//void PowerModel::add_COPPER_PV_vars_Time(){
+//
+//    for (auto n:_net->nodes) {  //nodes in network
+//        if (n->candidate() || n->inst()) {  //
+//            n->pv_t.resize(_timesteps*_nb_days*_nb_years);  //Active power from PV pannels (time dependent)
+//        }
+//    }
+//    
+//    for (auto g:_net->gens) {  //generators
+//        g->pg_t.resize(_timesteps*_nb_days*_nb_years);  //Active power generation variable (time dependent)
+//        g->qg_t.resize(_timesteps*_nb_days*_nb_years);  //Reactive power generation variable (time dependent)
+//    }
+//    string name;
+//    int idx = 0;
+//    for (int y = 0; y<_nb_years; y++) {   //for each year
+//        for (int d=0; d<_nb_days; d++) {   //for each day
+//            for (int t=0; t<_timesteps; t++) {   //for each time step
+//                name =  "Y"+to_string(y) +"_D" + to_string(d) + "_T" + to_string(t);
+//                idx= y*(_nb_days*_timesteps)+d*(_timesteps)+t;
+//                for (auto n:_net->nodes) {
+//                    if (n->candidate() || n->inst()) {
+//                        n->pv_t[idx].init("pv"+n->_name+"_"+name, 0, 1);
+//                        _model->addVar(n->pv_t[idx]);
+//                    }
+//                }
+//                for (auto g:_net->gens) {
+//                    g->pg_t[idx].init("pg"+g->_name+":"+g->_bus->_name+"_"+name, 0, g->pbound.max);
+//                    g->qg_t[idx].init("qg"+g->_name+":"+g->_bus->_name+"_"+name, g->qbound.min, g->qbound.max);
+//                    _model->addVar(g->pg_t[idx]);
+//                    _model->addVar(g->qg_t[idx]);
+//                    g->pg_t[idx]._print = true;
+//                    g->qg_t[idx]._print = true;
+//                    
+//                }
+//            }
+//        }
+//    }
+//}
 
 
 void PowerModel::add_SOCP_Rect_PV_vars_Time(){
@@ -2161,7 +3136,7 @@ void PowerModel::add_SOCP_Angle_Bounds_Time(Arc *a){
 }
 
 void PowerModel::add_AC_Angle_Bounds_Time(Arc *a){
-    for (int t=0; t<_timesteps*_days; t++){
+    for (int t=0; t<_timesteps*_nb_days; t++){
         if (a->status == 1 && !a->parallel) {
             /*     Constraint Wr_Wi_l("Theta_Delta_LB");
              Wr_Wi_l += a->wi_t[t];
@@ -2191,7 +3166,7 @@ void PowerModel::add_AC_Angle_Bounds_Time(Arc *a){
 
 
 void PowerModel::add_AC_thermal_Time(Arc* a){
-    for (int t = 0; t < _timesteps*_days; t++) {
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
         /** subject to Thermal_Limit {(l,i,j) in arcs}: p[l,i,j]^2 + q[l,i,j]^2 <= s[l]^2;*/
         
         if (a->status==1 && !a->dest->_has_gen && !a->src->_has_gen) {
@@ -2291,7 +3266,7 @@ void PowerModel::add_AC_Angle_Bounds(Arc* a, bool switch_lines){
 
 
 void PowerModel::add_AC_Power_Flow_Time(Arc *a){
-    for (int t = 0; t < _timesteps*_days; t++) {
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
         if (a->status==1) { //if nodes are connected
             /** subject to Flow_P_From {(l,i,j) in arcs_from}:
              p[l,i,j] = g[l]*(v[i]/tr[l])^2
@@ -2455,7 +3430,7 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
     _model->addConstraint(SOC_Batt_init);
     
     
-    for (int t = 0; t < _timesteps*_days; t++) {
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
         
 /*
         Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));                         //soc[t+1]=soc[t]+pch-pdis
@@ -2486,7 +3461,7 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
 
     }
     
-    for (int t = 0; t < _timesteps*_days-1; t++){ //change timestep back to _timesteps-1 with new addition
+    for (int t = 0; t < _timesteps*_nb_days-1; t++){ //change timestep back to _timesteps-1 with new addition
 
         //new addition
         Constraint Link_Batt("Link_Battery"+n->_name + "_" + to_string(t));
@@ -2530,12 +3505,12 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
     }
     //new  addition
         Constraint Last_step_ch("Last_step"+n->_name);
-        Last_step_ch += n->pch_t[_timesteps*_days-1];
+        Last_step_ch += n->pch_t[_timesteps*_nb_days-1];
         Last_step_ch = 0;
         _model->addConstraint(Last_step_ch);
 
         Constraint Last_step_dis("Last_step"+n->_name);
-        Last_step_dis += n->pdis_t[_timesteps*_days-1];
+        Last_step_dis += n->pdis_t[_timesteps*_nb_days-1];
         Last_step_dis = 0;
         _model->addConstraint(Last_step_dis);
     //end of new addition
@@ -2544,11 +3519,12 @@ void PowerModel::add_AC_link_Batt_Time(Node*n){
 
 
 void PowerModel::add_link_PV_Rate(Node*n){
-    for (int t = 0; t < _timesteps*_days; t++) {
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t];
-        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (0.945/ (1000 * _net->bMVA));
-        Link_PV_Rate <= 0;
+        Link_PV_Rate -= (_net->_radiation[t]) * (n->pv_rate) * (0.86/ (1000 * _net->bMVA));
+//        cout << "t = " << t << " and t mod 24 = " << t%24 << endl;
+        Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
 
 
@@ -2561,11 +3537,12 @@ void PowerModel::add_link_PV_Rate(Node*n){
 }
 
 void PowerModel::add_link_PV_fixed_Rate(Node*n){
-    for (int t = 0; t < _timesteps*_days; t++) {
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
         Constraint Link_PV_Rate("Link_PV_Rate" + n->_name + "_" + to_string(t));
         Link_PV_Rate += n->pv_t[t];
-        Link_PV_Rate -= (_net->_radiation[t]) * (n->max_pv_size) * (0.945/ (1000 * _net->bMVA));
-        Link_PV_Rate <= 0;
+        Link_PV_Rate -= (_net->_radiation[t]) * (n->max_pv_size) * (0.86/ (1000 * _net->bMVA));
+//        cout << "t = " << t << " and t mod 24 = " << t%24 << endl;
+        Link_PV_Rate = 0;
         _model->addConstraint(Link_PV_Rate);
         
         
@@ -2578,7 +3555,14 @@ void PowerModel::add_link_PV_fixed_Rate(Node*n){
 }       
 
 void PowerModel::add_AC_KCL_PV_Batt_Time(Node* n){
-    for (int t = 0; t < _timesteps*_days; t++) { // for each time step
+    double _power_factor = 0;
+    for (int t = 0; t < _timesteps*_nb_days; t++) { // for each time step
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+        }
         
         /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
          subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
@@ -2607,7 +3591,7 @@ void PowerModel::add_AC_KCL_PV_Batt_Time(Node* n){
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
         //cout<<"n gen is "<<n->_gen[0]<<endl;
-        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - n->ql();  //bs:Returns the real part of the bus shunt. ql:Returns the reactive power load at this bus at given time step. bs*|W|^2+ql, sum for all time steps.
+        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - (sqrt(1 - pow(_power_factor,2))/_power_factor)*n->pl(t);  //bs:Returns the real part of the bus shunt. ql:Returns the reactive power load at this bus at given time step. bs*|W|^2+ql, sum for all time steps.
         //            cout << n->_name << " qload = " << n->ql() << endl;
         KCL_Q = 0;
         _model->addConstraint(KCL_Q);
@@ -2616,13 +3600,19 @@ void PowerModel::add_AC_KCL_PV_Batt_Time(Node* n){
 }
 
 void PowerModel::add_AC_KCL_Batt_Time(Node* n){
+    double _power_factor = 0;
     for (int t = 0; t < _timesteps; t++) {
 
         /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
          subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
          */
 
-
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+        }
 
         Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
         KCL_P += sum_Time(n->get_out(), "pi", t);
@@ -2644,7 +3634,7 @@ void PowerModel::add_AC_KCL_Batt_Time(Node* n){
         KCL_Q += sum_Time(n->get_out(), "qi", t);
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
-        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - n->ql();
+        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - (sqrt(1 - pow(_power_factor,2))/_power_factor)*n->pl(t);
         //            cout << n->_name << " qload = " << n->ql() << endl;
         KCL_Q = 0;
         _model->addConstraint(KCL_Q);
@@ -2652,12 +3642,19 @@ void PowerModel::add_AC_KCL_Batt_Time(Node* n){
 
 }
 void PowerModel::add_SOCP_KCL_Batt_Time(Node* n){
+    double _power_factor = 0;
     for (int t = 0; t < _timesteps; t++) {
 
         /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
          subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
          */
-
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+        }
+        
 
 
         Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
@@ -2680,7 +3677,7 @@ void PowerModel::add_SOCP_KCL_Batt_Time(Node* n){
         KCL_Q += sum_Time(n->get_out(), "qi", t);
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
-        KCL_Q -= n->bs()*((n->w_t[t])^2) - n->ql();
+        KCL_Q -= n->bs()*((n->w_t[t])^2) - (sqrt(1 - pow(_power_factor,2))/_power_factor)*n->pl(t);
         //            cout << n->_name << " qload = " << n->ql() << endl;
         KCL_Q = 0;
         _model->addConstraint(KCL_Q);
@@ -2690,13 +3687,18 @@ void PowerModel::add_SOCP_KCL_Batt_Time(Node* n){
 
 
 void PowerModel::add_SOCP_KCL_PV_Batt_Time(Node* n){
+    double _power_factor = 0;
     for (int t = 0; t < _timesteps; t++) {
 
         /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
          subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
          */
-
-
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+        }
 
         Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
         KCL_P += sum_Time(n->get_out(), "pi", t);
@@ -2718,7 +3720,7 @@ void PowerModel::add_SOCP_KCL_PV_Batt_Time(Node* n){
         KCL_Q += sum_Time(n->get_out(), "qi", t);
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
-        KCL_Q -= n->bs()*(n->w_t[t]) - n->ql();
+        KCL_Q -= n->bs()*(n->w_t[t]) - (sqrt(1 - pow(_power_factor,2))/_power_factor)*n->pl(t);
         //            cout << n->_name << " qload = " << n->ql() << endl;
         KCL_Q = 0;
         _model->addConstraint(KCL_Q);
@@ -2728,12 +3730,18 @@ void PowerModel::add_SOCP_KCL_PV_Batt_Time(Node* n){
 
 
 void PowerModel::add_SOCP_KCL_PV_Time(Node* n){
+     double _power_factor = 0;
     for (int t = 0; t < _timesteps; t++) {
         /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
          subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
          */
 
-
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+        }
 
         Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
         KCL_P += sum_Time(n->get_out(), "pi", t);
@@ -2752,7 +3760,7 @@ void PowerModel::add_SOCP_KCL_PV_Time(Node* n){
         KCL_Q += sum_Time(n->get_out(), "qi", t);
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
-        KCL_Q -= n->bs()*((n->w_t[t])) - n->ql();
+        KCL_Q -= n->bs()*((n->w_t[t])) - (sqrt(1 - pow(_power_factor,2))/_power_factor)*n->pl(t);
 //        KCL_Q -= n->bs()*((n->wi_t[t]) + (n->wr_t[t])) - n->ql();  Commented out 19/09/2016
 //            cout << n->_name << " qload = " << n->ql() << endl;
         KCL_Q = 0;
@@ -2768,12 +3776,18 @@ void PowerModel::add_SOCP_KCL_PV_Time(Node* n){
 
 
 void PowerModel::add_AC_KCL_PV_Time(Node* n){
-    for (int t = 0; t < _timesteps; t++) {
+     double _power_factor = 0;
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
         /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
          subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
          */
         
-        
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+        }
         
         Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
         KCL_P += sum_Time(n->get_out(), "pi", t);
@@ -2791,7 +3805,7 @@ void PowerModel::add_AC_KCL_PV_Time(Node* n){
         KCL_Q += sum_Time(n->get_out(), "qi", t);
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
-        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - n->ql();
+        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - (sqrt(1 - pow(_power_factor,2))/_power_factor)*(n->pl(t));
 //            cout << n->_name << " qload = " << n->ql() << endl;
         KCL_Q = 0;
         _model->addConstraint(KCL_Q);
@@ -2799,13 +3813,58 @@ void PowerModel::add_AC_KCL_PV_Time(Node* n){
     
 }
 
-void PowerModel::add_AC_KCL_Time(Node* n){
-    for (int t = 0; t < _timesteps; t++) {
+void PowerModel::add_AC_KCL_PV_Time_Compact(Node* n){
+     double _power_factor = 0;
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
         /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
          subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
          */
+        
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+        }
+        
+        Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
+        KCL_P += sum_Time_Compact(n->get_out(), "pi", t);
+        KCL_P += sum_Time_Compact(n->get_in(), "pj", t);
+        KCL_P -= sum_Time(n->_gen, "pg", t);
+        if(n->candidate() || n->inst()){
+            KCL_P -= (_net->_radiation[t]) * (n->max_pv_size) * (0.86/ (1000 * _net->bMVA));
+        }
+        KCL_P += n->gs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) + (n->pl(t));
+        //        cout << n->_name << " pload = " << n->pl(t) << endl;
+        KCL_P = 0;
+        _model->addConstraint(KCL_P);
+        
+        Constraint KCL_Q("KCL_Q_"+ n->_name + "_" + to_string(t));
+        KCL_Q += sum_Time_Compact(n->get_out(), "qi", t);
+        KCL_Q += sum_Time_Compact(n->get_in(), "qj", t);
+        KCL_Q -= sum_Time(n->_gen, "qg", t);
+        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - (sqrt(1 - pow(_power_factor,2))/_power_factor)*(n->pl(t));
+        //            cout << n->_name << " qload = " << n->ql() << endl;
+        KCL_Q = 0;
+        _model->addConstraint(KCL_Q);
+    }
+    
+}
 
 
+void PowerModel::add_AC_KCL_Time(Node* n){
+     double _power_factor = 0;
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
+        /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
+         subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
+         */
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+            
+        }
         Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
         KCL_P += sum_Time(n->get_out(), "pi", t);
         KCL_P += sum_Time(n->get_in(), "pj", t);
@@ -2813,7 +3872,7 @@ void PowerModel::add_AC_KCL_Time(Node* n){
         if(n->inst()){
             KCL_P -= n->pv_t[t];
         }
-        KCL_P += n->gs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) + n->pl(t);
+        KCL_P += n->gs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) + (n->pl(t));
 //        cout << n->_name << " pload = " << n->pl(t) << endl;
         KCL_P = 0;
         _model->addConstraint(KCL_P);
@@ -2822,12 +3881,87 @@ void PowerModel::add_AC_KCL_Time(Node* n){
         KCL_Q += sum_Time(n->get_out(), "qi", t);
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
-        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - n->ql();
+        KCL_Q -= n->bs()*(((n->vi_t[t])^2) + ((n->vr_t[t])^2)) - (sqrt(1 - pow(_power_factor,2))/_power_factor)*(n->pl(t));
 //            cout << n->_name << " qload = " << n->ql() << endl;
         KCL_Q = 0;
         _model->addConstraint(KCL_Q);
     }
 
+}
+
+
+void PowerModel::add_AC_KCL_NF(Node* n, bool PV){
+    double _power_factor = 0;
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
+        /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
+         subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
+         */
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+            
+        }
+        Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
+        KCL_P += sum_Time(n->get_out(), "pi", t);
+        KCL_P -= sum_Time(n->get_in(), "pi", t);
+        KCL_P -= sum_Time(n->_gen, "pg", t);
+        if(n->inst()|| (PV && n->candidate())){
+            KCL_P -= n->pv_t[t];
+        }
+        KCL_P += (n->pl(t));
+        //        cout << n->_name << " pload = " << n->pl(t) << endl;
+        KCL_P = 0;
+        _model->addConstraint(KCL_P);
+        
+        Constraint KCL_Q("KCL_Q_"+ n->_name + "_" + to_string(t));
+        KCL_Q += sum_Time(n->get_out(), "qi", t);
+        KCL_Q -= sum_Time(n->get_in(), "qi", t);
+        KCL_Q -= sum_Time(n->_gen, "qg", t);
+        KCL_Q += (sqrt(1 - pow(_power_factor,2))/_power_factor)*(n->pl(t));
+        //            cout << n->_name << " qload = " << n->ql() << endl;
+        KCL_Q = 0;
+        _model->addConstraint(KCL_Q);
+    }
+    
+}
+
+void PowerModel::add_AC_KCL_NF_PV(Node* n){
+    double _power_factor = 0;
+    for (int t = 0; t < _timesteps*_nb_days; t++) {
+        /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
+         subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
+         */
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+            
+        }
+        Constraint KCL_P("KCL_P_"+ n->_name + "_" + to_string(t));
+        KCL_P += sum_Time(n->get_out(), "pi", t);
+        KCL_P -= sum_Time(n->get_in(), "pi", t);
+        KCL_P -= sum_Time(n->_gen, "pg", t);
+        if(n->inst() || n->candidate()){
+            KCL_P -= n->pv_t[t];
+        }
+        KCL_P += (n->pl(t));
+        //        cout << n->_name << " pload = " << n->pl(t) << endl;
+        KCL_P = 0;
+        _model->addConstraint(KCL_P);
+        
+        Constraint KCL_Q("KCL_Q_"+ n->_name + "_" + to_string(t));
+        KCL_Q += sum_Time(n->get_out(), "qi", t);
+        KCL_Q -= sum_Time(n->get_in(), "qi", t);
+        KCL_Q -= sum_Time(n->_gen, "qg", t);
+        KCL_Q += (sqrt(1 - pow(_power_factor,2))/_power_factor)*(n->pl(t));
+        //            cout << n->_name << " qload = " << n->ql() << endl;
+        KCL_Q = 0;
+        _model->addConstraint(KCL_Q);
+    }
+    
 }
 
 
@@ -2854,10 +3988,17 @@ void PowerModel::add_AC_KCL_PV(Node* n, bool switch_lines){
 }
 
 void PowerModel::add_AC_KCL_SOCP_Time(Node *n){
+     double _power_factor = 0;
     /** subject to KCL_P {i in buses}: sum{(l,i,j) in arcs} p[l,i,j] + shunt_g[i]*v[i]^2 + load_p[i] = sum{(i,gen) in bus_gen} pg[gen];
      subject to KCL_Q {i in buses}: sum{(l,i,j) in arcs} q[l,i,j] - shunt_b[i]*v[i]^2 + load_q[i] = sum{(i,gen) in bus_gen} qg[gen];
      */
     for (int t=0; t<_timesteps ; t++) {
+        if (t<24) {
+            _power_factor = _summer_power_factor;
+        }
+        else{
+            _power_factor = _winter_power_factor;
+        }
         Constraint KCL_P("KCL_P");
         KCL_P += sum_Time(n->get_out(), "pi", t);
         KCL_P += sum_Time(n->get_in(), "pj", t);
@@ -2874,7 +4015,7 @@ void PowerModel::add_AC_KCL_SOCP_Time(Node *n){
         KCL_Q += sum_Time(n->get_out(), "qi", t);
         KCL_Q += sum_Time(n->get_in(), "qj", t);
         KCL_Q -= sum_Time(n->_gen, "qg", t);
-        KCL_Q -= n->bs() * (n->w_t[t]) - n->ql();
+        KCL_Q -= n->bs() * (n->w_t[t]) - (sqrt(1 - pow(_power_factor,2))/_power_factor)*n->pl(t);
 
         KCL_Q = 0;
         _model->addConstraint(KCL_Q);
@@ -3533,10 +4674,25 @@ void PowerModel::post_AC_SOCP(){
 
 
 void PowerModel::add_AC_Voltage_Bounds_Time(Node* n){
+    if (n->_has_gen) {
+//        cout<< endl << endl << n->_name << " has generator." << endl<< endl;
+        for (int t = 0; t < _timesteps*_nb_days; t++) {
+            Constraint V_FIX("V_Fixed");
+            V_FIX += ((n->vi_t[t])^2) + ((n->vr_t[t])^2);
+            V_FIX = pow(n->vbound.max,2);
+            _model->addConstraint(V_FIX);
+            
+//            Constraint V_LB("V_LB");
+//            V_LB += ((n->vi_t[t])^2) + ((n->vr_t[t])^2);
+//            V_LB = 1;
+//            _model->addConstraint(V_LB);
+        }
+        return;
+    }
     /** subject to V_UB{i in buses}: vr[i]^2 + vi[i]^2 <= v_max[i]^2;
      subject to V_LB{i in buses}: vr[i]^2 + vi[i]^2 >= v_min[i]^2;
      */
-     for (int t = 0; t < _timesteps*_days; t++) {
+     for (int t = 0; t < _timesteps*_nb_days; t++) {
         Constraint V_UB("V_UB");
         V_UB += ((n->vi_t[t])^2) + ((n->vr_t[t])^2);
         V_UB <= pow(n->vbound.max,2);
@@ -4987,6 +6143,38 @@ Function PowerModel::sum_Time(vector<Arc*> vec, string var, int t){
                 }
             }
      }
+    return res;
+}
+
+Function PowerModel::sum_Time_Compact(vector<Arc*> vec, string var, int t){
+    Function res;
+    for (auto& a:vec) {
+        Node* src = a->src;
+        Node* dest = a->dest;
+
+        if (a->status==1) {
+            if (var.compare("pi")==0) {
+                res += a->g*((((src->vi_t[t])^2) + ((src->vr_t[t])^2)))/pow(a->tr,2.);
+                res += (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(src->vr_t[t]*dest->vr_t[t] + src->vi_t[t]*dest->vi_t[t]);
+                res += (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(src->vi_t[t]*dest->vr_t[t] - src->vr_t[t]*dest->vi_t[t]);
+            }
+            if (var.compare("pj")==0) {
+                res += a->g*((((dest->vi_t[t])^2) + ((dest->vr_t[t])^2)));
+                res += (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vr_t[t]*src->vr_t[t] + dest->vi_t[t]*src->vi_t[t]);
+                res += (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vi_t[t]*src->vr_t[t] - dest->vr_t[t]*src->vi_t[t]);
+            }
+            if (var.compare("qi")==0) {
+                res -= (a->ch/2+a->b)*((((src->vi_t[t])^2) + ((src->vr_t[t])^2)))/pow(a->tr,2.);
+                res -= (-a->b*a->cc - a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vr_t[t]*src->vr_t[t] + dest->vi_t[t]*src->vi_t[t]);
+                res += (-a->g*a->cc + a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(src->vi_t[t]*dest->vr_t[t] - src->vr_t[t]*dest->vi_t[t]);
+            }
+            if (var.compare("qj")==0) {
+                res -= (a->ch/2+a->b)*(((dest->vi_t[t])^2) + ((dest->vr_t[t])^2));
+                res -= (-a->b*a->cc + a->g*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vr_t[t]*src->vr_t[t] + dest->vi_t[t]*src->vi_t[t]);
+                res += (-a->g*a->cc - a->b*a->dd)/(pow(a->cc,2)+pow(a->dd,2))*(dest->vi_t[t]*src->vr_t[t] - dest->vr_t[t]*src->vi_t[t]);
+            }
+        }
+    }
     return res;
 }
 

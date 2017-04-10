@@ -37,6 +37,7 @@ public:
     double                      _dval; /**< default value, default type is double. */
     bool                        _bounded_up;
     bool                        _bounded_down;
+    bool                        _print = false;
     vector<int>                         _meta_var;
     std::string                 _name;
     std::map<int, Constraint*>  _cstrs; /**< Sorted map pointing to all constraints containing this variable */

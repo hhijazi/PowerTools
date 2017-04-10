@@ -1,289 +1,286 @@
-Id number,Code,Building Number,Building Name
-1,1008B1T1';,B109,Kingsley Street Parking Station
-2,'1008B1T2';,B24,Copland Building
-3,'1225E1';,B116,Gould Wing
-4,'1225E2';,B133,Wes Whitten Building
-5,'1225T1';,B141,Frank Fenner Building
-6,'1225T2';,B47,D.A. Brown Building
-7,'1240E1';,B50T,Laurus Wing Stage 1
-8,'1240T1';,,Laurus Wing Stage 2
-9,'1240T2';,B50,Ursula Hall
-10,'1241E1';,B10T,Chancelry 10T1
-11,'1241T1';,B10,Chancelry Building
-12,'1348E1';,B113,Jaeger 5
-13,'1348E2';,B142,Jaeger 8
-14,'1348T1';,B61,Jaeger Building
-15,'1348T2';,B62,Research School of Population Health
-16,'1744B1E1';,B46F,RN Robertson - Greenhouse
-17,'1744B1T1';,B46,R.N. Robertson Building
-18,'1744B2E2';,,
-19,'1744B2T2';,,
-20,'1853B1T1';,B20,University Union Building
-21,'1853B2T2';,B22,Haydon-Allen Building
-22,'1952B1E1';,B12,Melville Hall
-23,'1952B1T1';,B13T,Australian National Dictionary Centre
-24,'1952B2E2';,B13,Beryl Rawson Building
-25,'1952B2T2';,B14,AD Hope Building
-26,'2002E1';,B29,Drill Hall Gallery
-27,'2002T1';,B30,Toad Hall
-28,'2497T1';,B76,Acton Underhill
-29,'2972E1';,B18,University Health Service & Counselling Centre
-30,'2972T1';,B19,David Cocking Building
-31,'3294B1E1';,B1A,Molley Huxley Building
-32,'3294B1T1';,B1,University House
-33,'3294B2E2';,B8,HC Coombs BuildingŠ—”Extension
-34,'3294B2T2';,B9,HC Coombs Building
-35,'3401E1';,B56A,Leonard Huxley Plant Building
-36,'3401T1';,B56,Leonard Huxley Building
-37,'3411B1E1';,B35A,Craig Building
-38,'3411B1T1';,B35,Birch Building
-39,'3411B2E2';,B38,Physics Building
-40,'3411B2T2';,B39,Psychology Building
-41,'3488T1';,B40,Bruce Hall
-42,'4115T1';,B28,Constable's Cottage
-43,'4685T1';,B106,Dickson Precinct Parking Station
-44,'4737T1';,B128,8 Liversidge St
-45,'4871T1';,B95,Fulton Muir Building
-46,'5151B1E1';,B58,Cockroft Building
-47,'5151B1T1';,,
-48,'5151B2E2';,,
-49,'5151B2T2';,,
-50,'5151B3T3';,,
-51,'5842E1';,B108,Computer science & Information Technology Building
-52,'5842T1';,B19A,David Cocking Building - Extension
-53,'6163E1';,B110,Baldessin Precinct Building
-54,'6163T1';,B127,Centre for Arab & Islamic Studies
-55,'6809T1';,B115,Brian Anderson Building
-56,'739T1';,B31,Ian Ross Building
-57,'739T2';,B32,Engineering Building
-58,'755B1E1';,B2,R.G. Menzies Building
-59,'755B1T1';,B3H,Block H (O.A.A.)
-60,'755B2E2';,B3L,Scholars House Block L (O.A.A)
-61,'755B2T2';,,
-62,'7584E1';,B118,Graduate House
-63,'7584T1';,B124,Anthony Low Building
-64,'776T1';,B15,JB Chifley Building
-65,'776T2';,B16,Arts Centre
-66,'8007E1';,B120,Sir Roland Wilson Building
-67,'8007T1';,B126,Judith Wright Court
-68,'8500E1';,B46C,RN Robertson Controlled Environment Facility
-69,'8500T1';,B46H,RN Robertson Š—– Old Growth Cabinet Shed
-70,'8609E1';,,
-71,'8773B1T1';,B117,Hugh Ennor Building
-72,'8773B2T2';,B53,Central Store
-73,'8845B1E1';,B40A,Packard Wing ( Bruce Hall)
-74,'8845T1';,,
-75,'8972B1E1';,B131,John Curtin School of Medical Research Stage 1
-76,'8972B1T1';,,
-77,'8972B2E2';,,
-78,'8972B2T2';,,
-79,'9003E1';,B56,Leonard Huxley Building
-80,'9003T1';,,
-81,'9142E1';,B59,Le Couteur Building
-82,'9142T1';,,
-83,'9266B1E1';,B131,John Curtin School of Medical Research Stage 1
-84,'9266B1T1';,,
-85,'9266B2E2';,,
-86,'9266B2T2';,,
-87,'9266B3E3';,,
-88,'9266B3T3';,,
-89,'9469E1';,B132A,JG Crawford Building Extension
-90,'9469T1';,B132,JG Crawford Building
-91,'9525E1';,B56,Leonard Huxley Building
-92,'9525T1';,,
-93,'A4333';,,
-94,'A4378';,,
-95,'ANU1';,,
-96,'ANU2';,,
-97,'ANU3';,,
-98,'ANU4';,,
-99,'CV_AG_F';,,
-100,'L5321';,,
-101,'L6976';,,
-102,'L7451';,,
-103,'L7452';,,
-104,'L8653';,,
-105,'OASW1254B2';,,
-106,'N555';,,
-107,'OBSW1254B2';,,
-108,'OCSW1254B2';,,
-109,'OS1008B1';,B25A,HW Arndt Building
-110,'OS1241';,B5,Law School
-111,'OS3294B2';,,
-112,'OS5151B6';,,
-113,'OSW2962';,,
-114,'PLASMA';,,
-115,'S1008B1';,B26,LF Crisp Building
-116,'S1225';,B48,Forestry Building
-117,'S1240';,B51,John XXIII College
-118,'S1241';,B6,Law School - North Wing
-119,'S1348';,B63T,Research School of Population Health T1
-120,'S1744B1';,,
-121,'S1744B2';,,
-122,'S1853B1';,B26A,Manning Clark Centre
-123,'S1853B2';,,
-124,'S1952B1';,,
-125,'S1952B2';,,
-126,'S2497';,,
-127,'S2972';,,
-128,'S3294B1';,,
-129,'S3294B2';,,
-130,'S3401';,,
-131,'S3411B1';,,
-132,'S3411B2';,,
-133,'S3488';,B49A,"Staff Residence, Bruce Hall Warden's Lodge"
-134,'S3492';,,
-135,'S4115';,B73,Old Canberra House
-136,'S4685';,B79A,The Andrew Cockburn Building
-137,'S4737';,B1B,Postgraduate and Research Students Association (PARSA Cottage)
-138,'S4871';,,
-139,'S5151B1';,,
-140,'S5151B2';,,
-141,'S5151B3';,,
-142,'S5151B4';,,
-143,'S5151B5';,,
-144,'S5151B6';,,
-145,'S5151B7';,,
-146,'S5842';,B90,N/A
-147,'S6163';,B13B,Asian Studies Demountable
-148,'S6809';,,
-149,'S739';,,
-150,'S755B1';,,
-151,'S755B2';,,
-152,'S755B3';,,
-153,'S7584';,,
-154,'S7673';,,
-155,'S776';,B17,Concessions Building
-156,'S8007';,B77A,27 Brian Lewis Crescent
-157,'S8500';,B46J,RN Robertson Š—– Banksia Greenhouse
-158,'S8773B1';,B88TH,(DOI) Annex Garran Road (Removed June 2016)
-159,'S8773B2';,B88,South Pavillion
-160,'S8845';,,
-161,'S8972B1';,,
-162,'S8972B2';,,
-163,'S9003';,,
-164,'S9142';,,
-165,'S9266B1';,,
-166,'S9266B2';,,
-167,'S9266B3';,,
-168,'S9469';,B37,WEH Stanner Building
-169,'S9525';,,
-170,'SW1254B1';,,
-171,'SW1254B2';,,
-172,'Z1_1008';,B27,John Dedman Mathematical Sciences Building
-173,'Z1_1225';,B49,Burton and Garran Hall
-174,'Z1_1240';,B52,Burgmann College
-175,'Z1_1241';,B7,Law Link & Law Link Lecture Theatre
-176,'Z1_1254';,,
-177,'Z1_1254B2';,,
-178,'Z1_1348';,B63,National Institute for Mental Health Research
-179,'Z1_1744';,,
-180,'Z1_1853';,,
-181,'Z1_1952';,,
-182,'Z1_2972';,,
-183,'Z1_3401';,,
-184,'Z1_3492';,,
-185,'Z1_4115';,B75,Lennox House
-186,'Z1_4685';,,
-187,'Z1_5151';,,
-188,'Z1_5151B6';,,
-189,'Z1_739';,,
-190,'Z1_755B2';,,
-191,'Z1_755B3';,,
-192,'Z1_7584';,,
-193,'Z1_776';,B89,N/A
-194,'Z1_8007';,B77,University Accommodation Services
-195,'Z1_8500';,B46N,RN Robertson Š—– Acacia Greenhouse
-196,'Z1_8773';,,
-197,'Z1_8845';,,
-198,'Z1_9142';,,
-199,'Z1_9266';,,
-200,'Z1_9469';,,
-201,'Z1_ANU1';,,
-202,'Z1_ANU2';,,
-203,'Z1_ANU3';,,
-204,'Z1_ANU4';,,
-205,'Z2_2972';,,
-206,'Z2_3401';,,
-207,'Z2_3492';,,
-208,'Z2_5151B6';,,
-209,'Z2_739';,,
-210,'Z2_755B2';,,
-211,'Z2_755B3';,,
-212,'Z2_7584';,,
-213,'Z2_776';,,
-214,'Z2_8773';,,
-215,'Z2_ANU1';,,
-216,'Z2_ANU2';,,
-217,'Z3_1254B1';,,
-218,'Z3_1952';,,
-219,'Z3_7584';,,
-220,'Z3_8773';,,
-221,'Z3_ANU1';,,
-222,'Z3_ANU2';,,
-223,'Z4_1254B1';,,
-224,'Z4_ANU1';,,
-225,'Z4_ANU2';,,
-226,'Z5_ANU1';,,
-227,'Z5_ANU2';,,
-228,'N255';,,
-229,'N256';,,
-230,'N258';,,
-231,'N275';,,
-232,'N277';,,
-233,'S9746';,,
-234,'S9746';,,
+,Code,Building Number,Building Name
+0,1008B1T1';,B109,Kingsley Street Parking Station
+1,'1008B1T2';,B24,Copland Building
+2,'1225E1';,B116,Gould Wing
+3,'1225E2';,B133,Wes Whitten Building
+4,'1225T1';,B141,Frank Fenner Building
+5,'1225T2';,B47,D.A. Brown Building
+6,'1240E1';,B50T,Laurus Wing Stage 1
+7,'1240T1';,,Laurus Wing Stage 2
+8,'1240T2';,B50,Ursula Hall
+9,'1241E1';,B10,Chancelry
+10,'1241T1';,B10T1,ANU Centre for Continuing Education
+11,'1348E1';,B113,Jaeger 5
+12,'1348E2';,B142,Jaeger 8
+13,'1348T1';,B61,Jaeger Building
+14,'1348T2';,B62,Research School of Population Health
+15,'1744B1E1';,B46F,RN Robertson - Greenhouse
+16,'1744B1T1';,B46,R.N. Robertson Building
+17,'1744B2E2';,,
+18,'1744B2T2';,,
+19,'1853B1T1';,B20,University Union Building
+20,'1853B2T2';,B22,Haydon-Allen Building
+21,'1952B1E1';,B12,Melville Hall
+22,'1952B1T1';,B13T,Australian National Dictionary Centre
+23,'1952B2E2';,B13,Beryl Rawson Building
+24,'1952B2T2';,B14,AD Hope Building
+25,'2002E1';,B29,Drill Hall Gallery
+26,'2002T1';,B30,Toad Hall
+27,'2497T1';,B76,Acton Underhill
+28,'2972E1';,B18,University Health Service & Counselling Centre
+29,'2972T1';,B19,David Cocking Building
+30,'3294B1E1';,B1A,Molley Huxley Building
+31,'3294B1T1';,B1,University House
+32,'3294B2E2';,B8,HC Coombs Building_ÑÓExtension
+33,'3294B2T2';,B9,HC Coombs Building
+34,'3401E1';,B56A,Leonard Huxley Plant Building
+35,'3401T1';,B56,Leonard Huxley Building
+36,'3411B1E1';,B35A,Craig Building
+37,'3411B1T1';,B35,Birch Building
+38,'3411B2E2';,B38,Centre for Gravitational Physics
+39,'3411B2T2';,B39,Psychology Building
+40,'3488T1';,B40,Bruce Hall
+41,'4115T1';,B28,Constable's Cottage
+42,'4685T1';,B106,Dickson Precinct Parking Station
+43,'4737T1';,B128,8 Liversidge St
+44,'4871T1';,B95,Fulton Muir Building
+45,'5151B1E1';,B58,Cockroft Building
+46,'5151B1T1';,,
+47,'5151B2E2';,,
+48,'5151B2T2';,,
+49,'5151B3T3';,,
+50,'5842E1';,B108,Computer science & Information Technology Building
+51,'5842T1';,B19A,David Cocking Building - Extension
+52,'6163E1';,B110,Baldessin Precinct Building
+53,'6163T1';,B127,Centre for Arab & Islamic Studies
+54,'6809T1';,B115,Brian Anderson Building
+55,'739T1';,B31,Ian Ross Building
+56,'739T2';,B32,Engineering Building
+57,'755B1E1';,B2,R.G. Menzies Building
+58,'755B1T1';,B3H,Block H (O.A.A.)
+59,'755B2E2';,B3L,Scholars House Block L (O.A.A)
+60,'755B2T2';,,
+61,'7584E1';,B118,Graduate House
+62,'7584T1';,B124,Anthony Low Building
+63,'776T1';,B15,JB Chifley Building
+64,'776T2';,B16,Arts Centre
+65,'8007E1';,B120,Sir Roland Wilson Building
+66,'8007T1';,B126,Judith Wright Court
+67,'8500E1';,B46C,RN Robertson Controlled Environment Facility
+68,'8500T1';,B46H,RN Robertson _ÑÐ Old Growth Cabinet Shed
+69,'8609E1';,,
+70,'8773B1T1';,B117,Hugh Ennor Building
+71,'8773B2T2';,B53,Central Store
+72,'8845B1E1';,B40A,Packard Wing ( Bruce Hall)
+73,'8845T1';,,
+74,'8972B1E1';,B131,John Curtin School of Medical Research Stage 1
+75,'8972B1T1';,,
+76,'8972B2E2';,,
+77,'8972B2T2';,,
+78,'9003E1';,B56,Leonard Huxley Building
+79,'9003T1';,,
+80,'9142E1';,B59,Le Couteur Building
+81,'9142T1';,,
+82,'9266B1E1';,B131,John Curtin School of Medical Research Stage 1
+83,'9266B1T1';,,
+84,'9266B2E2';,,
+85,'9266B2T2';,,
+86,'9266B3E3';,,
+87,'9266B3T3';,,
+88,'9469E1';,B132A,JG Crawford Building Extension
+89,'9469T1';,B132,JG Crawford Building
+90,'9525E1';,B56,Leonard Huxley Building
+91,'9525T1';,,
+92,'A4333';,,
+93,'A4378';,,
+94,'ANU1';,,
+95,'ANU2';,,
+96,'ANU3';,,
+97,'ANU4';,,
+98,'CV_AG_F';,,
+99,'L5321';,,
+100,'L6976';,,
+101,'L7451';,,
+102,'L7452';,,
+103,'L8653';,,
+104,'OASW1254B2';,,
+105,'N555';,,
+106,'OBSW1254B2';,,
+107,'OCSW1254B2';,,
+108,'OS1008B1';,B25A,HW Arndt Building
+109,'OS1241';,B5,Law School
+110,'OS3294B2';,,
+111,'OS5151B6';,,
+112,'OSW2962';,,
+113,'PLASMA';,,
+114,'S1008B1';,B26,LF Crisp Building
+115,'S1225';,B49,Burton and Garran Hall
+116,'S1240';,B51,John XXIII College
+117,'S1241';,B6,Law School - North Wing
+118,'S1348';,B63T,Research School of Population Health T1
+119,'S1744B1';,,
+120,'S1744B2';,,
+121,'S1853B1';,B26A,Manning Clark Centre
+122,'S1853B2';,,
+123,'S1952B1';,,
+124,'S1952B2';,,
+125,'S2497';,,
+126,'S2972';,,
+127,'S3294B1';,,
+128,'S3294B2';,,
+129,'S3401';,,
+130,'S3411B1';,,
+131,'S3411B2';,,
+132,'S3488';,B49A,"Staff Residence, Bruce Hall Warden's Lodge"
+133,'S3492';,,
+134,'S4115';,B73,Old Canberra House
+135,'S4685';,B79A,The Andrew Cockburn Building
+136,'S4737';,B1B,Postgraduate and Research Students Association (PARSA Cottage)
+137,'S4871';,,
+138,'S5151B1';,,
+139,'S5151B2';,,
+140,'S5151B3';,,
+141,'S5151B4';,,
+142,'S5151B5';,,
+143,'S5151B6';,,
+144,'S5151B7';,,
+145,'S5842';,B90,N/A
+146,'S6163';,B13B,Asian Studies Demountable
+147,'S6809';,,
+148,'S739';,,
+149,'S755B1';,,
+150,'S755B2';,,
+151,'S755B3';,,
+152,'S7584';,,
+153,'S7673';,,
+154,'S776';,B17,Concessions Building
+155,'S8007';,B77A,27 Brian Lewis Crescent
+156,'S8500';,B46J,RN Robertson _ÑÐ Banksia Greenhouse
+157,'S8773B1';,,(DOI) Annex Garran Road (Removed June 2016)
+158,'S8773B2';,B88,South Pavillion
+159,'S8845';,,
+160,'S8972B1';,,
+161,'S8972B2';,,
+162,'S9003';,,
+163,'S9142';,,
+164,'S9266B1';,,
+165,'S9266B2';,,
+166,'S9266B3';,,
+167,'S9469';,B37,WEH Stanner Building
+168,'S9525';,,
+169,'SW1254B1';,,
+170,'SW1254B2';,,
+171,'Z1_1008';,B27,John Dedman Mathematical Sciences Building
+172,'Z1_1225';,B48,Forestry Building
+173,'Z1_1240';,B52,Burgmann College
+174,'Z1_1241';,B7,Law Link & Law Link Lecture Theatre
+175,'Z1_1254';,,
+176,'Z1_1254B2';,,
+177,'Z1_1348';,B63,National Institute for Mental Health Research
+178,'Z1_1744';,,
+179,'Z1_1853';,,
+180,'Z1_1952';,,
+181,'Z1_2972';,,
+182,'Z1_3401';,,
+183,'Z1_3492';,,
+184,'Z1_4115';,B75,Lennox House
+185,'Z1_4685';,,
+186,'Z1_5151';,,
+187,'Z1_5151B6';,,
+188,'Z1_739';,,
+189,'Z1_755B2';,,
+190,'Z1_755B3';,,
+191,'Z1_7584';,,
+192,'Z1_776';,B89,N/A
+193,'Z1_8007';,B77,University Accommodation Services
+194,'Z1_8500';,B46N,RN Robertson _ÑÐ Acacia Greenhouse
+195,'Z1_8773';,,
+196,'Z1_8845';,,
+197,'Z1_9142';,,
+198,'Z1_9266';,,
+199,'Z1_9469';,,
+200,'Z1_ANU1';,,
+201,'Z1_ANU2';,,
+202,'Z1_ANU3';,,
+203,'Z1_ANU4';,,
+204,'Z2_2972';,,
+205,'Z2_3401';,,
+206,'Z2_3492';,,
+207,'Z2_5151B6';,,
+208,'Z2_739';,,
+209,'Z2_755B2';,,
+210,'Z2_755B3';,,
+211,'Z2_7584';,,
+212,'Z2_776';,,
+213,'Z2_8773';,,
+214,'Z2_ANU1';,,
+215,'Z2_ANU2';,,
+216,'Z3_1254B1';,,
+217,'Z3_1952';,,
+218,'Z3_7584';,,
+219,'Z3_8773';,,
+220,'Z3_ANU1';,,
+221,'Z3_ANU2';,,
+222,'Z4_1254B1';,,
+223,'Z4_ANU1';,,
+224,'Z4_ANU2';,,
+225,'Z5_ANU1';,,
+226,'Z5_ANU2';,,
+227,'N255';,,
+228,'N256';,,
+229,'N258';,,
+230,'N275';,,
+231,'N277';,,
+232,'S9746';,B42,Peter Baume Building
+233,'S9746';,B137,Chemistry
+234,'S9747';,,
 235,'S9747';,,
-236,'S9747';,,
+236,'S9634';,B134,Linnaeus
 237,'S9634';,,
-238,'S9634';,,
+238,'S9635';,,
 239,'S9635';,,
-240,'S9635';,,
+240,'S9655A';,,
 241,'S9655A';,,
-242,'S9655A';,,
-243,'S9655B';,,
-244,'S9655C';,,
-245,'N301';,,
-246,'S9655B';,,
-247,'S9655C';,,
-248,'S2002';,,
-249,'N309';,,
-250,'N310';,,
-251,'N311';,,
-252,'N312';,,
-253,'N313';,,
-254,'N317';,,
-255,'N318';,,
-256,'N320';,,
-257,'N326';,,
-258,'S9770T2';,,
-259,'S9770';,,
-260,'N339';,,
-261,'N340';,,
-262,'N342';,,
-263,'S8782';,,
+242,'S9655B';,,
+243,'S9655C';,,
+244,'N301';,,
+245,'S9655B';,,
+246,'S9655C';,,
+247,'S2002';,,
+248,'N309';,,
+249,'N310';,,
+250,'N311';,,
+251,'N312';,,
+252,'N313';,,
+253,'N317';,,
+254,'N318';,,
+255,'N320';,,
+256,'N326';,,
+257,'S9770T2';,,
+258,'S9770';,B143,NCI
+259,'N339';,,
+260,'N340';,,
+261,'N342';,,
+262,'S8782';,,
+263,'S9260';,,
 264,'S9260';,,
-265,'S9260';,,
-266,'N352';,,
-267,'N354';,,
+265,'N352';,,
+266,'N354';,,
+267,'S7673';,,
 268,'S7673';,,
-269,'S7673';,,
-270,'N359';,,
+269,'N359';,,
+270,'S9427';,,
 271,'S9427';,,
-272,'S9427';,,
-273,'N365';,,
-274,'S8972T3';,,
-275,'S9770T3';,,
-276,'S9770T1';,,
-277,'N378';,,
-278,'N382';,,
-279,'N385';,,
-280,'N386';,,
-281,'653-*CV_AG_F';,,
-282,'654-*OS1008B1';,,
-283,'655-*OS3294B2';,,
-284,'657-*S1241';,,
-285,'658-*S5151B2';,,
-286,,,
-287,,,
-288,,,
+272,'N365';,,
+273,'S8972T3';,,
+274,'S9770T3';,,
+275,'S9770T1';,,
+276,'N378';,,
+277,'N382';,,
+278,'N385';,,
+279,'N386';,,
+280,'653-*CV_AG_F';,,
+281,'654-*OS1008B1';,,
+282,'655-*OS3294B2';,,
+283,'657-*S1241';,,
+284,'658-*S5151B2';,,
