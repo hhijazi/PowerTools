@@ -166,6 +166,10 @@ Function sin(var_& v){
     return sin(Function(v));
 };
 
+Function cos(var_& v){
+    return cos(Function(v));
+};
+
 
 //Function var_::operator^(int p){
 //    Function res(*this);
