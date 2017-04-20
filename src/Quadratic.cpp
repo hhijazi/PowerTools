@@ -694,9 +694,9 @@ Function operator/(var_& v, Quadratic q){
            }
             return 1/(q._coefs[vid] + q.get_q_coeff(vid, vid)*v);
         }
-//        if (q._quad_vars.count(vid)==1) {
+        if (q._quad_vars.count(vid)==1) {
             return 1/(q.get_q_coeff(vid, vid)*v);
-//        }
+        }
     }
     return Function(v)/= q;
 };
