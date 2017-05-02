@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 #include "PowerTools++/var.h"
 #include "PowerTools++/Constraint.h"
@@ -184,8 +185,7 @@ template<typename Number> void var<Number>::print () const{
     }
     cout << _name;
     if (!_bounded_down && !_bounded_down) {
-        cout << " (unbounded) = ";
-        printf("%.10f;\n", (double)_val);
+        cout << " (unbounded) = " << std::fixed << std::setprecision(6) << _val;
 //        cout << "in constraints: ";
 //        for (auto it:_cstrs) {
 //            it.second->print();
@@ -196,18 +196,16 @@ template<typename Number> void var<Number>::print () const{
     switch (_type) {
         case integ:
             cout << "{" << get_lb() << "," << get_ub() << "}";
-            cout << " = " << _val;
             break;
         case binary:
-            cout << "{" << 0 << "," << 1 << "}";
-            cout << " = " << _val;
+            cout << "{" << (get_lb() ? 1 : 0) << "," << (get_ub() ? 1 : 0)  << "}";
             break;
         default:
-            cout << "[" << get_lb() << "," << get_ub() << "]";
-            printf(" = %.10f", (double)_val);
+            cout << "[" << std::fixed << std::setprecision(10) << get_lb() 
+                << "," << std::fixed << std::setprecision(10) << get_ub() << "]";
             break;
     }
-
+    cout << " = " << std::fixed << std::setprecision(10) << _val;
 
     cout << ";" << endl;
 //    cout << "in constraints: ";
