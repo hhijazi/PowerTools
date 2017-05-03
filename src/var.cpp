@@ -185,7 +185,7 @@ template<typename Number> void var<Number>::print () const{
     }
     cout << _name;
     if (!_bounded_down && !_bounded_down) {
-        cout << " (unbounded) = " << std::fixed << std::setprecision(6) << _val;
+        cout << " (unbounded) = " << std::fixed << std::setprecision(10) << _val << ";" << std::endl;
 //        cout << "in constraints: ";
 //        for (auto it:_cstrs) {
 //            it.second->print();
