@@ -86,12 +86,12 @@ void GurobiProgram::update_model(){
             case binary:
                 vb =  (var<bool>*)it;
                 gvarit = _grb_vars.find(it->get_idx());
-                vb->set_val(gvarit->second->get(GRB_DoubleAttr_X));
+                vb->set_val(static_cast<int>(gvarit->second->get(GRB_DoubleAttr_X) + 0.5) == 1);
                 break;
             case integ:
                 vi =  (var<int>*)it;
                 gvarit = _grb_vars.find(it->get_idx());
-                vi->set_val(gvarit->second->get(GRB_DoubleAttr_X));
+                vi->set_val(static_cast<int>(gvarit->second->get(GRB_DoubleAttr_X) + 0.5));
                 break;
             case real:
             case longreal:
