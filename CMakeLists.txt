@@ -9,6 +9,9 @@ set (PowerTools_VERSION_MINOR 0)
 # Find Gurobi (optional).
 option(ENABLE_GUROBI "Link to Gurobi libraries" OFF)
 
+# Find BONMIN (optional).
+option(ENABLE_BONMIN "Link to BONMIN libraries" OFF)
+
 # configure a header file to pass some of the CMake settings
 # to the source code.
 configure_file (
@@ -36,13 +39,13 @@ include_directories(${IPOPT_INCLUDE_DIRS}/..)
 set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
 
 # Find BONMIN.
-find_package(BONMIN REQUIRED)
-include_directories(${BONMIN_INCLUDE_DIRS}/..)
-set(LIBS ${LIBS} ${BONMIN_LIBRARIES})
-
-# find_package(SCIP REQUIRED)
-#include_directories(${SCIP_INCLUDE_DIRS}/..)
-#set(LIBS ${LIBS} ${SCIP_LIBRARIES})
+if (ENABLE_BONMIN)
+    message(STATUS "Enable GUROBI")
+    add_definitions(-DUSE_BONMIN)
+    find_package(BONMIN REQUIRED)
+    include_directories(${BONMIN_INCLUDE_DIRS}/..)
+    set(LIBS ${LIBS} ${BONMIN_LIBRARIES})
+endif()
 
 # Compiler options
 
