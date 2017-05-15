@@ -40,7 +40,7 @@ endif()
 
 # Find BONMIN.
 if (ENABLE_BONMIN)
-    message(STATUS "Enable GUROBI")
+    message(STATUS "Enable BONMIN")
     add_definitions(-DUSE_BONMIN)
     find_package(BONMIN)
     include_directories(${BONMIN_INCLUDE_DIRS}/..)
