@@ -127,6 +127,7 @@ int PTSolver::run(int output, bool relax){
     gurobiNotAvailable();
 #endif
     else if(_stype==bonmin) {
+        using namespace Bonmin;
         BonminSetup bonmin;
         bonmin.initializeOptionsAndJournalist();
         bonmin.initialize(prog.bonmin_prog);

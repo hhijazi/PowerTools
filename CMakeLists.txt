@@ -24,25 +24,25 @@ include_directories("${PROJECT_BINARY_DIR}/include")
  
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
-# Find Gurobi?
-if (ENABLE_GUROBI)
-    message(STATUS "Enable GUROBI")
-    add_definitions(-DUSE_GUROBI)
-    find_package(GUROBI)
-    include_directories(${GUROBI_INCLUDE_DIRS})
-    set(LIBS ${LIBS} ${GUROBI_LIBRARIES})
-endif()
-
 # Find Ipopt.
 find_package(IPOPT REQUIRED)
 include_directories(${IPOPT_INCLUDE_DIRS}/..)
 set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
 
+# Find Gurobi?
+if (ENABLE_GUROBI)
+    message(STATUS "Enable GUROBI")
+    add_definitions(-DUSE_GUROBI)
+    find_package(GUROBI)
+    include_directories(${GUROBI_INCLUDE_DIRS}/..)
+    set(LIBS ${LIBS} ${GUROBI_LIBRARIES})
+endif()
+
 # Find BONMIN.
 if (ENABLE_BONMIN)
     message(STATUS "Enable GUROBI")
     add_definitions(-DUSE_BONMIN)
-    find_package(BONMIN REQUIRED)
+    find_package(BONMIN)
     include_directories(${BONMIN_INCLUDE_DIRS}/..)
     set(LIBS ${LIBS} ${BONMIN_LIBRARIES})
 endif()

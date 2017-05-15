@@ -1643,6 +1643,28 @@ void Model::fill_in_cstr_bounds(double* g_l ,double* g_u) {
     }
 }
 
+void Model::fill_in_var_types(Bonmin::TMINLP::VariableType* var_types){
+    int vid = 0;
+    for(auto& vi: _vars){
+        vid = vi->get_idx();
+        switch (vi->get_type()) {
+            case real:
+                var_types[vid] = Bonmin::TMINLP::CONTINUOUS;
+                break;
+            case longreal:
+                var_types[vid] = Bonmin::TMINLP::CONTINUOUS;
+                break;
+            case integ:
+                var_types[vid] = Bonmin::TMINLP::INTEGER;
+                break;
+            case binary:
+                var_types[vid] = Bonmin::TMINLP::BINARY;
+                break;
+            default:
+                break;
+        } ;
+    }
+}
 void Model::print_functions() const{
     cout << " Number of atomic functions = " << _functions.size();
     cout << endl;

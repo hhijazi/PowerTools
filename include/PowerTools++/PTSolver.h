@@ -18,15 +18,21 @@
 #ifdef USE_GUROBI
 #include <PowerTools++/GurobiProgram.h>
 #endif
+#ifdef USE_BONMIN
+#include <PowerTools++/BonminProgram.h>
+#endif
 
 class PTSolver {
     
 protected:
     union {
+        IpoptProgram* ipopt_prog;
 #ifdef USE_GUROBI
         GurobiProgram* grb_prog;
 #endif
-        IpoptProgram* ipopt_prog;
+#ifdef USE_BONMIN
+        BonminProgram* bonmin_prog;
+#endif
     } prog;
 
 public:
