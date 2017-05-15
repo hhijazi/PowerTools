@@ -20,7 +20,9 @@
 #include <vector>
 #include <coin/IpIpoptApplication.hpp>
 #include <coin/IpTNLP.hpp>
+#ifdef USE_BONMIN 
 #include <coin/BonTMINLP.hpp>
+#endif
 #include <thread>
 
 class Model {
@@ -115,7 +117,9 @@ public:
     void fill_in_hess_nnz(int* iRow , int* jCol);
     void fill_in_var_linearity(Ipopt::TNLP::LinearityType* var_types);
     void fill_in_cstr_linearity(Ipopt::TNLP::LinearityType* const_types);
+#ifdef USE_BONMIN 
     void fill_in_var_types(Bonmin::TMINLP::VariableType* var_types);
+#endif
     void solve();
     friend std::vector<int> bounds(int parts, int mem);
 //    IpoptProgram* create_ipopt_program();

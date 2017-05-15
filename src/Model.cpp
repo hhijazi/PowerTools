@@ -1643,6 +1643,7 @@ void Model::fill_in_cstr_bounds(double* g_l ,double* g_u) {
     }
 }
 
+#ifdef USE_BONMIN
 void Model::fill_in_var_types(Bonmin::TMINLP::VariableType* var_types){
     int vid = 0;
     for(auto& vi: _vars){
@@ -1665,6 +1666,8 @@ void Model::fill_in_var_types(Bonmin::TMINLP::VariableType* var_types){
         } ;
     }
 }
+#endif
+
 void Model::print_functions() const{
     cout << " Number of atomic functions = " << _functions.size();
     cout << endl;

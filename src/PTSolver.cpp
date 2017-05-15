@@ -7,14 +7,23 @@
 //
 
 #include "PowerTools++/PTSolver.h"
+
+#ifdef USE_BONMIN
 #include <coin/BonBonminSetup.hpp>
 #include <coin/BonCbc.hpp>
+#endif
 
 namespace {
     void gurobiNotAvailable()
     {
         cerr << "Can't use Gurobi for solver: this version of PowerTools "
         "was compiled without Gurobi support." << endl;
+        exit(1);
+    }
+    void bonminNotAvailable()
+    {
+        cerr << "Can't use Bonmin for solver: this version of PowerTools "
+        "was compiled without Bonmin support." << endl;
         exit(1);
     }
 }
@@ -111,22 +120,25 @@ int PTSolver::run(int output, bool relax){
         }
     }
     else if(_stype==gurobi)
+    {
 #ifdef USE_GUROBI
-            try{
-                //                prog.grbprog = new GurobiProgram();
-                prog.grb_prog->_output = output;
-                prog.grb_prog->reset_model();
-                prog.grb_prog->prepare_model();
-                bool ok = prog.grb_prog->solve(relax);
-                return ok ? 100 : -1;
-            }catch(GRBException e) {
-                cerr << "\nError code = " << e.getErrorCode() << endl;
-                cerr << e.getMessage() << endl;
-            }
+        try{
+            //                prog.grbprog = new GurobiProgram();
+            prog.grb_prog->_output = output;
+            prog.grb_prog->reset_model();
+            prog.grb_prog->prepare_model();
+            bool ok = prog.grb_prog->solve(relax);
+            return ok ? 100 : -1;
+        }catch(GRBException e) {
+            cerr << "\nError code = " << e.getErrorCode() << endl;
+            cerr << e.getMessage() << endl;
+        }
 #else
-    gurobiNotAvailable();
+        gurobiNotAvailable();
 #endif
+    }
     else if(_stype==bonmin) {
+#ifdef USE_BONMIN
         using namespace Bonmin;
         BonminSetup bonmin;
         bonmin.initializeOptionsAndJournalist();
@@ -136,8 +148,8 @@ int PTSolver::run(int output, bool relax){
             bb(bonmin);
         }
         catch(TNLPSolver::UnsolvedError *E) {
-            //There has been a failure to solve a problem with Ipopt.
-            std::cerr<<"Ipopt has failed to solve a problem"<<std::endl;
+            //There has been a failure to solve a problem with Bonmin.
+            std::cerr<<"Bonmin has failed to solve a problem"<<std::endl;
         }
         catch(OsiTMINLPInterface::SimpleError &E) {
             std::cerr<<E.className()<<"::"<<E.methodName()
@@ -149,6 +161,9 @@ int PTSolver::run(int output, bool relax){
             <<std::endl
             <<E.message()<<std::endl;
         }
+#else
+        bonminNotAvailable();
+#endif
     }
     return -1;
 }
