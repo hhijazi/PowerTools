@@ -29,6 +29,8 @@ void BonminProgram::finalize_solution(TMINLP::SolverReturn               status 
                                       const Number*                     x         ,
                                       Number                            obj_value )
 {
+    if (x == nullptr) return; // Bonmin must have had an issue...
+
     var_* v = NULL;
     var<int>* int_var = NULL;
     var<bool>* bin_var = NULL;
