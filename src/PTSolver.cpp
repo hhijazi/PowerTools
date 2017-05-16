@@ -144,6 +144,11 @@ int PTSolver::run(int output, bool relax){
     }
     else if(_stype==bonmin) {
 #ifdef USE_BONMIN
+        if(prog.bonmin_prog->model->_objt==maximize){
+            *prog.bonmin_prog->model->_obj *= -1;
+        }
+
+        bool ok = true;
         using namespace Bonmin;
         BonminSetup bonmin;
         bonmin.initializeOptionsAndJournalist();
@@ -155,17 +160,26 @@ int PTSolver::run(int output, bool relax){
         catch(TNLPSolver::UnsolvedError *E) {
             //There has been a failure to solve a problem with Bonmin.
             std::cerr<<"Bonmin has failed to solve a problem"<<std::endl;
+            ok = false;
         }
         catch(OsiTMINLPInterface::SimpleError &E) {
             std::cerr<<E.className()<<"::"<<E.methodName()
             <<std::endl
             <<E.message()<<std::endl;
+            ok = false;
         }
         catch(CoinError &E) {
             std::cerr<<E.className()<<"::"<<E.methodName()
             <<std::endl
             <<E.message()<<std::endl;
+            ok = false;
         }
+
+        if(prog.bonmin_prog->model->_objt==maximize){
+            *prog.bonmin_prog->model->_obj *= -1;
+        }
+
+        return ok ? 100 : -1;
 #else
         bonminNotAvailable();
 #endif
