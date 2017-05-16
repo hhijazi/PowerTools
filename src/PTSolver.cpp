@@ -48,7 +48,12 @@ PTSolver::PTSolver(Model* model, SolverType stype){
             gurobiNotAvailable();
 #endif
             break;
-        default:
+        case bonmin:
+#ifdef USE_BONMIN
+            prog.bonmin_prog = new BonminProgram(model);
+#else
+            bonminNotAvailable();
+#endif
             break;
     }
 }
