@@ -84,7 +84,7 @@ public:
     void update_hess_link();    
     var_* getVar(int vid);
     void delVar(var_* v);
-    void addConstraint(Constraint c);
+    void addConstraint(const Constraint& c);
     void addConstraint(Constraint* c);
     void on_off(Constraint c, var<bool>& on);
     void on_off(var<>& v, var<bool>& on);

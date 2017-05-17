@@ -68,7 +68,7 @@ public:
     void set_idx(int idx);
     
     /* Output */
-    void print();
+    void print() const;
     
     
 };

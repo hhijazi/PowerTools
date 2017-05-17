@@ -157,7 +157,7 @@ Constraint& Constraint::operator=(const Function& f){
 }
 
 /* Output */
-void Constraint::print(){
+void Constraint::print() const {
     cout << _name << " | idx = " << get_idx() << " : ";
     
     this->Function::print(false);
