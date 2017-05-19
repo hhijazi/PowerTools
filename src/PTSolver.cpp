@@ -156,22 +156,32 @@ int PTSolver::run(int output, bool relax){
         try {
             Bab bb;
             bb(bonmin);
+            auto status = bb.mipStatus();
+            switch (bb.mipStatus())
+            {
+                case Bab::MipStatuses::FeasibleOptimal:
+                case Bab::MipStatuses::Feasible:
+                    ok = true;
+                    break;
+                default:
+                    ok = false;
+            }
         }
         catch(TNLPSolver::UnsolvedError *E) {
             //There has been a failure to solve a problem with Bonmin.
-            std::cerr<<"Bonmin has failed to solve a problem"<<std::endl;
+            std::cerr << "Bonmin has failed to solve a problem" << std::endl;
             ok = false;
         }
         catch(OsiTMINLPInterface::SimpleError &E) {
-            std::cerr<<E.className()<<"::"<<E.methodName()
-            <<std::endl
-            <<E.message()<<std::endl;
+            std::cerr << E.className() << "::" << E.methodName() << std::endl << E.message() << std::endl;
             ok = false;
         }
         catch(CoinError &E) {
-            std::cerr<<E.className()<<"::"<<E.methodName()
-            <<std::endl
-            <<E.message()<<std::endl;
+            std::cerr << E.className() << "::" << E.methodName() << std::endl << E.message() << std::endl;
+            ok = false;
+        }
+        catch(...) {
+            std::cerr << "Unknown error: Bonmin failed to solve the problem." << std::endl;
             ok = false;
         }
 
