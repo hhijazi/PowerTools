@@ -19,6 +19,7 @@ GurobiProgram::GurobiProgram(Model* m):GurobiProgram(){
 }
 
 GurobiProgram::~GurobiProgram() {
+    for (auto p : _grb_vars) delete p.second;
     if (grb_mod) delete grb_mod;
     delete grb_env;
 }
