@@ -2,3 +2,4 @@
 #define PowerTools_VERSION_MINOR @PowerTools_VERSION_MINOR@
 
 #cmakedefine ENABLE_GUROBI
+#cmakedefine ENABLE_BONMIN
