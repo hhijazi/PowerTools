@@ -98,6 +98,8 @@ public:
     bool SDP_satisfied(vector<Node *> *b);
 
     bool circles_intersect(double xc, double yc, double R1, double R2, Arc *a);
+
+    bool SDP_satisfied_new(vector<Node *> *b);
 };
 
 #endif /* defined(__PowerTools____PowerModel__) */

@@ -41,6 +41,8 @@ Arc* Arc::clone(){
     copy->parallel = parallel;
     copy->in_cycle = in_cycle;
     copy->status = status;
+    copy->free = free;
+    copy->socp = socp;
     copy->imaginary = imaginary;
     return copy;
 }

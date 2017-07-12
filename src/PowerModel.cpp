@@ -183,7 +183,7 @@ void PowerModel::min_cost(){
     }
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-        obj->print(true);
+       // obj->print(true);
     //    _solver->run();
 }
 
@@ -204,27 +204,41 @@ void PowerModel::max_var(var<> v){
 }
 
 int PowerModel::solve(int output, bool relax){
-    int status = _solver->run(output,relax);
+    int status = _solver->run(output,relax);//1
     if (_type == SDP) {
-        check_SDP();
-        //add_SDP_cuts(3);
+        double wall0 = get_wall_time1();
+        check_SDP();//2
+        double wall1 = get_wall_time1();
+        cout << "\ntime spent on generating cuts = " << wall1-wall0 << "\n";
+//        add_SDP_cuts(3);//3
 //        var<double>* vr = NULL;
 //        for (auto v: _model->_vars) {
 //            if (v->get_type() != longreal) continue;
 //            vr = (var<double>*)v;
 //            cout << "\n" << vr->_name << ": " << vr->get_lb() << ", " << vr->get_ub();
 //        }
-        double wall0 = get_wall_time1();
+        _solver->warm_start = true;//4
         status = _solver->run(output,relax);
-        double wall1 = get_wall_time1();
+        wall1 = get_wall_time1();
         cout << "\ntime = " << wall1-wall0 << "\n";
-//        for (auto b: *_net->_bags) {
-//            if (b->size() != 3) continue;
-//            if (SDP_satisfied(b)) cout << "\nCUT SATISFIED";
-//            else cout << "\n NOT SATISFIED!";
-//            cout << "\n" << b->at(0)->_name << ", " << b->at(1)->_name << ", " << b->at(2) ->_name;
-//        }
+
+        //Second iteration
 //        check_SDP();
+//        status = _solver->run(output,relax);
+//        wall1 = get_wall_time1();
+//        cout << "\ntime2 = " << wall1-wall0 << "\n";
+
+//        Checks after
+        int i = 0;
+        for (auto b: *_net->_bags) {
+            if (b->size() != 3) continue;
+            cout << "\nBag #" << i;
+            if (SDP_satisfied_new(b)) cout << "CUT SATISFIED";
+            else cout << "CUT NOT SATISFIED!";
+            //cout << "\n" << b->at(0)->_name << ", " << b->at(1)->_name << ", " << b->at(2) ->_name;
+            i++;
+        }
+//        check_SDP_after();
     }
     return status;
 }
@@ -1328,22 +1342,266 @@ bool PowerModel::circles_intersect(double xc, double yc, double R1, double R2, A
 //        }
 //    }
     //cout << "\nR2 = " << R2;
-    if(fabs(R1) < tol) {
-        if (xc*xc + yc*yc <= R2 && xc >= a->wr.get_lb() && xc <= a->wr.get_ub() && yc >= a->wi.get_lb() && yc <= a->wi.get_ub()) {
+//    if(fabs(R1) < tol) {
+        tol = 0;
+        if (xc*xc + yc*yc <= R2+tol && xc >= a->wr.get_lb()-tol && xc <= a->wr.get_ub()+tol && yc >= a->wi.get_lb()-tol && yc <= a->wi.get_ub()+tol) {
             //cout << "\nAn SDP completion exists!";
             return true;
         }else {
-            if (!(xc >= a->wr.get_lb() && xc <= a->wr.get_ub() && yc >= a->wi.get_lb() && yc <= a->wi.get_ub())) {
-                cout << "\nBounds are violated: (x,y) = (" << xc << ", " << yc << "), wr lb, ub = (" << a->wr.get_lb() << ", " << a->wr.get_ub() << "), wi lb, ub = (" << a->wi.get_lb() << ", " << a->wi.get_ub() << ")";
-            }//else cout << "\nR2 = " << R2;
+            if (!(xc*xc + yc*yc <= R2+tol)) {
+                cout << "\nSOC is violated:";// (x,y) = (" << xc << ", " << yc << "), wr lb, ub = (" << a->wr.get_lb() << ", " << a->wr.get_ub() << "), wi lb, ub = (" << a->wi.get_lb() << ", " << a->wi.get_ub() << ")";
+                cout << " res for SOC = " << R2 - xc*xc - yc*yc;
+            }
+            if(!(xc >= a->wr.get_lb()-tol)) {
+                cout << "\nBound is violated: ";
+                cout << "res for xlb = " << xc - a->wr.get_lb();
+            }
+            if(!(xc <= a->wr.get_ub()+tol)) {
+                cout << "\nBound is violated: ";
+                cout << "res for xub = " << a->wr.get_ub()-xc;
+            }
+            if(!(yc >= a->wi.get_lb()-tol)) {
+                cout << "\nBound is violated: ";
+                cout << "res for ylb = " << yc - a->wi.get_lb();
+            }
+            if(!(yc <= a->wi.get_ub()+tol)) {
+                cout << "\nBound is violated: ";
+                cout << "res for yub = " << a->wi.get_ub() - yc;
+            }
+
+
+            //else cout << "\nR2 = " << R2;
 //            cout << "\n Squared dist from 0 = " << xc*xc + yc*yc;
-            //cout << "\nNo SDP completion exists!";
             return false;
         }
+//    }else{
+//        cout << "\nCircle with non-zero radius, not implemented!";
+//        return false;
+//    }
+}
+
+bool PowerModel::SDP_satisfied_new(vector<Node*>* b){
+    Arc* a12 = nullptr;
+    Arc* a13 = nullptr;
+    Arc* a32 = nullptr;
+
+    Node* n1 = nullptr;
+    Node* n2 = nullptr;
+    Node* n3 = nullptr;
+
+    double wr12, wi12;
+    double wr13, wi13;
+    double wr32, wi32;
+
+    double tol = 0.000001;
+
+    bool rot_bag;
+    int n_i1, n_i2, n_i3 = 0;
+
+    if (b->size()==3) {
+        cout << "\n------------------------------\n";
+        rot_bag = _net->rotation_bag(b);
+        if (rot_bag) {
+            n1 = b->at(0);
+            if (_net->_clone->has_directed_arc(n1, b->at(1))) {
+                n2 = b->at(1);
+                n3 = b->at(2);
+            }
+            else {
+                n2 = b->at(2);
+                n3 = b->at(1);
+            }
+            a13 = _net->get_arc(n3, n1);
+            a32 = _net->get_arc(n2, n3);
+        }
+        else {
+            n_i1 = get_order(b, 1);
+            n1 = b->at(n_i1);
+            n_i2 = get_order(b, 2);
+            n2 = b->at(n_i2);
+            n_i3 = get_order(b, 3);
+            n3 = b->at(n_i3);
+            a13 = _net->get_arc(n1, n3);
+            a32 = _net->get_arc(n3, n2);
+        }
+        a12 = _net->get_arc(n1, n2);
+        cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+
+        if(!a13 || a13->status == 0) {
+            if (!a13) {
+                if(rot_bag) a13 = _net->_clone->get_arc(n3,n1)->clone();
+                else a13 = _net->_clone->get_arc(n1,n3)->clone();
+                a13->src = _net->get_node(a13->src->_name);
+                a13->dest = _net->get_node(a13->dest->_name);
+                a13->connect();
+                _net->add_arc(a13);
+            }
+            a13->init_vars(SDP);
+            _model->addVar(a13->wr);
+            _model->addVar(a13->wi);
+        }
+
+        if(!a32 || a32->status == 0) {
+            if (!a32) {
+                if(rot_bag) a32 = _net->_clone->get_arc(n2,n3)->clone();
+                else a32 = _net->_clone->get_arc(n3,n2)->clone();
+                a32->src = _net->get_node(a32->src->_name);
+                a32->dest = _net->get_node(a32->dest->_name);
+                a32->connect();
+                _net->add_arc(a32);
+            }
+            a32->init_vars(SDP);
+            _model->addVar(a32->wr);
+            _model->addVar(a32->wi);
+        }
+
+        if(!a12 || a12->status == 0) {
+            if (!a12) {
+                a12 = _net->_clone->get_arc(n1,n2)->clone();
+                a12->src = _net->get_node(a12->src->_name);
+                a12->dest = _net->get_node(a12->dest->_name);
+                a12->connect();
+                _net->add_arc(a12);
+            }
+            a12->init_vars(SDP);
+            _model->addVar(a12->wr);
+            _model->addVar(a12->wi);
+        }
+
+        if ((a12->free && a13->free) || (a12->free && a32->free) || (a13->free && a32->free)) {
+            cout << "\nAt least two free lines in bag, returning 'satisfied'.";
+            // There can never be one free line in a bag, because then it would be fixed
+            return true;
+        }
+
+        if (a12->status) {
+            cout << a12->_name << " known; ";
+            if(a12->imaginary) cout << "imaginary; ";
+            wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
+            wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
+        }
+        if (a13->status) {
+            cout << a13->_name << " known; ";
+            if(a13->imaginary) cout << "imaginary; ";
+            wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
+            wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
+        }
+        if (a32->status) {
+            cout << a32->_name << " known; ";
+            if(a32->imaginary) cout << "imaginary; ";
+            wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
+            wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
+        }
+        double w1 = _model->getVar_<double>(_net->get_node(n1->_name)->w.get_idx())->get_value();
+        double w2 = _model->getVar_<double>(_net->get_node(n2->_name)->w.get_idx())->get_value();
+        double w3 = _model->getVar_<double>(_net->get_node(n3->_name)->w.get_idx())->get_value();
+
+        // if we get to here, at most one line is missing
+
+        // Calculate values for missing lines
+        cout << "\n";
+        // Calculate the parameters of the circles; not rot: 13, 32; rot: 31, 23. 12 same for both
+        if(a12->imaginary && !a12->status) {
+            cout << "Calculating values for " << a12->_name;
+            if(!rot_bag) {
+                wr12 = (wr32 * wr13 - wi32 * wi13) / w3;
+                wi12 = (wi32 * wr13 + wr32 * wi13) / w3;
+            }else{
+                cout << "\nRotation bag! ";
+                wr12 = (wr32*wr13 - wi32*wi13)/w3;//was +?
+                wi12 = (-wi32*wr13 - wr32*wi13)/w3;//was + -?
+            }
+            a12->wr.set_val(wr12);
+            a12->wi.set_val(wi12);
+            if (!(wr12 >= a12->wr.get_lb() && wr12 <= a12->wr.get_ub() && wi12 >= a12->wi.get_lb() && wi12 <= a12->wi.get_ub())) {
+                cout << "\nBounds are violated: (x,y) = (" << wr12 << ", " << wi12 << "), ";
+                cout << "wr lb, ub = (" << a12->wr.get_lb() << ", " << a12->wr.get_ub() << "), ";
+                cout << "wi lb, ub = (" << a12->wi.get_lb() << ", " << a12->wi.get_ub() << ")";
+                return false;
+            }else{
+                cout << "\nBounds are NOT violated: (x,y) = (" << wr12 << ", " << wi12 << ") ";
+            }
+            //cout << "\nSDP: wr12*" << 2*(wr32*wr13 - wi32*wi13) << " + wi12*" << 2*(wi32*wr13 + wr32*wi13);
+            //cout << " - (wr12^2 + wi12^2)*" << w3 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr32*wr32 + wi32*wi32)*w1;
+            a12->status = 1;
+        }
+        if(a13->imaginary && !a13->status) {
+            cout << "Calculating values for " << a13->_name;
+            if(!rot_bag) {
+                wr13 = (wr12 * wr32 + wi12 * wi32) / w2;
+                wi13 = (wi12 * wr32 - wr12 * wi32) / w2;
+            }else{
+                cout << "\nRotation bag! ";
+                wr13 = (wr12*wr32 - wi12*wi32)/w2;
+                wi13 = (-wi12*wr32 - wr12*wi32)/w2;
+            }
+            a13->wr.set_val(wr13);
+            a13->wi.set_val(wi13);
+            if (!(wr13 >= a13->wr.get_lb() && wr13 <= a13->wr.get_ub() && wi13 >= a13->wi.get_lb() && wi13 <= a13->wi.get_ub())) {
+                cout << "\nBounds are violated: (x,y) = (" << wr13 << ", " << wi13 << "), ";
+                cout << "wr lb, ub = (" << a13->wr.get_lb() << ", " << a13->wr.get_ub() << "), ";
+                cout << "wi lb, ub = (" << a13->wi.get_lb() << ", " << a13->wi.get_ub() << ")";
+                return false;
+            }else{
+                cout << "\nBounds are NOT violated: (x,y) = (" << wr13 << ", " << wi13 << ") ";
+            }
+            //cout << "\nSDP: wr13*" << 2*(wr12*wr32 + wi12*wi32) << " + wi13*" << 2*(wi12*wr32 - wr12*wi32);//
+            //cout << " - (wr13^2 + wi13^2)*" << w2 << " + " << w1*w2*w3 - (wr32*wr32 + wi32*wi32)*w1 - (wr12*wr12 + wi12*wi12)*w3;//
+            a13->status = 1;
+        }
+        if(a32->imaginary && !a32->status) {
+            cout << "Calculating values for " << a32->_name;
+            if(!rot_bag) {
+                wr32 = (wr12 * wr13 + wi12 * wi13) / w1;
+                wi32 = (wi12 * wr13 - wr12 * wi13) / w1;
+            }else{
+                cout << "\nRotation bag! ";
+                wr32 = (wr12*wr13 - wi12*wi13)/w1;
+                wi32 = (-wi12*wr13 - wr12*wi13)/w1;
+            }
+            a32->wr.set_val(wr32);
+            a32->wi.set_val(wi32);
+            if (!(wr32 >= a32->wr.get_lb() && wr32 <= a32->wr.get_ub() && wi32 >= a32->wi.get_lb() && wi32 <= a32->wi.get_ub())) {
+                cout << "\nBounds are violated: (x,y) = (" << wr32 << ", " << wi32 << "), ";
+                cout << "wr lb, ub = (" << a32->wr.get_lb() << ", " << a32->wr.get_ub() << "), ";
+                cout << "wi lb, ub = (" << a32->wi.get_lb() << ", " << a32->wi.get_ub() << ")";
+                return false;
+            }else{
+                cout << "\nBounds are NOT violated: (x,y) = (" << wr32 << ", " << wi32 << ") ";
+            }
+            //cout << "\nSDP: wr32*" << 2*(wr12*wr13 + wi12*wi13) << " + wi12*" << 2*(wi12*wr13 - wr12*wi13);
+            //cout << " - (wr32^2 + wi32^2)*" << w1 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr12*wr12 + wi12*wi12)*w3;
+            a32->status = 1;
+        }
+
+        //------------------------
+        cout << "\nCheck bag with all known lines";
+        if (!rot_bag) {
+            double SDP = wr12*(wr32*wr13 - wi32*wi13) + wi12*(wi32*wr13 + wr32*wi13);
+            SDP *= 2;
+            SDP -= (wr12*wr12 + wi12*wi12)*w3 + (wr13*wr13 + wi13*wi13)*w2 + (wr32*wr32 + wi32*wi32)*w1;
+            SDP += w1*w2*w3;
+            cout << "\nSDP = " << SDP;
+            if(SDP > -tol) return true;
+            else {
+                return false;
+            }
+        }else{
+            double SDPr = wr12*(wr32*wr13 - wi32*wi13) - wi12*(wi32*wr13 + wr32*wi13);
+            SDPr *= 2;
+            SDPr -= ((wr12*wr12 + wi12*wi12)*w3 + (wr13*wr13 + wi13*wi13)*w2 + (wr32*wr32 + wi32*wi32)*w1);
+            SDPr += w1*w2*w3;
+            cout << "\nSDPr = " << SDPr;
+            if(SDPr > -tol) return true;
+            else {
+                return false;
+            }
+        }
     }else{
-        cout << "\nCircle with non-zero radius, not implemented!";
-        return false;
+        //cout << "\nBag with more than 3 nodes, skipping.";
+        return true;
     }
+    return true;
 }
 
 bool PowerModel::SDP_satisfied(vector<Node*>* b){
@@ -1394,87 +1652,88 @@ bool PowerModel::SDP_satisfied(vector<Node*>* b){
             a32 = _net->get_arc(n3, n2);
         }
         a12 = _net->get_arc(n1, n2);
-        cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+        //cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
 
         if(!a13 || a13->status == 0) {
             if (!a13) {
                 if(rot_bag) a13 = _net->_clone->get_arc(n3,n1)->clone();
                 else a13 = _net->_clone->get_arc(n1,n3)->clone();
-                a13->status = 0;
+
                 a13->src = _net->get_node(a13->src->_name);
                 a13->dest = _net->get_node(a13->dest->_name);
-//                a13->imaginary = true;
+//                a13->free = true;
                 a13->connect();
                 _net->add_arc(a13);
             }
+            cout << "\nAdding a13";
+            a13->status = 1;
             a13->init_vars(SDP);
             _model->addVar(a13->wr);
             _model->addVar(a13->wi);
-            new_arc = a13;
-        }
-        if (a13->imaginary) {
-            new_arc = a13;
-            a13 = nullptr;
+            //new_arc = a13;
+            //a13 = nullptr;
+            a13->imaginary = true;
         }
 
         if(!a32 || a32->status == 0) {
             if (!a32) {
                 if(rot_bag) a32 = _net->_clone->get_arc(n2,n3)->clone();
                 else a32 = _net->_clone->get_arc(n3,n2)->clone();
-                a32->status=0;
+
                 a32->src = _net->get_node(a32->src->_name);
                 a32->dest = _net->get_node(a32->dest->_name);
-//                a32->imaginary = true;
+//                a32->free = true;
                 a32->connect();
                 _net->add_arc(a32);
             }
+            cout << "\nAdding a32";
+            a32->status=1;
             a32->init_vars(SDP);
             _model->addVar(a32->wr);
             _model->addVar(a32->wi);
-            new_arc = a32;
-        }
-        if (a32->imaginary) {
-            new_arc = a32;
-            a32 = nullptr;
+            //new_arc = a32;
+            //a32 = nullptr;
+            a32->imaginary = true;
         }
 
         if(!a12 || a12->status == 0) {
             if (!a12) {
                 a12 = _net->_clone->get_arc(n1,n2)->clone();
-                a12->status=0;
+
                 a12->src = _net->get_node(a12->src->_name);
                 a12->dest = _net->get_node(a12->dest->_name);
-//                a12->imaginary = true;
-                //if(!a12->imaginary) {cout << "\n12 !Imaginary"; a12->imaginary = true;}
+//                a12->free = true;
+                //if(!a12->free) {cout << "\n12 !Imaginary"; a12->free = true;}
                 a12->connect();
                 _net->add_arc(a12);
             }
+            cout << "\nAdding a12";
+            a12->status=1;
             a12->init_vars(SDP);
             _model->addVar(a12->wr);
             _model->addVar(a12->wi);
-        }
-        if (a12->imaginary) {
-            new_arc = a12;
-            a12 = nullptr;
+            //new_arc = a12;
+            //a12 = nullptr;
+            a12->imaginary = true;
         }
 
-        if (!a12 && !a13 && !a32) { //nothing to check for bags without lines
-            cout << "\nNo lines in bag, returning 'satisfied'.";
+        if (a12->imaginary && a13->imaginary && a32->imaginary) { //nothing to check for bags without lines
+            //cout << "\nNo lines in bag, returning 'satisfied'.";
             return true;
         }
 
-        if (a12) {
-            //cout << "a12 real; ";
+        if (!a12->imaginary) {
+            cout << "a12 real; ";
             wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
             wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
         }
-        if (a13) {
-            //cout << "a13 real; ";
+        if (!a13->imaginary) {
+            cout << "a13 real; ";
             wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
             wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
         }
-        if (a32) {
-            //cout << "a32 real; ";
+        if (!a32->imaginary) {
+            cout << "a32 real; ";
             wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
             wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
         }
@@ -1482,73 +1741,81 @@ bool PowerModel::SDP_satisfied(vector<Node*>* b){
         double w2 = _model->getVar_<double>(_net->get_node(n2->_name)->w.get_idx())->get_value();
         double w3 = _model->getVar_<double>(_net->get_node(n3->_name)->w.get_idx())->get_value();
 
-        if((!a12 && !a13) || (!a12 && !a32) || (!a13 && !a32)) {
-            cout << "\nTwo lines are missing. Return 'satisfied'.";
+        if((a12->imaginary && a13->imaginary) || (a12->imaginary && a32->imaginary) || (a13->imaginary && a32->imaginary)) {
+            //cout << "\nTwo lines are missing. Return 'satisfied'.";
             return true;
         }
 
         // if we get to here, at most one line is missing
         if(!rot_bag) { // Calculate the parameters of the circles; not rot: 13, 32; rot: 31, 23. 12 same for both
-            if(!a12) {
+            if(a12->imaginary) {
                 xc = (wr32*wr13 - wi32*wi13)/w3;
                 yc = (wi32*wr13 + wr32*wi13)/w3;
                 R1 = (wr32*wr32*wr13*wr13 + wi32*wi32*wi13*wi13 + wi32*wi32*wr13*wr13 + wr32*wr32*wi13*wi13)/(w3*w3);
                 R1 -= ((wr13*wr13+wi13*wi13)*w2 + (wr32*wr32+wi32*wi32)*w1 - w1*w2*w3)/w3;
-                cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;
+                //cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;
                 R2 = w1*w2;
-
-                cout << "\nSDP: wr12*" << 2*(wr32*wr13 - wi32*wi13) << " + wi12*" << 2*(wi32*wr13 + wr32*wi13);
-                cout << " - (wr12^2 + wi12^2)*" << w3 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr32*wr32 + wi32*wi32)*w1;
+                //cout << "\nSDP: wr12*" << 2*(wr32*wr13 - wi32*wi13) << " + wi12*" << 2*(wi32*wr13 + wr32*wi13);
+                //cout << " - (wr12^2 + wi12^2)*" << w3 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr32*wr32 + wi32*wi32)*w1;
+                //cout << "SOC1 res: " << wr32*wr32+wi32*wi32 - w2*w3 << ", SOC2 res: " << wr13*wr13+wi13*wi13 - w1*w3;
+                if ((wr32*wr32+wi32*wi32 - w2*w3 < -0.0001) && (wr13*wr13+wi13*wi13 - w1*w3 < -0.0001)) cout << "\none of the socs is inactive.";
             }
-            if(!a13) {
+            if(a13->imaginary) {
                 xc = (wr12*wr32 + wi12*wi32)/w2;//
                 yc = (wi12*wr32 - wr12*wi32)/w2;//
                 R1 = (wr12*wr12*wr32*wr32 + wi12*wi12*wi32*wi32 + wi12*wi12*wr32*wr32 + wr12*wr12*wi32*wi32)/(w2*w2);//
                 R1 -= ((wr32*wr32+wi32*wi32)*w1 + (wr12*wr12+wi12*wi12)*w3 - w1*w2*w3)/w2;//
-                cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;//
+                //cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;//
                 R2 = w1*w3;
-
-                cout << "\nSDP: wr13*" << 2*(wr12*wr32 + wi12*wi32) << " + wi13*" << 2*(wi12*wr32 - wr12*wi32);//
-                cout << " - (wr13^2 + wi13^2)*" << w2 << " + " << w1*w2*w3 - (wr32*wr32 + wi32*wi32)*w1 - (wr12*wr12 + wi12*wi12)*w3;//
-                cout << "\nSOCP: wr13^2 + wi13^2 <= " << R2;
-                cout << "\nFree vars: " << new_arc->wr._name << ", " << new_arc->wr._name;
+                //cout << "\nSDP: wr13*" << 2*(wr12*wr32 + wi12*wi32) << " + wi13*" << 2*(wi12*wr32 - wr12*wi32);//
+                //cout << " - (wr13^2 + wi13^2)*" << w2 << " + " << w1*w2*w3 - (wr32*wr32 + wi32*wi32)*w1 - (wr12*wr12 + wi12*wi12)*w3;//
+                //cout << "\nSOCP: wr13^2 + wi13^2 <= " << R2;
+                //cout << "\nFree vars: " << new_arc->wr._name << ", " << new_arc->wr._name;
+                //cout << "SOC1 res: " << wr32*wr32+wi32*wi32 - w2*w3 << ", SOC2 res: " << wr12*wr12+wi12*wi12 - w1*w2;
+                if ((wr32*wr32+wi32*wi32 - w2*w3 < -0.0001) && (wr12*wr12+wi12*wi12 - w1*w2 < -0.0001)) cout << "\none of the socs is inactive.";
             }
-            if(!a32) {
+            if(a32->imaginary) {
                 xc = (wr12*wr13 + wi12*wi13)/w1;
                 yc = (wi12*wr13 - wr12*wi13)/w1;
                 R1 = (wr12*wr12*wr13*wr13 + wi12*wi12*wi13*wi13 + wi12*wi12*wr13*wr13 + wr12*wr12*wi13*wi13)/(w1*w1);
                 R1 -= ((wr13*wr13+wi13*wi13)*w2 + (wr12*wr12+wi12*wi12)*w3 - w1*w2*w3)/w1;
-                cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;
+                //cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;
                 R2 = w3*w2;
-
-                cout << "\nSDP: wr32*" << 2*(wr12*wr13 + wi12*wi13) << " + wi12*" << 2*(wi12*wr13 - wr12*wi13);
-                cout << " - (wr32^2 + wi32^2)*" << w1 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr12*wr12 + wi12*wi12)*w3;
+                //cout << "\nSDP: wr32*" << 2*(wr12*wr13 + wi12*wi13) << " + wi12*" << 2*(wi12*wr13 - wr12*wi13);
+                //cout << " - (wr32^2 + wi32^2)*" << w1 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr12*wr12 + wi12*wi12)*w3;
+//                cout << "SOC1 res: " << wr13*wr13+wi13*wi13 - w1*w3 << ", SOC2 res: " << wr12*wr12+wi12*wi12 - w1*w2;
+                if ((wr12*wr12+wi12*wi12 - w2*w1 < -0.0001) && (wr13*wr13+wi13*wi13 - w1*w3 < -0.0001)) cout << "\none of the socs is inactive.";
             }
         }else{
-            if(!a12) {
+            if(a12->imaginary) {
                 xc = (wr32*wr13 + wi32*wi13)/w3;
                 yc = (wi32*wr13 - wr32*wi13)/w3;
                 R1 = (wr32*wr32*wr13*wr13 + wi32*wi32*wi13*wi13 + wi32*wi32*wr13*wr13 + wr32*wr32*wi13*wi13)/(w3*w3);
                 R1 -= ((wr13*wr13+wi13*wi13)*w2 + (wr32*wr32+wi32*wi32)*w1 - w1*w2*w3)/w3; // stay the same because all wi are squared?
-                cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;
+                //cout << "\nR1 = " << R1 << " xc = " << xc << " yc = " << yc;
                 R2 = w1*w2;
-
-                cout << "\nSDPr: wr12*" << 2*(wr32*wr13 - wi32*wi13) << " - wi12*" << 2*(wi32*wr13 + wr32*wi13);
-                cout << " - (wr12^2 + wi12^2)*" << w3 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr32*wr32 + wi32*wi32)*w1;
+                //cout << "\nSDPr: wr12*" << 2*(wr32*wr13 - wi32*wi13) << " - wi12*" << 2*(wi32*wr13 + wr32*wi13);
+                //cout << " - (wr12^2 + wi12^2)*" << w3 << " + " << w1*w2*w3 - (wr13*wr13 + wi13*wi13)*w2 - (wr32*wr32 + wi32*wi32)*w1;
             }
-            if(!a13) {
+            if(a13->imaginary) {
                 //R2 = w1*w3;
                 cout << "\nNOT IMPLEMENTED ";
             }
-            if(!a32) {
+            if(a32->imaginary) {
                 //R2 = w3*w2;
                 cout << "\nNOT IMPLEMENTED ";
             }
         }
 
         // If a line is missing - check if the circles intersect and return
-        if (!a12 || !a13 || !a32) {
-            return circles_intersect(xc, yc, R1, R2, new_arc);
+        if (a12->imaginary) {
+            return circles_intersect(xc, yc, R1, R2, a12);
+        }
+        if (a13->imaginary) {
+            return circles_intersect(xc, yc, R1, R2, a13);
+        }
+        if (a32->imaginary) {
+            return circles_intersect(xc, yc, R1, R2, a32);
         }
 
         // If we get here, then all lines are in place. SOCP should already be satisfied.
@@ -1557,21 +1824,25 @@ bool PowerModel::SDP_satisfied(vector<Node*>* b){
             SDP *= 2;
             SDP -= (wr12*wr12 + wi12*wi12)*w3 + (wr13*wr13 + wi13*wi13)*w2 + (wr32*wr32 + wi32*wi32)*w1;
             SDP += w1*w2*w3;
-            cout << "\nSDP = " << SDP;
             if(SDP > -tol) return true;
-            else return false;
+            else {
+                cout << "\nSDP = " << SDP;
+                return false;
+            }
         }else{
             double SDPr = wr12*(wr32*wr13 - wi32*wi13) - wi12*(wi32*wr13 + wr32*wi13);
             SDPr *= 2;
             SDPr -= ((wr12*wr12 + wi12*wi12)*w3 + (wr13*wr13 + wi13*wi13)*w2 + (wr32*wr32 + wi32*wi32)*w1);
             SDPr += w1*w2*w3;
-            cout << "\nSDPr = " << SDPr;
             if(SDPr > -tol) return true;
-            else return false;
+            else {
+                cout << "\nSDPr = " << SDPr;
+                return false;
+            }
         }
 
     }else{
-        cout << "\nBag with more than 3 nodes, skipping.";
+        //cout << "\nBag with more than 3 nodes, skipping.";
         return true;
     }
 }
@@ -1628,14 +1899,14 @@ void PowerModel::check_SDP(){
     int i = 0;
 
     for (auto b: *_net->_bags){
-        //cout << "\n\nBag number = " << i;
-        i++;
-        if(SDP_satisfied(b)){
-            //cout << "\nCUT ALREADY SATISFIED";
+        cout << "\n\nBag number = " << i << ": ";
+        if(b->size() ==3) i++;
+        if(SDP_satisfied_new(b)){
+//            cout << "CUT ALREADY SATISFIED";
         }else{
-            //cout << "\n bag id = " << id;
+//            cout << "\nBag #" << i << ": ";
             //if (id == 7) {id++; continue;}
-            cout << "\nADDING NEW CUT";
+            cout << "ADDING NEW CUT";
             if(b->size()!=3) continue;
 
             rot_bag = _net->rotation_bag(b);
@@ -1662,11 +1933,11 @@ void PowerModel::check_SDP(){
                 a13 = _net->get_arc(n1,n3);
                 a32 = _net->get_arc(n3,n2);
             }
-//            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
             a12 = _net->get_arc(n1,n2);
 
-            if(a12->imaginary && a12->status==0) {
-                a12->status = 1;
+            if(a12->imaginary && !a12->socp) {
+                a12->socp = true;
                 Constraint SOCP1("SOCP1_"+to_string(id));
                 SOCP1 += _net->get_node(n1->_name)->w*_net->get_node(n2->_name)->w;
                 SOCP1 -= ((a12->wr)^2);
@@ -1675,8 +1946,8 @@ void PowerModel::check_SDP(){
                 SOCP1.is_cut = true;
                 _model->addConstraint(SOCP1);
             }
-            if(a13->imaginary && a13->status==0) {
-                a13->status = 1;
+            if(a13->imaginary && !a13->socp) {
+                a13->socp = true;
                 Constraint SOCP2("SOCP2_"+to_string(id));
                 SOCP2 += _net->get_node(n1->_name)->w*_net->get_node(n3->_name)->w;
                 SOCP2 -= ((a13->wr)^2);
@@ -1685,8 +1956,8 @@ void PowerModel::check_SDP(){
                 SOCP2.is_cut = true;
                 _model->addConstraint(SOCP2);
             }
-            if(a32->imaginary && a32->status==0) {
-                a32->status = 1;
+            if(a32->imaginary && !a32->socp) {
+                a32->socp = true;
                 Constraint SOCP3("SOCP3_"+to_string(id));
                 SOCP3 += _net->get_node(n3->_name)->w*_net->get_node(n2->_name)->w;
                 SOCP3 -= ((a32->wr)^2);
@@ -1776,13 +2047,13 @@ void PowerModel::add_SDP_cuts(int dim){
     int n_i1, n_i2, n_i3 = 0;
     bool rot_bag;
     for (auto b: *_net->_bags){
-        cout << "\nid = " << id1;
+        //cout << "\nid = " << id1;
         id1++;
         //cout << "\nSize of bag = " << b->size();
         if (b->size()==dim) {
             rot_bag = _net->rotation_bag(b);
             if (rot_bag) {
-                                cout << "rot_bag: ";
+                                //cout << "rot_bag: ";
                 n1 = b->at(0);
                 if (_net->_clone->has_directed_arc(n1, b->at(1))){
                     n2 = b->at(1);
@@ -1796,7 +2067,7 @@ void PowerModel::add_SDP_cuts(int dim){
                 a32 = _net->get_arc(n2,n3);
             }
             else {
-                cout << "not rot_bag: ";
+                //cout << "not rot_bag: ";
                 n_i1 = get_order(b,1);
                 n1 = b->at(n_i1);
                 n_i2 = get_order(b,2);
@@ -1806,25 +2077,25 @@ void PowerModel::add_SDP_cuts(int dim){
                 a13 = _net->get_arc(n1,n3);
                 a32 = _net->get_arc(n3,n2);
             }
-            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+            //cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
             a12 = _net->get_arc(n1,n2);
 
-            if ((!a12 && !a13) || (!a13 && !a32) || (!a12 && !a32)) cout << "\nJust one arc in bag!";
+            //if ((!a12 && !a13) || (!a13 && !a32) || (!a12 && !a32)) cout << "\nJust one arc in bag!";
 
-            if (!a12 || !a13 || !a32) cout << "\nArc missing in bag!";
-            else {
-                cout << "\na12 = " << a12->_name << " a13 = " << a13->_name << " a32 = " << a32->_name << endl;
-                a12->print();
-            }
+            //if (!a12 || !a13 || !a32) cout << "\nArc missing in bag!";
+            //else {
+                //cout << "\na12 = " << a12->_name << " a13 = " << a13->_name << " a32 = " << a32->_name << endl;
+                //a12->print();
+            //}
             
             if(!a12 || a12->status==0) {
-                cout << "\nadding a12\n";
+                //cout << "\nadding a12\n";
                 if (!a12) {
                     a12 = _net->_clone->get_arc(n1,n2)->clone();
                     a12->status=1;
                     a12->src = _net->get_node(a12->src->_name);
                     a12->dest = _net->get_node(a12->dest->_name);
-                    a12->imaginary = true;
+                    a12->free = true;
                     a12->connect();
                     _net->add_arc(a12);
                 }
@@ -1873,7 +2144,7 @@ void PowerModel::add_SDP_cuts(int dim){
                 //                _net->_clone->remove_arc(a12);
             }
             if(!a13 || a13->status==0) {
-                cout << "\nadding a13\n";
+                //cout << "\nadding a13\n";
                 if(!a13) {
                     if (rot_bag) {
                         a13 = _net->_clone->get_arc(n3,n1)->clone();
@@ -1884,7 +2155,7 @@ void PowerModel::add_SDP_cuts(int dim){
                     a13->status=1;
                     a13->src = _net->get_node(a13->src->_name);
                     a13->dest = _net->get_node(a13->dest->_name);
-                    a13->imaginary = true;
+                    a13->free = true;
                     a13->connect();
                     _net->add_arc(a13);
                 }
@@ -1934,7 +2205,7 @@ void PowerModel::add_SDP_cuts(int dim){
                 //                _net->_clone->remove_arc(a13);
             }
             if(!a32 || a32->status==0) {
-                cout << "\nadding a32\n";
+                //cout << "\nadding a32\n";
                 if (!a32) {
                     if (rot_bag) {
                         a32 = _net->_clone->get_arc(n2,n3)->clone();
@@ -1945,7 +2216,7 @@ void PowerModel::add_SDP_cuts(int dim){
                     a32->status=1;
                     a32->src = _net->get_node(a32->src->_name);
                     a32->dest = _net->get_node(a32->dest->_name);
-                    a32->imaginary = true;
+                    a32->free = true;
                     a32->connect();
                     _net->add_arc(a32);
                 }
@@ -2108,19 +2379,19 @@ void PowerModel::add_SDP_cut(vector<Node*>* b, int id){
         a13 = _net->get_arc(n1,n3);
         a32 = _net->get_arc(n3,n2);
     }
-    cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+    //cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
     a12 = _net->get_arc(n1,n2);
 
     if ((!a12 && !a13) || (!a13 && !a32) || (!a12 && !a32)) cout << "\nJust one arc in bag!";
 
     if(!a12 || a12->status==0) {
-        cout << "\nadding a12\n";
+        //cout << "\nadding a12\n";
         if (!a12) {
             a12 = _net->_clone->get_arc(n1,n2)->clone();
             a12->status=1;
             a12->src = _net->get_node(a12->src->_name);
             a12->dest = _net->get_node(a12->dest->_name);
-            a12->imaginary = true;
+            a12->free = true;
             a12->connect();
             _net->add_arc(a12);
         }
@@ -2167,7 +2438,7 @@ void PowerModel::add_SDP_cut(vector<Node*>* b, int id){
         _model->addConstraint(SOCP1);
     }
     if(!a13 || a13->status==0) {
-        cout << "\nadding a13\n";
+        //cout << "\nadding a13\n";
         if(!a13) {
             if (rot_bag) {
                 a13 = _net->_clone->get_arc(n3,n1)->clone();
@@ -2178,7 +2449,7 @@ void PowerModel::add_SDP_cut(vector<Node*>* b, int id){
             a13->status=1;
             a13->src = _net->get_node(a13->src->_name);
             a13->dest = _net->get_node(a13->dest->_name);
-            a13->imaginary = true;
+            a13->free = true;
             a13->connect();
             _net->add_arc(a13);
         }
@@ -2226,7 +2497,7 @@ void PowerModel::add_SDP_cut(vector<Node*>* b, int id){
         _model->addConstraint(SOCP2);
     }
     if(!a32 || a32->status==0) {
-        cout << "\nadding a32\n";
+        //cout << "\nadding a32\n";
         if (!a32) {
             if (rot_bag) {
                 a32 = _net->_clone->get_arc(n2,n3)->clone();
@@ -2237,7 +2508,7 @@ void PowerModel::add_SDP_cut(vector<Node*>* b, int id){
             a32->status=1;
             a32->src = _net->get_node(a32->src->_name);
             a32->dest = _net->get_node(a32->dest->_name);
-            a32->imaginary = true;
+            a32->free = true;
             a32->connect();
             _net->add_arc(a32);
         }

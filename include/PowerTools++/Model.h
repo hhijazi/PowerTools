@@ -40,10 +40,11 @@ public:
 
     vector<var_*>                   _vars; /**< Sorted map (increasing index) pointing to all variables contained in this model */
     map<int, var_*>                 _meta_vars; /**< Sorted map (increasing index) pointing to all meta-variables contained in this model */
-    map<std::string, int>           _hess_index; /**< Mapping variables to hessian index */
+//    map<std::string, int>           _hess_index; /**< Mapping variables to hessian index */
     Function*                       _obj; /** Objective function */
     double                          _opt;
     ObjectiveType                   _objt; /** Minimize or maximize */
+    bool                            _store_duals = true; /** Store dual values */
     /** Constructor */
     //@{
     Model();
@@ -117,6 +118,7 @@ public:
     void fill_in_cstr_linearity(Ipopt::TNLP::LinearityType* const_types);
     void fill_in_var_types(Bonmin::TMINLP::VariableType* var_types);
     void solve();
+    void reset();
     friend std::vector<int> bounds(int parts, int mem);
 //    IpoptProgram* create_ipopt_program();
     /* Operators */
@@ -128,8 +130,13 @@ public:
     void print_functions() const;
     void print() const;
     void print_solution() const;
-    
-    
+
+
+    void fill_in_bnd_duals(double *z_L, double *z_U);
+
+    void fill_in_cstr_duals(double *lambda);
+
+    void print_constrs(const double *x);
 };
 
 

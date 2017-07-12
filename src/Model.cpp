@@ -212,7 +212,7 @@ void Model::addConstraint(Constraint c_){
     }
     _nnz_g+=c->get_nb_vars();
 
-    c->print();
+    //c->print();
 };
 
 void Model::addConstraint(Constraint* c){
@@ -253,7 +253,7 @@ void Model::addConstraint(Constraint* c){
     }
     _nnz_g+=c->get_nb_vars();
     
-        c->print();
+        //c->print();
 };
 
 
@@ -875,6 +875,7 @@ void Model::fill_in_jac_nnz(int* iRow , int* jCol){
         {
             vid = itv->first;
             v = itv->second;
+            if (vid != v->get_idx()) cout << "\nVar = " << v->_name;
             assert(vid==v->get_idx());
             iRow[idx] = cid;
             jCol[idx] = vid;
@@ -1625,6 +1626,52 @@ void Model::fill_in_var_init(double* x) {
     }
 }
 
+void Model::fill_in_bnd_duals(double* z_L, double* z_U) {
+    var<int>* int_var = NULL;
+    var<bool>* bin_var = NULL;
+    var<float>* real_var = NULL;
+    var<>* long_real_var = NULL;
+    int idx=0;
+    for(auto& vi: _vars)
+    {
+        switch (vi->get_type()) {
+            case real:
+                real_var = (var<float>*)vi;
+                z_L[idx] = real_var->_dualL;
+                z_U[idx] = real_var->_dualU;
+                break;
+            case longreal:
+                long_real_var = (var<>*)vi;
+                z_L[idx] = long_real_var->_dualL;
+                z_U[idx] = long_real_var->_dualU;
+                break;
+            case integ:
+                int_var = (var<int>*)vi;
+                z_L[idx] = int_var->_dualL;
+                z_U[idx] = int_var->_dualU;
+                break;
+            case binary:
+                bin_var = (var<bool>*)vi;
+                z_L[idx] = bin_var->_dualL;
+                z_U[idx] = bin_var->_dualU;
+                break;
+            default:
+                exit(-1);
+                break;
+        } ;
+        idx++;
+    }
+}
+
+void Model::fill_in_cstr_duals(double* lambda) {
+    int idx=0;
+    for(auto& c : _cons)
+    {
+        lambda[idx] = c->_dual;
+        idx++;
+    }
+}
+
 void Model::fill_in_cstr_bounds(double* g_l ,double* g_u) {
     int idx=0;
     int cid = 0;
@@ -1683,6 +1730,51 @@ void Model::fill_in_var_types(Bonmin::TMINLP::VariableType* var_types){
     }
 }
 
+void Model::reset(){
+    var<int>* int_var = NULL;
+    var<bool>* bin_var = NULL;
+    var<float>* real_var = NULL;
+    var<>* long_real_var = NULL;
+    _nnz_h = 0;
+
+    for(auto& v: _vars) {
+        v->_hess.clear();
+        v->_hess_id.clear();
+
+        switch (v->get_type()) {
+            case real:
+                real_var = (var<float>*)v;
+                real_var->set_val_to_initial();
+                break;
+            case longreal:
+                long_real_var = (var<>*)v;
+                long_real_var->set_val_to_initial();
+                break;
+            case integ:
+                int_var = (var<int>*)v;
+                int_var->set_val_to_initial();
+                break;
+            case binary:
+                bin_var = (var<bool>*)v;
+                bin_var->set_val_to_initial();
+                break;
+            default:
+                cerr << "\nUnknown variable type";
+                exit(-1);
+                break;
+        } ;
+    }
+
+    for(auto& f: _functions) {
+        for(auto e: f->_evaluated) e = false;
+        for(auto& val: f->_val) val = 0;
+    }
+
+    for(auto& c: _cons) {
+        if (c->has_meta()) c->_meta_constr->_evaluated[c->_meta_link] = false;
+    }
+}
+
 
 void Model::print_functions() const{
     cout << "Number of atomic functions = " << _functions.size();
@@ -1725,6 +1817,30 @@ void Model::print_solution() const{
                 break;
         } ;
         idx++;
+    }
+}
+
+void Model::print_constrs(const double* x){
+    int meta_link = -1, c_meta_link = -1;
+    double res;
+    for(auto& c: _cons)
+    {
+        c_meta_link = c->_meta_link;
+        if (c->has_meta()) {
+            c->_meta_constr->_evaluated[c_meta_link] = false;
+            if (meta_link!=c_meta_link) {
+                meta_link = c_meta_link;
+                for (auto& f: _functions) {
+                    f->_evaluated[meta_link] = false;
+                }
+
+            }
+            res = c->_meta_constr->eval_meta(x, c->_meta_coeff, c->_meta_vars, c_meta_link);
+        }
+        else
+            res = c->eval(x);
+        //if(fabs(res) <= 0.0001) cout << "\n" << c->_name << " : " << res;
+        cout << "\n" << c->_name << " : " << res;
     }
 }
 

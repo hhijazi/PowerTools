@@ -63,6 +63,7 @@ template<typename Number> var<Number>::var(Model* model, string name, int idx, N
     _lb_off = lb_off;
     _ub_off = ub_off;
     _val = 0.0;
+    _init_val = 0;
 };
 //@}
 
@@ -157,6 +158,14 @@ template<typename Number>void var<Number>::set_ub(Number ub){
 };
 template<typename Number>void var<Number>::set_val(Number val){
     _val = val;
+};
+
+template<typename Number>void var<Number>::set_ival(Number ival){
+    _init_val = ival;
+};
+
+template<typename Number>void var<Number>::set_val_to_initial(){
+    _val = _init_val;
 };
 
 

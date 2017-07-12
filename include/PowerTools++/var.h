@@ -30,9 +30,14 @@ protected:
     Number                      _ub; /**< Upper Bound */
     Number                      _lb_off; /**< Lower Bound when the variable is not active */
     Number                      _ub_off; /**< Upper Bound when the variable is not active */
+    Number                      _init_val; /**< The initial value of the variable */
 
 
 public:
+    double                      _dual = 0.; /**< Dual value for variable bounds */
+    double                      _dualL = 0.;
+    double                      _dualU = 0.;
+
     /* Constructors */
     
     //@{
@@ -82,8 +87,11 @@ public:
     void    set_lb(Number lb);
     void    set_ub(Number ub);
     void    set_val(Number val);
-    
-    
+    void    set_ival(Number val);
+    void    set_val_to_initial();
+
+
+
     /* Output */
     void print() const;
 

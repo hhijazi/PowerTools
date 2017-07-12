@@ -27,6 +27,7 @@ protected:
 
 public:
     SolverType                      _stype;
+    bool warm_start = false;
     /** Constructor */
     //@{
     PTSolver();

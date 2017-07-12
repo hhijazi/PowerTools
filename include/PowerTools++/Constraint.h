@@ -27,6 +27,7 @@ public:
     ConstraintType              _ctype; /**< Constraint type: leq, geq or eq */
     double _rhs;
     bool is_cut = false;
+    double                      _dual = 0.; /**< dual value */
     /** Constructor */
     //@{
     Constraint();

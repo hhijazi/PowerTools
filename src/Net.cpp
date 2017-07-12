@@ -174,16 +174,16 @@ void Net::get_tree_decomp_bags(){
     while (_clone->nodes.size()>2) {
         sort(_clone->nodes.begin(), _clone->nodes.end(), node_compare);
         n = _clone->nodes.back();
-        cout << "\nnode " << n->_name << "\n";
+        //cout << "\nnode " << n->_name << "\n";
         bag = new vector<Node*>();
-        cout << "new bag = { ";
+        //cout << "new bag = { ";
         for (auto a: n->branches) {
             nn = a->neighbour(n);
             bag->push_back(nn);
-            cout << nn->_name << ", ";
+            //cout << nn->_name << ", ";
         }
         _clone->remove_end_node();
-        if (bag->size()==2) cout << " Missing lines in bag: ";
+        //if (bag->size()==2) cout << " Missing lines in bag: ";
         for (int i = 0; i<bag->size(); i++) {
             u = bag->at(i);
             for (int j = i+1; j<bag->size(); j++) {
@@ -196,6 +196,7 @@ void Net::get_tree_decomp_bags(){
                 arc->id = id;
                 arc->src = u;
                 arc->dest = nn;
+                arc->free = true;
                 arc->imaginary = true;
                 arc->tbound.min = -1.4999;
                 arc->tbound.max = 1.4999;
@@ -204,50 +205,104 @@ void Net::get_tree_decomp_bags(){
                 //arc->tbound.max = m_theta_ub;
                 arc->connect();
                 _clone->add_arc(arc);
-                if (bag->size()==2) cout << "(" << u->_name << "," << nn->_name << "); ";
+                //if (bag->size()==2) cout << "(" << u->_name << "," << nn->_name << "); ";
             }
         }
         bag->push_back(n);
-        cout << n->_name << "}\n";
-        _bags->push_back(bag);
+        //cout << n->_name << "}\n";
+
         if (bag->size()==3) {
+            _bags->push_back(bag);
             nb3++;
+        }
+        else if (bag->size()>3){
+            for (int j = 0; j<bag->size()-2; j++) {
+                auto bag3 = new vector<Node*>();
+                bag3->push_back((*bag)[j]);
+                bag3->push_back((*bag)[j+1]);
+                bag3->push_back((*bag)[j+2]);
+                _bags->push_back(bag3);
+                nb3++;
+            }
+            delete bag;
         }
     }
 
-    int fixed = 1;
+    int fixed = 1, ib;
     Arc *a12, *a13, *a32;
+    std::vector<std::vector<Node*>*>* bags_sorted = new vector<vector<Node*>*>();
+    std::vector<bool> bag_added;
+    for(int i = 0; i < _bags->size(); i++) bag_added.push_back(false);
+
     while (fixed != 0) {
         fixed = 0;
         cout << "\nNew iteration";
-        for (auto b: *_bags) {
+        ib = -1;
+        for(auto b: *_bags) {
             if(b->size() != 3) continue;
+            ib++;
+            cout << "\nBag: " << b->at(0)->_name << ", " << b->at(1)->_name << ", " << b->at(2)->_name;
             a12 = _clone->get_arc(b->at(0), b->at(1));
             a13 = _clone->get_arc(b->at(0), b->at(2));
             a32 = _clone->get_arc(b->at(2), b->at(1));
-            if((a12->imaginary && a13->imaginary) || (a12->imaginary && a32->imaginary) || (a13->imaginary && a32->imaginary)) continue; //at least two missing lines
+            if((a12->free && a13->free) || (a12->free && a32->free) || (a13->free && a32->free) || (!a12->free && !a13->free && !a32->free))
+                continue; // at least two missing lines
             // check and modify *clone*
-            if(a12->imaginary) {
-                a12->imaginary = false;
-                cout << "\nFixing arc " << a12->_name;
-                a12->print();
+            if(a12->free) {
+                a12->free = false;
+                cout << "; Fixing arc " << a12->_name;
                 fixed++;
             }
-            if(a13->imaginary) {
-                a13->imaginary = false;
-                cout << "\nFixing arc " << a13->_name;
-                a13->print();
+            if(a13->free) {
+                a13->free = false;
+                cout << "; Fixing arc " << a13->_name;
                 fixed++;
             }
-            if(a32->imaginary) {
-                a32->imaginary = false;
-                cout << "\nFixing arc " << a32->_name;
-                a32->print();
+            if(a32->free) {
+                a32->free = false;
+                cout << "; Fixing arc " << a32->_name;
                 fixed++;
             }
+            bags_sorted->push_back(b);
+            bag_added[ib] = true;
         }
     }
-//    cout << "\nNumber of 3D bags = " << nb3 << endl;
+    ib = -1;
+    for (auto b: *_bags) {
+        if(b->size() != 3) continue;
+        ib++;
+        if(!bag_added[ib]) bags_sorted->push_back(b);
+    }
+
+
+//    cout << "\nBags sorted: ";
+//    for (auto b: *bags_sorted){
+//        cout << "\nBag: " << b->at(0)->_name << ", " << b->at(1)->_name << ", " << b->at(2)->_name;
+//        a12 = _clone->get_arc(b->at(0), b->at(1));
+//        a13 = _clone->get_arc(b->at(0), b->at(2));
+//        a32 = _clone->get_arc(b->at(2), b->at(1));
+//        cout << " : ";
+//        if(a12->status) cout << "real, ";
+//        else {
+//            if(a12->free) cout << "free, ";
+//            else cout << "imaginary fixed,";
+//        }
+//        if(a13->status) cout << "real, ";
+//        else {
+//            if(a13->free) cout << "free, ";
+//            else cout << "imaginary fixed,";
+//        }
+//        if(a32->status) cout << "real, ";
+//        else {
+//            if(a32->free) cout << "free, ";
+//            else cout << "imaginary fixed,";
+//        }
+//    }
+
+    delete _bags;
+    _bags = bags_sorted;
+
+    cout << "\nNumber of 3D bags = " << nb3 << endl;
 }
 
 void Net::get_tree_decomp_bags_3d(){

@@ -15,7 +15,9 @@
 
 class Arc : public Line{
 public:
+    bool free = false;
     bool imaginary = false;
+    bool socp = false;
     Node* src;
     Node* dest;
     bool in_cycle;
