@@ -69,7 +69,7 @@ void IpoptProgram::finalize_solution(    Ipopt::SolverReturn               statu
         } ;
     }
 
-    model->print_constrs(x);
+    //model->print_constrs(x);
 
     if (model->_store_duals) {
         auto &cons = model->get_cons();

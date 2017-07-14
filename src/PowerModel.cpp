@@ -204,20 +204,20 @@ void PowerModel::max_var(var<> v){
 }
 
 int PowerModel::solve(int output, bool relax){
-    int status = _solver->run(output,relax);//1
+    int status = _solver->run(output,relax);
     if (_type == SDP) {
         double wall0 = get_wall_time1();
-        check_SDP();//2
+        check_SDP();
         double wall1 = get_wall_time1();
         cout << "\ntime spent on generating cuts = " << wall1-wall0 << "\n";
-//        add_SDP_cuts(3);//3
+//        add_SDP_cuts(3);
 //        var<double>* vr = NULL;
 //        for (auto v: _model->_vars) {
 //            if (v->get_type() != longreal) continue;
 //            vr = (var<double>*)v;
 //            cout << "\n" << vr->_name << ": " << vr->get_lb() << ", " << vr->get_ub();
 //        }
-        _solver->warm_start = true;//4
+        _solver->warm_start = true;
         status = _solver->run(output,relax);
         wall1 = get_wall_time1();
         cout << "\ntime = " << wall1-wall0 << "\n";
@@ -229,16 +229,13 @@ int PowerModel::solve(int output, bool relax){
 //        cout << "\ntime2 = " << wall1-wall0 << "\n";
 
 //        Checks after
-        int i = 0;
-        for (auto b: *_net->_bags) {
-            if (b->size() != 3) continue;
-            cout << "\nBag #" << i;
-            if (SDP_satisfied_new(b)) cout << "CUT SATISFIED";
-            else cout << "CUT NOT SATISFIED!";
-            //cout << "\n" << b->at(0)->_name << ", " << b->at(1)->_name << ", " << b->at(2) ->_name;
-            i++;
-        }
-//        check_SDP_after();
+//        for (auto b: *_net->_bagsnew) {
+//            if (b->size() != 3) continue;
+//            cout << "\nBag #" << b->_id;
+//            if (SDP_satisfied_new1(b)) cout << "CUT SATISFIED";
+//            else cout << "CUT NOT SATISFIED!";
+//            //cout << "\n" << b->at(0)->_name << ", " << b->at(1)->_name << ", " << b->at(2) ->_name;
+//        }
     }
     return status;
 }
@@ -1380,6 +1377,224 @@ bool PowerModel::circles_intersect(double xc, double yc, double R1, double R2, A
 //    }
 }
 
+bool PowerModel::fix_bag(Bag *b){
+    Arc* a12 = nullptr;
+    Arc* a13 = nullptr;
+    Arc* a32 = nullptr;
+    Node* n1 = nullptr;
+    Node* n2 = nullptr;
+    Node* n3 = nullptr;
+    double wr12, wi12;
+    double wr13, wi13;
+    double wr32, wi32;
+    double tol = 0.00001;
+
+    n1 = b->_n1; n2 = b->_n2; n3 = b->_n3;
+
+    double w1 = _model->getVar_<double>(_net->get_node(n1->_name)->w.get_idx())->get_value();
+    double w2 = _model->getVar_<double>(_net->get_node(n2->_name)->w.get_idx())->get_value();
+    double w3 = _model->getVar_<double>(_net->get_node(n3->_name)->w.get_idx())->get_value();
+
+    a12 = _net->get_arc(n1,n2);
+    a13 = _net->get_arc(n1,n3);
+    a32 = _net->get_arc(n3,n2);
+
+    if(!a13 || a13->status == 0) {
+        if (!a13){
+            a13 = _net->_clone->get_arc(n1,n3)->clone();
+            a13->src = _net->get_node(a13->src->_name);
+            a13->dest = _net->get_node(a13->dest->_name);
+            a13->connect();
+            _net->add_arc(a13);
+        }
+        a13->status = 1;
+        a13->init_vars(SDP);
+        _model->addVar(a13->wr);
+        _model->addVar(a13->wi);
+
+        wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
+        wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
+        wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
+        wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
+
+        cout << "Calculating values for " << a13->_name;
+        if(!(b->_rot)) {
+            wr13 = (wr12 * wr32 + wi12 * wi32) / w2;
+            wi13 = (wi12 * wr32 - wr12 * wi32) / w2;
+        }else{
+            wr13 = (wr12*wr32 - wi12*wi32)/w2;
+            wi13 = (-wi12*wr32 - wr12*wi32)/w2;
+        }
+        a13->wr.set_val(wr13);
+        a13->wi.set_val(wi13);
+        if (!(wr13 >= a13->wr.get_lb()-tol && wr13 <= a13->wr.get_ub()+tol && wi13 >= a13->wi.get_lb()-tol
+              && wi13 <= a13->wi.get_ub()+tol && wr13*wr13+wi13*wi13 <= w1*w3+tol)) {
+            cout << "\nBounds are violated: (x,y) = (" << wr13 << ", " << wi13 << "), ";
+            cout << "wr lb, ub = (" << a13->wr.get_lb() << ", " << a13->wr.get_ub() << "), ";
+            cout << "wi lb, ub = (" << a13->wi.get_lb() << ", " << a13->wi.get_ub() << ")";
+            return false;
+        }else{
+            //cout << "\nBounds are NOT violated: (x,y) = (" << wr13 << ", " << wi13 << ") ";
+            return false;
+        }
+    }
+
+    if(!a32 || a32->status == 0) {
+        if (!a32) {
+            a32 = _net->_clone->get_arc(n3,n2)->clone();
+            a32->src = _net->get_node(a32->src->_name);
+            a32->dest = _net->get_node(a32->dest->_name);
+            a32->connect();
+            _net->add_arc(a32);
+        }
+        a32->status = 1;
+        a32->init_vars(SDP);
+        _model->addVar(a32->wr);
+        _model->addVar(a32->wi);
+
+        wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
+        wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
+        wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
+        wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
+
+        cout << "Calculating values for " << a32->_name;
+        if(!(b->_rot)) {
+            wr32 = (wr12 * wr13 + wi12 * wi13) / w1;
+            wi32 = (wi12 * wr13 - wr12 * wi13) / w1;
+        }else{
+            wr32 = (wr12*wr13 - wi12*wi13)/w1;
+            wi32 = (-wi12*wr13 - wr12*wi13)/w1;
+        }
+        a32->wr.set_val(wr32);
+        a32->wi.set_val(wi32);
+        if (!(wr32 >= a32->wr.get_lb()-tol && wr32 <= a32->wr.get_ub()+tol && wi32 >= a32->wi.get_lb()-tol
+              && wi32 <= a32->wi.get_ub()+tol + wr32*wr32+wi32*wi32 <= w3*w2+tol)) {
+            cout << "\nBounds are violated: (x,y) = (" << wr32 << ", " << wi32 << "), ";
+            cout << "wr lb, ub = (" << a32->wr.get_lb() << ", " << a32->wr.get_ub() << "), ";
+            cout << "wi lb, ub = (" << a32->wi.get_lb() << ", " << a32->wi.get_ub() << ")";
+            return false;
+        }else{
+            //cout << "\nBounds are NOT violated: (x,y) = (" << wr32 << ", " << wi32 << ") ";
+            return false;
+        }
+    }
+
+    if(!a12 || a12->status == 0) {
+        if (!a12) {
+            a12 = _net->_clone->get_arc(n1,n2)->clone();
+            a12->src = _net->get_node(a12->src->_name);
+            a12->dest = _net->get_node(a12->dest->_name);
+            a12->connect();
+            _net->add_arc(a12);
+        }
+        a12->status = 1;
+        a12->init_vars(SDP);
+        _model->addVar(a12->wr);
+        _model->addVar(a12->wi);
+
+        wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
+        wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
+        wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
+        wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
+
+        cout << "Calculating values for " << a12->_name;
+        if(!(b->_rot)) {
+            wr12 = (wr32 * wr13 - wi32 * wi13) / w3;
+            wi12 = (wi32 * wr13 + wr32 * wi13) / w3;
+        }else{
+            cout << "\nRotation bag! ";
+            wr12 = (wr32*wr13 - wi32*wi13)/w3;
+            wi12 = (-wi32*wr13 - wr32*wi13)/w3;
+        }
+        a12->wr.set_val(wr12);
+        a12->wi.set_val(wi12);
+        if (!(wr12 >= a12->wr.get_lb()-tol && wr12 <= a12->wr.get_ub()+tol && wi12 >= a12->wi.get_lb()-tol
+              && wi12 <= a12->wi.get_ub()+tol && wr12*wr12+wi12*wi12 <= w1*w2+tol)) {
+            cout << "\nBounds are violated: (x,y) = (" << wr12 << ", " << wi12 << "), ";
+            cout << "wr lb, ub = (" << a12->wr.get_lb() << ", " << a12->wr.get_ub() << "), ";
+            cout << "wi lb, ub = (" << a12->wi.get_lb() << ", " << a12->wi.get_ub() << ")";
+            return false;
+        }else{
+            //cout << "\nBounds are NOT violated: (x,y) = (" << wr12 << ", " << wi12 << ") ";
+            return false;
+        }
+    }
+}
+
+bool PowerModel::SDP_satisfied_new1(Bag* b){
+    Arc* a12 = nullptr;
+    Arc* a13 = nullptr;
+    Arc* a32 = nullptr;
+    Node* n1 = nullptr;
+    Node* n2 = nullptr;
+    Node* n3 = nullptr;
+    double wr12, wi12;
+    double wr13, wi13;
+    double wr32, wi32;
+    double tol = 0.00001;
+    bool a12_on, a13_on, a32_on;
+
+    if (b->size()==3) {
+        cout << "\n------------------------------\n";
+        n1 = b->_n1; n2 = b->_n2; n3 = b->_n3;
+        a12 = _net->get_arc(n1,n2);
+        a13 = _net->get_arc(n1,n3);
+        a32 = _net->get_arc(n3,n2);
+        a12_on = a12 && a12->status;
+        a13_on = a13 && a13->status;
+        a32_on = a32 && a32->status;
+
+        cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+
+        if ((!a12_on && !a13_on) || (!a12_on && !a32_on) || (!a13_on && !a32_on)) {
+            cout << "\nAt least two free lines in bag, returning 'satisfied'.";
+            return true;
+        }
+
+        if(!a12_on || !a13_on || !a32_on) return fix_bag(b);
+
+        if(a12->imaginary) cout << "\na12 is imaginary";
+        if(a13->imaginary) cout << "\na13 is imaginary";
+        if(a32->imaginary) cout << "\na32 is imaginary";
+
+        // all lines exist
+
+        wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
+        wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
+        wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
+        wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
+        wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
+        wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
+        double w1 = _model->getVar_<double>(_net->get_node(n1->_name)->w.get_idx())->get_value();
+        double w2 = _model->getVar_<double>(_net->get_node(n2->_name)->w.get_idx())->get_value();
+        double w3 = _model->getVar_<double>(_net->get_node(n3->_name)->w.get_idx())->get_value();
+
+        cout << "\nCheck bag with all known lines";
+        if (!(b->_rot)) {
+            double SDP = wr12*(wr32*wr13 - wi32*wi13) + wi12*(wi32*wr13 + wr32*wi13);
+            SDP *= 2;
+            SDP -= (wr12*wr12 + wi12*wi12)*w3 + (wr13*wr13 + wi13*wi13)*w2 + (wr32*wr32 + wi32*wi32)*w1;
+            SDP += w1*w2*w3;
+            cout << "\nSDP = " << SDP;
+            if(SDP > -tol) return true;
+            else {
+                return false;
+            }
+        }else{
+            double SDPr = wr12*(wr32*wr13 - wi32*wi13) - wi12*(wi32*wr13 + wr32*wi13);
+            SDPr *= 2;
+            SDPr -= ((wr12*wr12 + wi12*wi12)*w3 + (wr13*wr13 + wi13*wi13)*w2 + (wr32*wr32 + wi32*wi32)*w1);
+            SDPr += w1*w2*w3;
+            cout << "\nSDPr = " << SDPr;
+            if(SDPr > -tol) return true;
+            else {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool PowerModel::SDP_satisfied_new(vector<Node*>* b){
     Arc* a12 = nullptr;
     Arc* a13 = nullptr;
@@ -1411,7 +1626,7 @@ bool PowerModel::SDP_satisfied_new(vector<Node*>* b){
                 n2 = b->at(2);
                 n3 = b->at(1);
             }
-            a13 = _net->get_arc(n3, n1);
+            a13 = _net->get_arc(n3, n1);//searches by names, not nodes themselves
             a32 = _net->get_arc(n2, n3);
         }
         else {
@@ -1886,55 +2101,186 @@ void PowerModel::check_SDP(){
     SDPr->is_cut = true;
     _model->addMetaConstraint(*SDPr);
 
-    _model->init_functions(_net->_bags->size());
+//    _model->init_functions(_net->_bags->size());
+    _model->init_functions(_net->_bagsnew->size());
     _model->print_functions();
 
     Node *n1, *n2, *n3;
     Arc *a12, *a13, *a32;
-
-    int n_i1, n_i2, n_i3;
-    bool rot_bag;
-
+//    int n_i1, n_i2, n_i3;
+//    bool rot_bag;
     int id = 0;
-    int i = 0;
 
-    for (auto b: *_net->_bags){
-        cout << "\n\nBag number = " << i << ": ";
-        if(b->size() ==3) i++;
-        if(SDP_satisfied_new(b)){
+    for (auto b: *_net->_bagsnew){
+        cout << "\n\nBag number = " << b->_id << ": ";
+        if(SDP_satisfied_new1(b)){
 //            cout << "CUT ALREADY SATISFIED";
         }else{
 //            cout << "\nBag #" << i << ": ";
-            //if (id == 7) {id++; continue;}
             cout << "ADDING NEW CUT";
             if(b->size()!=3) continue;
 
-            rot_bag = _net->rotation_bag(b);
-            if (rot_bag) {
-                n1 = b->at(0);
-                if (_net->_clone->has_directed_arc(n1, b->at(1))){
-                    n2 = b->at(1);
-                    n3 = b->at(2);
-                }
-                else {
-                    n2 = b->at(2);
-                    n3 = b->at(1);
-                }
-                a13 = _net->get_arc(n3,n1);
-                a32 = _net->get_arc(n2,n3);
-            }
-            else {
-                n_i1 = get_order(b,1);
-                n1 = b->at(n_i1);
-                n_i2 = get_order(b,2);
-                n2 = b->at(n_i2);
-                n_i3 = get_order(b,3);
-                n3 = b->at(n_i3);
-                a13 = _net->get_arc(n1,n3);
-                a32 = _net->get_arc(n3,n2);
-            }
-            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+//            rot_bag = _net->rotation_bag(b);
+//            if (rot_bag) {
+//                n1 = b->at(0);
+//                if (_net->_clone->has_directed_arc(n1, b->at(1))){
+//                    n2 = b->at(1);
+//                    n3 = b->at(2);
+//                }
+//                else {
+//                    n2 = b->at(2);
+//                    n3 = b->at(1);
+//                }
+//                a13 = _net->get_arc(n3,n1);
+//                a32 = _net->get_arc(n2,n3);
+//            }
+//            else {
+//                n_i1 = get_order(b,1);
+//                n1 = b->at(n_i1);
+//                n_i2 = get_order(b,2);
+//                n2 = b->at(n_i2);
+//                n_i3 = get_order(b,3);
+//                n3 = b->at(n_i3);
+//                a13 = _net->get_arc(n1,n3);
+//                a32 = _net->get_arc(n3,n2);
+//            }
+//            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+//            a12 = _net->get_arc(n1,n2);
+//
+//            if(a12->imaginary && !a12->socp) {
+//                a12->socp = true;
+//                Constraint SOCP1("SOCP1_"+to_string(id));
+//                SOCP1 += _net->get_node(n1->_name)->w*_net->get_node(n2->_name)->w;
+//                SOCP1 -= ((a12->wr)^2);
+//                SOCP1 -= ((a12->wi)^2);
+//                SOCP1 >= 0;
+//                SOCP1.is_cut = true;
+//                _model->addConstraint(SOCP1);
+//            }
+//            if(a13->imaginary && !a13->socp) {
+//                a13->socp = true;
+//                Constraint SOCP2("SOCP2_"+to_string(id));
+//                SOCP2 += _net->get_node(n1->_name)->w*_net->get_node(n3->_name)->w;
+//                SOCP2 -= ((a13->wr)^2);
+//                SOCP2 -= ((a13->wi)^2);
+//                SOCP2 >= 0;
+//                SOCP2.is_cut = true;
+//                _model->addConstraint(SOCP2);
+//            }
+//            if(a32->imaginary && !a32->socp) {
+//                a32->socp = true;
+//                Constraint SOCP3("SOCP3_"+to_string(id));
+//                SOCP3 += _net->get_node(n3->_name)->w*_net->get_node(n2->_name)->w;
+//                SOCP3 -= ((a32->wr)^2);
+//                SOCP3 -= ((a32->wi)^2);
+//                SOCP3 >= 0;
+//                SOCP3.is_cut = true;
+//                _model->addConstraint(SOCP3);
+//            }
+//
+//            *wr12 = a12->wr;
+//            *wi12 = a12->wi;
+//            *wr13 = a13->wr;
+//            *wi13 = a13->wi;
+//            *wr31 = a13->wr;
+//            *wi31 = a13->wi;
+//            *wr32 = a32->wr;
+//            *wi32 = a32->wi;
+//            *wr23 = a32->wr;
+//            *wi23 = a32->wi;
+//
+//            *w1 = _net->get_node(n1->_name)->w;
+//            *w2 = _net->get_node(n2->_name)->w;
+//            *w3 = _net->get_node(n3->_name)->w;
+//            if (rot_bag) _model->concretise(*SDPr, id, "SDP"+to_string(id));
+//            else _model->concretise(*SDP, id, "SDP"+to_string(id));
+//
+//            id++;
+            //            rot_bag = _net->rotation_bag(b);
+//            if (rot_bag) {
+//                n1 = b->at(0);
+//                if (_net->_clone->has_directed_arc(n1, b->at(1))){
+//                    n2 = b->at(1);
+//                    n3 = b->at(2);
+//                }
+//                else {
+//                    n2 = b->at(2);
+//                    n3 = b->at(1);
+//                }
+//                a13 = _net->get_arc(n3,n1);
+//                a32 = _net->get_arc(n2,n3);
+//            }
+//            else {
+//                n_i1 = get_order(b,1);
+//                n1 = b->at(n_i1);
+//                n_i2 = get_order(b,2);
+//                n2 = b->at(n_i2);
+//                n_i3 = get_order(b,3);
+//                n3 = b->at(n_i3);
+//                a13 = _net->get_arc(n1,n3);
+//                a32 = _net->get_arc(n3,n2);
+//            }
+//            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+//            a12 = _net->get_arc(n1,n2);
+//
+//            if(a12->imaginary && !a12->socp) {
+//                a12->socp = true;
+//                Constraint SOCP1("SOCP1_"+to_string(id));
+//                SOCP1 += _net->get_node(n1->_name)->w*_net->get_node(n2->_name)->w;
+//                SOCP1 -= ((a12->wr)^2);
+//                SOCP1 -= ((a12->wi)^2);
+//                SOCP1 >= 0;
+//                SOCP1.is_cut = true;
+//                _model->addConstraint(SOCP1);
+//            }
+//            if(a13->imaginary && !a13->socp) {
+//                a13->socp = true;
+//                Constraint SOCP2("SOCP2_"+to_string(id));
+//                SOCP2 += _net->get_node(n1->_name)->w*_net->get_node(n3->_name)->w;
+//                SOCP2 -= ((a13->wr)^2);
+//                SOCP2 -= ((a13->wi)^2);
+//                SOCP2 >= 0;
+//                SOCP2.is_cut = true;
+//                _model->addConstraint(SOCP2);
+//            }
+//            if(a32->imaginary && !a32->socp) {
+//                a32->socp = true;
+//                Constraint SOCP3("SOCP3_"+to_string(id));
+//                SOCP3 += _net->get_node(n3->_name)->w*_net->get_node(n2->_name)->w;
+//                SOCP3 -= ((a32->wr)^2);
+//                SOCP3 -= ((a32->wi)^2);
+//                SOCP3 >= 0;
+//                SOCP3.is_cut = true;
+//                _model->addConstraint(SOCP3);
+//            }
+//
+//            *wr12 = a12->wr;
+//            *wi12 = a12->wi;
+//            *wr13 = a13->wr;
+//            *wi13 = a13->wi;
+//            *wr31 = a13->wr;
+//            *wi31 = a13->wi;
+//            *wr32 = a32->wr;
+//            *wi32 = a32->wi;
+//            *wr23 = a32->wr;
+//            *wi23 = a32->wi;
+//
+//            *w1 = _net->get_node(n1->_name)->w;
+//            *w2 = _net->get_node(n2->_name)->w;
+//            *w3 = _net->get_node(n3->_name)->w;
+//            if (rot_bag) _model->concretise(*SDPr, id, "SDP"+to_string(id));
+//            else _model->concretise(*SDP, id, "SDP"+to_string(id));
+//
+//            id++;
+
+            n1 = b->_n1;
+            n2 = b->_n2;
+            n3 = b->_n3;
             a12 = _net->get_arc(n1,n2);
+            a13 = _net->get_arc(n1,n3);
+            a32 = _net->get_arc(n3,n2);
+            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+            cout << "\na12 = " << a12->_name << " a13 = " << a13->_name << " a32 = " << a32->_name;
 
             if(a12->imaginary && !a12->socp) {
                 a12->socp = true;
@@ -1981,7 +2327,7 @@ void PowerModel::check_SDP(){
             *w1 = _net->get_node(n1->_name)->w;
             *w2 = _net->get_node(n2->_name)->w;
             *w3 = _net->get_node(n3->_name)->w;
-            if (rot_bag) _model->concretise(*SDPr, id, "SDP"+to_string(id));
+            if (b->_rot) _model->concretise(*SDPr, id, "SDP"+to_string(id));
             else _model->concretise(*SDP, id, "SDP"+to_string(id));
 
             id++;

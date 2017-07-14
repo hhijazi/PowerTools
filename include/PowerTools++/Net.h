@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <PowerTools++/Bag.h>
 #include <PowerTools++/Node.h>
 #include <PowerTools++/Path.h>
 #include <assert.h>
@@ -53,6 +54,7 @@ public:
     
     /** Tree decomposition bags */
     std::vector<std::vector<Node*>*>* _bags;
+    std::vector<Bag*>* _bagsnew;
 
     /** Compute the tree decomposition bags **/
     void get_tree_decomp_bags();
@@ -191,6 +193,16 @@ public:
     /** sets all nodes to unexplored */
     void reset_nodeExplored();
 
+    void complete_bag(Bag *b);
+
     void get_tree_decomp_bags_3d();
+
+    void sort_bag3_elements(Bag *b);
+
+    int get_order(Bag *b, int order);
+
+    bool rotation_bag3(Bag *b);
+
+    void get_tree_decomp_bags_new();
 };
 #endif
