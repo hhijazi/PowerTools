@@ -8,6 +8,7 @@
 
 #ifndef Cycle_Basis_PF_Arc_h
 #define Cycle_Basis_PF_Arc_h
+#include <PowerTools++/Bag.h>
 #include <PowerTools++/Node.h>
 #include <PowerTools++/Path.h>
 #include <PowerTools++/Line.h>
@@ -17,13 +18,13 @@ class Arc : public Line{
 public:
     bool free = false;
     bool imaginary = false;
-    bool socp = false;
+    bool added = false;
     Node* src;
     Node* dest;
     bool in_cycle;
     bool parallel;
     Path* horton_path;
-    
+    vector<Bag*>* defining_bags = nullptr;
     double weight;
     
     /** @brief Phase angle difference bounds */

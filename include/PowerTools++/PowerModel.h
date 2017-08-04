@@ -91,8 +91,6 @@ public:
 
     bool SDP_satisfied(vector<Node *> *b, int id);
 
-    void add_SDP_cut(vector<Node *> *b, int id);
-
     bool circles_intersect(double xc, double yc, double R1, double R2);
 
     bool SDP_satisfied(vector<Node *> *b);
@@ -104,6 +102,8 @@ public:
     bool SDP_satisfied_new1(Bag *b);
 
     bool fix_bag(Bag *b);
+
+    void add_bag_SOCP(Bag *b, int id);
 };
 
 #endif /* defined(__PowerTools____PowerModel__) */

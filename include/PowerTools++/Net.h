@@ -22,7 +22,8 @@
 
 class Net{
 public:
-    
+    int sdp_alg = 2; // dynamic SDP cut generation algorithms:
+                    // 0 - all; 1 - violated + underdefined bags that were fixed; 2 - violated + dependent bags; 3 - violated
 
     double bMVA;
     

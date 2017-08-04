@@ -42,7 +42,8 @@ Arc* Arc::clone(){
     copy->in_cycle = in_cycle;
     copy->status = status;
     copy->free = free;
-    copy->socp = socp;
+    copy->defining_bags = defining_bags;
+    copy->added = added;
     copy->imaginary = imaginary;
     return copy;
 }
@@ -51,23 +52,27 @@ void Arc::init_vars(PowerModelType t){
     switch(t){
         case SOCP:
         case SDP:
-            //cout << "\nt bounds = " << tbound.min << ", " << tbound.max;
-            if (tbound.min < 0 && tbound.max > 0)
+            if (tbound.min < -3.14 && tbound.max > 3.14)
+                cs.init("cs("+_name+","+src->_name+","+dest->_name+")",-1., 1.);
+            else if (tbound.min < 0 && tbound.max > 0)
                 cs.init("cs("+_name+","+src->_name+","+dest->_name+")",min(cos(tbound.min), cos(tbound.max)), 1.);
             else
                 cs.init("cs("+_name+","+src->_name+","+dest->_name+")",min(cos(tbound.min), cos(tbound.max)), max(cos(tbound.min),cos(tbound.max)));
             vv.init("vv("+_name+","+src->_name+","+dest->_name+")",src->vbound.min*dest->vbound.min,src->vbound.max*dest->vbound.max);
             wr.init("wr("+_name+","+src->_name+","+dest->_name+")",vv.get_lb()*cs.get_lb(), vv.get_ub()*cs.get_ub());
-            //cout << "\nvv bounds = " << vv.get_lb() << ", " << vv.get_ub();
-            //cout << "\nwi bounds0 = " << vv.get_ub()*sin(tbound.min) << ", " << vv.get_ub()*sin(tbound.max);
+
+            if(tbound.min < -1.57 && tbound.max > 1.57)
+                sn.init("sn("+_name+","+src->_name+","+dest->_name+")",-1., 1.);
+            else
+                sn.init("sn("+_name+","+src->_name+","+dest->_name+")",sin(tbound.min), sin(tbound.max));
+
             if(tbound.min < 0 && tbound.max > 0)
-                wi.init("wi("+_name+","+src->_name+","+dest->_name+")",vv.get_ub()*sin(tbound.min),sin(tbound.max), vv.get_ub()*sin(tbound.min),sin(tbound.max));
+                wi.init("wi(" + _name + "," + src->_name + "," + dest->_name + ")", vv.get_ub() * sn.get_lb(), vv.get_ub() * sn.get_ub());
             if (tbound.min >= 0)
-                wi.init("wi("+_name+","+src->_name+","+dest->_name+")",vv.get_lb()*sin(tbound.min), vv.get_ub()*sin(tbound.max));
+                wi.init("wi("+_name+","+src->_name+","+dest->_name+")",vv.get_lb()*sn.get_lb(), vv.get_ub()*sn.get_ub());
             if (tbound.max <= 0)
-                wi.init("wi("+_name+","+src->_name+","+dest->_name+")",vv.get_ub()*sin(tbound.min), vv.get_lb()*sin(tbound.max));
+                wi.init("wi("+_name+","+src->_name+","+dest->_name+")",vv.get_ub()*sn.get_lb(), vv.get_lb()*sn.get_ub());
             wr = 1;
-            //cout << "\nwi bounds = " << wi.get_lb() << ", " << wi.get_ub();
             break;
         default:
             break;
@@ -80,11 +85,13 @@ void Arc::connect(){
     src->update_fill_in(dest);
     dest->update_fill_in(src);
     Node* common = nullptr;
-    for (auto a:src->branches) {
-        common = a->neighbour(src);
-        if (common->is_connected(dest)) {
-            common->fill_in--;
-            assert(common->fill_in >=0);
+    if(!src->is_connected(dest)) {
+        for (auto a:src->branches) {
+            common = a->neighbour(src);
+            if (common->is_connected(dest)) {
+                common->fill_in--;
+                assert(common->fill_in >= 0);
+            }
         }
     }
     src->addArc(this);

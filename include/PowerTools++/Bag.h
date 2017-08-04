@@ -5,7 +5,6 @@
 #ifndef POWERTOOLS_BAG_H
 #define POWERTOOLS_BAG_H
 
-#include <PowerTools++/Arc.h>
 #include <PowerTools++/Node.h>
 
 class Bag {
@@ -16,6 +15,8 @@ public:
     Node* _n3;
     bool _rot;
     int _id;
+    bool _need_to_fix = false;
+    bool _added = false;
 
     Bag(int id);
     ~Bag();
