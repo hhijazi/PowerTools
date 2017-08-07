@@ -59,7 +59,7 @@ public:
     void add_AC_Power_Flow(Arc* a, bool polar);
     void add_AC_KCL(Node* n, bool switch_lines);
     void add_Cosine(Arc* a);
-    void add_SDP_cuts(int dim);
+    int add_SDP_cuts(int dim);
     /** Operators */
     int get_order(vector<Node*>* bag, int i);
     
@@ -87,7 +87,7 @@ public:
     void min_cost_load();
     void print();
 
-    void check_SDP();
+    int check_SDP();
 
     bool SDP_satisfied(vector<Node *> *b, int id);
 

@@ -204,6 +204,8 @@ void PowerModel::max_var(var<> v){
 }
 
 int PowerModel::solve(int output, bool relax){
+    int cuts = 0;
+    double obj, time = 0;
     int sdp_alg = _net->sdp_alg;
     int status;
     if(_type != SDP) status = _solver->run(output,relax);
@@ -214,13 +216,14 @@ int PowerModel::solve(int output, bool relax){
             status = _solver->run(output, relax);
             wall1 = get_wall_time1();
             cout << "\ntime spent on SOCP = " << wall1-wall0 << "\n";
-            check_SDP();
+            cuts = check_SDP();
             _solver->warm_start = true;
         }
-        else add_SDP_cuts(3);
+        else cuts = add_SDP_cuts(3);
 
         status = _solver->run(output,relax);
         wall1 = get_wall_time1();
+        time = wall1-wall0;
         cout << "\ntime = " << wall1-wall0 << "\n";
 
         //Second iteration
@@ -240,6 +243,10 @@ int PowerModel::solve(int output, bool relax){
 //            else cout << "CUT NOT SATISFIED!";
 //        }
     }
+    obj = _model->_opt;
+    cout.setf(ios::fixed);
+    cout.precision(2);
+    cout << "\nResults: " << time << " & " << obj << " & " << cuts << "\n";
     return status;
 }
 
@@ -2165,7 +2172,7 @@ void PowerModel::add_bag_SOCP(Bag* b, int id){
     }
 }
 
-void PowerModel::check_SDP(){
+int PowerModel::check_SDP(){
     int sdp_alg = _net->sdp_alg;
 
     meta_var* wr12 = new meta_var("wr12", _model);
@@ -2284,10 +2291,11 @@ void PowerModel::check_SDP(){
         }
     }
 
-    cout << "\nNumber of added cuts = " << id << endl;
+//    cout << "\nNumber of added cuts = " << id << endl;
+    return id;
 }
 
-void PowerModel::add_SDP_cuts(int dim){
+int PowerModel::add_SDP_cuts(int dim){
     assert(dim==3);
     /** subject to PSD {l in lines}: w[from_bus[l]]*w[to_bus[l]] >= wr[l]^2 + wi[l]^2;
      //     */
@@ -2601,6 +2609,7 @@ void PowerModel::add_SDP_cuts(int dim){
         }
     }
     cout << "\ntotal number of 3d SDP cuts added = " << id << endl;
+    return id;
 }
 
 void PowerModel::add_AC_Voltage_Bounds(Node* n){
