@@ -183,7 +183,7 @@ void PowerModel::min_cost(){
     }
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-       // obj->print(true);
+//             obj->print(true);
     //    _solver->run();
 }
 
@@ -378,19 +378,19 @@ void PowerModel::add_QC_vars(){
         else
             a->cs.init("cs("+a->_name+","+a->src->_name+","+a->dest->_name+")",min(cos(a->tbound.min), cos(a->tbound.max)), max(cos(a->tbound.min),cos(a->tbound.max)));
         a->vv.init("vv("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->src->vbound.min*a->dest->vbound.min,a->src->vbound.max*a->dest->vbound.max);
-        a->vcs.init("vcs("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->vv.get_lb()*a->cs.get_lb(), a->vv.get_ub()*a->cs.get_ub());
+        a->wr.init("wr("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->vv.get_lb()*a->cs.get_lb(), a->vv.get_ub()*a->cs.get_ub());
         if(a->tbound.min < 0 && a->tbound.max > 0)
-            a->vsn.init("vsn("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->vv.get_ub()*sin(a->tbound.min), a->vv.get_ub()*sin(a->tbound.max));
+            a->wi.init("wi("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->vv.get_ub()*sin(a->tbound.min), a->vv.get_ub()*sin(a->tbound.max));
         if (a->tbound.min >= 0)
-            a->vsn.init("vsn("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->vv.get_lb()*sin(a->tbound.min), a->vv.get_ub()*sin(a->tbound.max));
+            a->wi.init("wi("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->vv.get_lb()*sin(a->tbound.min), a->vv.get_ub()*sin(a->tbound.max));
         if (a->tbound.max <= 0)
-            a->vsn.init("vsn("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->vv.get_ub()*sin(a->tbound.min), a->vv.get_lb()*sin(a->tbound.max));
+            a->wi.init("wi("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->vv.get_ub()*sin(a->tbound.min), a->vv.get_lb()*sin(a->tbound.max));
         a->sn.init("sn("+a->_name+","+a->src->_name+","+a->dest->_name+")",sin(a->tbound.min), sin(a->tbound.max));
         a->ci.init("ci("+a->_name+","+a->src->_name+","+a->dest->_name+")", 0.0, INFINITY);
         a->delta.init("delta("+a->_name+","+a->src->_name+","+a->dest->_name+")",a->tbound.min,a->tbound.max);
-        _model->addVar(a->vcs);
-        a->vcs = 1;
-        _model->addVar(a->vsn);
+        _model->addVar(a->wr);
+        a->wr = 1;
+        _model->addVar(a->wi);
         _model->addVar(a->vv);
         _model->addVar(a->cs);
         _model->addVar(a->sn);
@@ -1271,7 +1271,7 @@ void PowerModel::post_AC_SOCP(){
 
         /** subject to PSD {l in lines}: w[from_bus[l]]*w[to_bus[l]] >= wr[l]^2 + wi[l]^2;
          */
-        Constraint SOCP("SOCP");
+        Constraint SOCP("SOCP("+src->_name+","+dest->_name+")");
         SOCP += a->src->w * a->dest->w;
         SOCP -= ((ap->wr) ^ 2);
         SOCP -= ((ap->wi) ^ 2);
@@ -2313,29 +2313,29 @@ int PowerModel::add_SDP_cuts(int dim){
     meta_var* w2 = new meta_var("w2", _model);
     meta_var* w3 = new meta_var("w3", _model);
     
-    meta_Constraint* SDP = new meta_Constraint();
-    *SDP = (*wr12)*((*wr32)*(*wr13) - (*wi32)*(*wi13));
-    *SDP += (*wi12)*((*wi32)*(*wr13) + (*wr32)*(*wi13));
-    *SDP *= 2;
-    *SDP -= (((*wr12)^2)+((*wi12)^2))*(*w3);
-    *SDP -= (((*wr13)^2)+((*wi13)^2))*(*w2);
-    *SDP -= (((*wr32)^2)+((*wi32)^2))*(*w1);
-    *SDP += (*w1)*(*w2)*(*w3);
-    *SDP >= 0;
-    SDP->is_cut = true;
-    _model->addMetaConstraint(*SDP);
+    meta_Constraint* SDPconstr = new meta_Constraint();
+    *SDPconstr = (*wr12)*((*wr32)*(*wr13) - (*wi32)*(*wi13));
+    *SDPconstr += (*wi12)*((*wi32)*(*wr13) + (*wr32)*(*wi13));
+    *SDPconstr *= 2;
+    *SDPconstr -= (((*wr12)^2)+((*wi12)^2))*(*w3);
+    *SDPconstr -= (((*wr13)^2)+((*wi13)^2))*(*w2);
+    *SDPconstr -= (((*wr32)^2)+((*wi32)^2))*(*w1);
+    *SDPconstr += (*w1)*(*w2)*(*w3);
+    *SDPconstr >= 0;
+    SDPconstr->is_cut = true;
+    _model->addMetaConstraint(*SDPconstr);
     
-    meta_Constraint* SDPr = new meta_Constraint();// Rotational SDP
-    *SDPr = (*wr12)*((*wr23)*(*wr31) - (*wi23)*(*wi31));
-    *SDPr -= (*wi12)*((*wi23)*(*wr31) + (*wr23)*(*wi31));
-    *SDPr *= 2;
-    *SDPr -= (((*wr12)^2)+((*wi12)^2))*(*w3);
-    *SDPr -= (((*wr31)^2)+((*wi31)^2))*(*w2);
-    *SDPr -= (((*wr23)^2)+((*wi23)^2))*(*w1);
-    *SDPr += (*w1)*(*w2)*(*w3);
-    *SDPr >= 0;
-    SDPr->is_cut = true;
-    _model->addMetaConstraint(*SDPr);
+    meta_Constraint* SDPrconstr = new meta_Constraint();// Rotational SDP
+    *SDPrconstr = (*wr12)*((*wr23)*(*wr31) - (*wi23)*(*wi31));
+    *SDPrconstr -= (*wi12)*((*wi23)*(*wr31) + (*wr23)*(*wi31));
+    *SDPrconstr *= 2;
+    *SDPrconstr -= (((*wr12)^2)+((*wi12)^2))*(*w3);
+    *SDPrconstr -= (((*wr31)^2)+((*wi31)^2))*(*w2);
+    *SDPrconstr -= (((*wr23)^2)+((*wi23)^2))*(*w1);
+    *SDPrconstr += (*w1)*(*w2)*(*w3);
+    *SDPrconstr >= 0;
+    SDPrconstr->is_cut = true;
+    _model->addMetaConstraint(*SDPrconstr);
     
     Node* n1 = nullptr;
     Node* n2 = nullptr;
@@ -2410,18 +2410,6 @@ int PowerModel::add_SDP_cuts(int dim){
                     a12->cs.init("cs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",min(cos(a12->tbound.min), cos(a12->tbound.max)), max(cos(a12->tbound.min),cos(a12->tbound.max)));
                 a12->vv.init("vv("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->src->vbound.min*a12->dest->vbound.min,a12->src->vbound.max*a12->dest->vbound.max);
                 if (_type==QC_SDP) {
-                    a12->vcs.init("vcs("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*a12->cs.get_lb(), a12->vv.get_ub()*a12->cs.get_ub());
-                    if(a12->tbound.min < 0 && a12->tbound.max > 0)
-                        a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
-                    if (a12->tbound.min >= 0)
-                        a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
-                    if (a12->tbound.max <= 0)
-                        a12->vsn.init("vsn("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_lb()*sin(a12->tbound.max));
-                    _model->addVar(a12->vcs);
-                    a12->vcs = 1;
-                    _model->addVar(a12->vsn);
-                }
-                else {
                     a12->wr.init("wr("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*a12->cs.get_lb(), a12->vv.get_ub()*a12->cs.get_ub());
                     if(a12->tbound.min < 0 && a12->tbound.max > 0)
                         a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
@@ -2429,15 +2417,20 @@ int PowerModel::add_SDP_cuts(int dim){
                         a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_lb()*sin(a12->tbound.min), a12->vv.get_ub()*sin(a12->tbound.max));
                     if (a12->tbound.max <= 0)
                         a12->wi.init("wi("+a12->_name+","+a12->src->_name+","+a12->dest->_name+")",a12->vv.get_ub()*sin(a12->tbound.min), a12->vv.get_lb()*sin(a12->tbound.max));
+                    _model->addVar(a12->wr);
                     a12->wr = 1;
+                    _model->addVar(a12->wi);
+                }
+                else {
+                    a12->init_vars(SDP);
                     _model->addVar(a12->wr);
                     _model->addVar(a12->wi);
                 }
                 Constraint SOCP1("SOCP1");
                 SOCP1 += _net->get_node(n1->_name)->w*_net->get_node(n2->_name)->w;
                 if (_type==QC_SDP) {
-                    SOCP1 -= ((a12->vcs)^2);
-                    SOCP1 -= ((a12->vsn)^2);
+                    SOCP1 -= ((a12->wr)^2);
+                    SOCP1 -= ((a12->wi)^2);
                 }
                 else{
                     SOCP1 -= ((a12->wr)^2);
@@ -2471,18 +2464,6 @@ int PowerModel::add_SDP_cuts(int dim){
                 a13->vv.init("vv("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->src->vbound.min*a13->dest->vbound.min,a13->src->vbound.max*a13->dest->vbound.max);
                 
                 if (_type==QC_SDP) {
-                    a13->vcs.init("vcs("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*a13->cs.get_lb(), a13->vv.get_ub()*a13->cs.get_ub());
-                    if(a13->tbound.min < 0 && a13->tbound.max > 0)
-                        a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
-                    if (a13->tbound.min >= 0)
-                        a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
-                    if (a13->tbound.max <= 0)
-                        a13->vsn.init("vsn("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_lb()*sin(a13->tbound.max));
-                    _model->addVar(a13->vcs);
-                    a13->vcs = 1;
-                    _model->addVar(a13->vsn);
-                }
-                else {
                     a13->wr.init("wr("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*a13->cs.get_lb(), a13->vv.get_ub()*a13->cs.get_ub());
                     if(a13->tbound.min < 0 && a13->tbound.max > 0)
                         a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
@@ -2490,15 +2471,20 @@ int PowerModel::add_SDP_cuts(int dim){
                         a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_lb()*sin(a13->tbound.min), a13->vv.get_ub()*sin(a13->tbound.max));
                     if (a13->tbound.max <= 0)
                         a13->wi.init("wi("+a13->_name+","+a13->src->_name+","+a13->dest->_name+")",a13->vv.get_ub()*sin(a13->tbound.min), a13->vv.get_lb()*sin(a13->tbound.max));
+                    _model->addVar(a13->wr);
                     a13->wr = 1;
+                    _model->addVar(a13->wi);
+                }
+                else {
+                    a13->init_vars(SDP);
                     _model->addVar(a13->wr);
                     _model->addVar(a13->wi);
                 }
                 Constraint SOCP2("SOCP2");
                 SOCP2 += _net->get_node(n1->_name)->w*_net->get_node(n3->_name)->w;
                 if (_type==QC_SDP) {
-                    SOCP2 -= ((a13->vcs)^2);
-                    SOCP2 -= ((a13->vsn)^2);
+                    SOCP2 -= ((a13->wr)^2);
+                    SOCP2 -= ((a13->wi)^2);
                 }
                 else{
                     SOCP2 -= ((a13->wr)^2);
@@ -2532,18 +2518,6 @@ int PowerModel::add_SDP_cuts(int dim){
                 a32->vv.init("vv("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->src->vbound.min*a32->dest->vbound.min,a32->src->vbound.max*a32->dest->vbound.max);
                 
                 if (_type==QC_SDP) {
-                    a32->vcs.init("vcs("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*a32->cs.get_lb(), a32->vv.get_ub()*a32->cs.get_ub());
-                    if(a32->tbound.min < 0 && a32->tbound.max > 0)
-                        a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
-                    if (a32->tbound.min >= 0)
-                        a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
-                    if (a32->tbound.max <= 0)
-                        a32->vsn.init("vsn("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_lb()*sin(a32->tbound.max));
-                    _model->addVar(a32->vcs);
-                    a32->vcs = 1;
-                    _model->addVar(a32->vsn);
-                }
-                else {
                     a32->wr.init("wr("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*a32->cs.get_lb(), a32->vv.get_ub()*a32->cs.get_ub());
                     if(a32->tbound.min < 0 && a32->tbound.max > 0)
                         a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
@@ -2551,15 +2525,20 @@ int PowerModel::add_SDP_cuts(int dim){
                         a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_lb()*sin(a32->tbound.min), a32->vv.get_ub()*sin(a32->tbound.max));
                     if (a32->tbound.max <= 0)
                         a32->wi.init("wi("+a32->_name+","+a32->src->_name+","+a32->dest->_name+")",a32->vv.get_ub()*sin(a32->tbound.min), a32->vv.get_lb()*sin(a32->tbound.max));
+                    _model->addVar(a32->wr);
                     a32->wr = 1;
+                    _model->addVar(a32->wi);
+                }
+                else {
+                    a32->init_vars(SDP);
                     _model->addVar(a32->wr);
                     _model->addVar(a32->wi);
                 }
                 Constraint SOCP3("SOCP3");
                 SOCP3 += _net->get_node(n3->_name)->w*_net->get_node(n2->_name)->w;
                 if (_type==QC_SDP) {
-                    SOCP3 -= ((a32->vcs)^2);
-                    SOCP3 -= ((a32->vsn)^2);
+                    SOCP3 -= ((a32->wr)^2);
+                    SOCP3 -= ((a32->wi)^2);
                 }
                 else{
                     SOCP3 -= ((a32->wr)^2);
@@ -2572,16 +2551,16 @@ int PowerModel::add_SDP_cuts(int dim){
             }
             
             if (_type==QC_SDP) {
-                *wr12 = a12->vcs;
-                *wi12 = a12->vsn;
-                *wr13 = a13->vcs;
-                *wi13 = a13->vsn;
-                *wr31 = a13->vcs;
-                *wi31 = a13->vsn;
-                *wr32 = a32->vcs;
-                *wi32 = a32->vsn;
-                *wr23 = a32->vcs;
-                *wi23 = a32->vsn;
+                *wr12 = a12->wr;
+                *wi12 = a12->wi;
+                *wr13 = a13->wr;
+                *wi13 = a13->wi;
+                *wr31 = a13->wr;
+                *wi31 = a13->wi;
+                *wr32 = a32->wr;
+                *wi32 = a32->wi;
+                *wr23 = a32->wr;
+                *wi23 = a32->wi;
             }
             else{
                 *wr12 = a12->wr;
@@ -2599,11 +2578,11 @@ int PowerModel::add_SDP_cuts(int dim){
             *w2 = _net->get_node(n2->_name)->w;
             *w3 = _net->get_node(n3->_name)->w;
             if (rot_bag) {
-                _model->concretise(*SDPr, id, "SDP"+to_string(id));
+                _model->concretise(*SDPrconstr, id, "SDP"+to_string(id));
                 id++;
             }
             else {
-                _model->concretise(*SDP, id, "SDP"+to_string(id));
+                _model->concretise(*SDPconstr, id, "SDP"+to_string(id));
                 id++;
             }
         }

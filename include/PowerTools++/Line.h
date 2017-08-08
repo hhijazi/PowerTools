@@ -38,8 +38,6 @@ public:
     var<>   qi;
     var<>   pj;
     var<>   qj;
-    var<>   vcs;    /** vi*vj*cs */
-    var<>   vsn;    /** vi*vj*sn */
     var<>   vv;     /** vi*vj */
     var<>   cs;     /** cos(thetai - thetaj - as) */
     var<>   sn;     /** sin(thetai - thetaj - as) */

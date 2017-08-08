@@ -68,7 +68,7 @@ int PTSolver::run(int output, bool relax){
             //            iapp.Options()->SetStringValue("hessian_constant", "yes");
 //                        iapp.Options()->SetStringValue("derivative_test", "second-order");
         iapp->Options()->SetNumericValue("tol", 1e-6);
-        iapp->Options()->SetIntegerValue("max_iter", INFINITY);
+        iapp->Options()->SetIntegerValue("max_iter", std::numeric_limits<int>::max());
         iapp->Options()->SetNumericValue("max_cpu_time", 7200);
             //            iapp->Options()->SetStringValue("derivative_test", "second-order");
             //            iapp.Options()->SetNumericValue("bound_relax_factor", 0);
