@@ -117,6 +117,8 @@ public:
     void fill_in_var_linearity(Ipopt::TNLP::LinearityType* var_types);
     void fill_in_cstr_linearity(Ipopt::TNLP::LinearityType* const_types);
     void fill_in_var_types(Bonmin::TMINLP::VariableType* var_types);
+    void fill_in_bnd_duals(double *z_L, double *z_U);
+    void fill_in_cstr_duals(double *lambda);
     void solve();
     void reset();
     friend std::vector<int> bounds(int parts, int mem);
@@ -130,12 +132,6 @@ public:
     void print_functions() const;
     void print() const;
     void print_solution() const;
-
-
-    void fill_in_bnd_duals(double *z_L, double *z_U);
-
-    void fill_in_cstr_duals(double *lambda);
-
     void print_constrs(const double *x);
 };
 

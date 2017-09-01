@@ -87,23 +87,32 @@ public:
     void min_cost_load();
     void print();
 
-    int check_SDP();
+    /** Dynamic SDP cut generation */
+    int add_SDP_cuts_dyn();
 
-    bool SDP_satisfied(vector<Node *> *b, int id);
-
-    bool circles_intersect(double xc, double yc, double R1, double R2);
-
+    /** Checking whether SDP conditions are satisfied for a 3D bag */
     bool SDP_satisfied(vector<Node *> *b);
-
-    bool circles_intersect(double xc, double yc, double R1, double R2, Arc *a);
 
     bool SDP_satisfied_new(vector<Node *> *b);
 
     bool SDP_satisfied_new1(Bag *b);
 
+    /** Checks if two circles with given centers and radii have common points */
+    bool circles_intersect(double xc, double yc, double R1, double R2, Arc *a);
+
+    /** For a 3D bag with one unknown line, calculates the values of wr and wi
+     * for this line using the SDP conditions */
     bool fix_bag(Bag *b);
 
+    /** Add any missing SOCP constraints for a 3D bag */
     void add_bag_SOCP(Bag *b, int id);
+
+    /** For a partially defined bag, add SDP constraints for all non-PSD maximal cliques */
+    void add_violated_cliques(Bag *b);
+
+    bool clique_psd(Bag *b, igraph_vector_t *cl);
+
+    void add_clique(Bag *b, igraph_vector_t *cl);
 };
 
 #endif /* defined(__PowerTools____PowerModel__) */

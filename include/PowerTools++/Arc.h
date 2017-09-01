@@ -14,18 +14,22 @@
 #include <PowerTools++/Line.h>
 #include <PowerTools++/Type.h>
 
+class Bag;
+
 class Arc : public Line{
 public:
     bool free = false;
     bool imaginary = false;
-    bool added = false;
+    bool added = false; // indicates if a SOCP constraint for this line has been added to the model
     Node* src;
     Node* dest;
     bool in_cycle;
     bool parallel;
     Path* horton_path;
-    vector<Bag*>* defining_bags = nullptr;
     double weight;
+
+    /** List of bags that are used to fix this line */
+    vector<Bag*>* defining_bags = nullptr;
     
     /** @brief Phase angle difference bounds */
     Bound   tbound;

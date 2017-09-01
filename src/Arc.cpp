@@ -16,6 +16,9 @@ Arc::~Arc(){
     if (horton_path) {
         delete horton_path;
     }
+    if (defining_bags) {
+        delete defining_bags;
+    }
 }
 
 
@@ -42,7 +45,10 @@ Arc* Arc::clone(){
     copy->in_cycle = in_cycle;
     copy->status = status;
     copy->free = free;
-    copy->defining_bags = defining_bags;
+    if(defining_bags) {
+        copy->defining_bags = new vector<Bag*>();
+        copy->defining_bags->insert(copy->defining_bags->end(),defining_bags->begin(),defining_bags->end());
+    }
     copy->added = added;
     copy->imaginary = imaginary;
     return copy;

@@ -68,6 +68,20 @@ bool Node::is_connected(Node* n){
     return false;
 }
 
+bool Node::is_connected_fixed(Node *n){
+    for (auto a:branches) {
+        if (!(a->free) && n->ID==a->neighbour(this)->ID) {
+            return true;
+        }
+    }
+    for (auto a:n->branches) {
+        if (!(a->free) && ID==a->neighbour(n)->ID) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Node::is_source(Node* n){
     for (auto a:branches) {
         if (ID == a->src->ID && n->ID==a->dest->ID) {

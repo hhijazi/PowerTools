@@ -183,7 +183,7 @@ void PowerModel::min_cost(){
     }
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-//             obj->print(true);
+             obj->print(true);
     //    _solver->run();
 }
 
@@ -216,7 +216,7 @@ int PowerModel::solve(int output, bool relax){
             status = _solver->run(output, relax);
             wall1 = get_wall_time1();
             cout << "\ntime spent on SOCP = " << wall1-wall0 << "\n";
-            cuts = check_SDP();
+            cuts = add_SDP_cuts_dyn();
             _solver->warm_start = true;
         }
         else cuts = add_SDP_cuts(3);
@@ -230,7 +230,7 @@ int PowerModel::solve(int output, bool relax){
 //        for(auto a:_net->arcs){ // Unfix non-existent lines
 //            if(a->imaginary) a->status = 0;
 //        }
-//        check_SDP();
+//        add_SDP_cuts_dyn();
 //        status = _solver->run(output,relax);
 //        wall1 = get_wall_time1();
 //        cout << "\ntime2 = " << wall1-wall0 << "\n";
@@ -1391,6 +1391,7 @@ bool PowerModel::fix_bag(Bag *b){
     Arc* a12 = nullptr;
     Arc* a13 = nullptr;
     Arc* a32 = nullptr;
+    bool a12b, a13b, a32b;
     Node* n1 = nullptr;
     Node* n2 = nullptr;
     Node* n3 = nullptr;
@@ -1401,13 +1402,21 @@ bool PowerModel::fix_bag(Bag *b){
 
     n1 = b->_n1; n2 = b->_n2; n3 = b->_n3;
 
-    double w1 = _model->getVar_<double>(_net->get_node(n1->_name)->w.get_idx())->get_value();
-    double w2 = _model->getVar_<double>(_net->get_node(n2->_name)->w.get_idx())->get_value();
-    double w3 = _model->getVar_<double>(_net->get_node(n3->_name)->w.get_idx())->get_value();
+    double w1 = _net->get_node(n1->_name)->w.get_value();
+    double w2 = _net->get_node(n2->_name)->w.get_value();
+    double w3 = _net->get_node(n3->_name)->w.get_value();
 
     a12 = _net->get_arc(n1,n2);
     a13 = _net->get_arc(n1,n3);
     a32 = _net->get_arc(n3,n2);
+
+    a12b = a12 && a12->status;
+    a13b = a13 && a13->status;
+    a32b = a32 && a32->status;
+
+    // Check that there is exactly one unknown line in the bag
+    assert((a13b && a12b) || (a13b && a32b) || (a12b && a32b));
+    assert(!a13b || !a12b || !a32b);
 
     if(!a13 || a13->status == 0) {
         if (!a13){
@@ -1422,10 +1431,10 @@ bool PowerModel::fix_bag(Bag *b){
         _model->addVar(a13->wr);
         _model->addVar(a13->wi);
 
-        wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
-        wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
-        wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
-        wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
+        wr12 = a12->wr.get_value();
+        wi12 = a12->wi.get_value();
+        wr32 = a32->wr.get_value();
+        wi32 = a32->wi.get_value();
 
 //        cout << "Calculating values for " << a13->_name;
         if(!(b->_rot)) {
@@ -1479,10 +1488,10 @@ bool PowerModel::fix_bag(Bag *b){
         _model->addVar(a32->wr);
         _model->addVar(a32->wi);
 
-        wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
-        wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
-        wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
-        wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
+        wr12 = a12->wr.get_value();
+        wi12 = a12->wi.get_value();
+        wr13 = a13->wr.get_value();
+        wi13 = a13->wi.get_value();
 
 //        cout << "Calculating values for " << a32->_name;
         if(!(b->_rot)) {
@@ -1533,10 +1542,10 @@ bool PowerModel::fix_bag(Bag *b){
         _model->addVar(a12->wr);
         _model->addVar(a12->wi);
 
-        wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
-        wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
-        wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
-        wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
+        wr13 = a13->wr.get_value();
+        wi13 = a13->wi.get_value();
+        wr32 = a32->wr.get_value();
+        wi32 = a32->wi.get_value();
 
 //        cout << "Calculating values for " << a12->_name;
         if(!(b->_rot)) {
@@ -1592,9 +1601,7 @@ bool PowerModel::SDP_satisfied_new1(Bag* b){
         a12 = _net->get_arc(n1,n2);
         a13 = _net->get_arc(n1,n3);
         a32 = _net->get_arc(n3,n2);
-        if(a12 && a12->added) a12->status = 1;
-        if(a13 && a13->added) a13->status = 1;
-        if(a32 && a32->added) a32->status = 1;
+
         a12_on = a12 && a12->status;
         a13_on = a13 && a13->status;
         a32_on = a32 && a32->status;
@@ -1619,15 +1626,15 @@ bool PowerModel::SDP_satisfied_new1(Bag* b){
 
         // all lines exist
 
-        wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
-        wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
-        wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
-        wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
-        wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
-        wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
-        double w1 = _model->getVar_<double>(_net->get_node(n1->_name)->w.get_idx())->get_value();
-        double w2 = _model->getVar_<double>(_net->get_node(n2->_name)->w.get_idx())->get_value();
-        double w3 = _model->getVar_<double>(_net->get_node(n3->_name)->w.get_idx())->get_value();
+        wr12 = a12->wr.get_value();
+        wi12 = a12->wi.get_value();
+        wr13 = a13->wr.get_value();
+        wi13 = a13->wi.get_value();
+        wr32 = a32->wr.get_value();
+        wi32 = a32->wi.get_value();
+        double w1 = _net->get_node(n1->_name)->w.get_value();
+        double w2 = _net->get_node(n2->_name)->w.get_value();
+        double w3 = _net->get_node(n3->_name)->w.get_value();
 
         if (!(b->_rot)) {
             double SDP = wr12*(wr32*wr13 - wi32*wi13) + wi12*(wi32*wr13 + wr32*wi13);
@@ -1785,20 +1792,20 @@ bool PowerModel::SDP_satisfied_new(vector<Node*>* b){
         }
 
         if (a12->status) {
-            wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
-            wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
+            wr12 = a12->wr.get_value();
+            wi12 = a12->wi.get_value();
         }
         if (a13->status) {
-            wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
-            wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
+            wr13 = a13->wr.get_value();
+            wi13 = a13->wi.get_value();
         }
         if (a32->status) {
-            wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
-            wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
+            wr32 = a32->wr.get_value();
+            wi32 = a32->wi.get_value();
         }
-        double w1 = _model->getVar_<double>(_net->get_node(n1->_name)->w.get_idx())->get_value();
-        double w2 = _model->getVar_<double>(_net->get_node(n2->_name)->w.get_idx())->get_value();
-        double w3 = _model->getVar_<double>(_net->get_node(n3->_name)->w.get_idx())->get_value();
+        double w1 = _net->get_node(n1->_name)->w.get_value();
+        double w2 = _net->get_node(n2->_name)->w.get_value();
+        double w3 = _net->get_node(n3->_name)->w.get_value();
 
         // if we get to here, at most one line is missing
 
@@ -2009,22 +2016,22 @@ bool PowerModel::SDP_satisfied(vector<Node*>* b){
 
         if (!a12->imaginary) {
             cout << "a12 real; ";
-            wr12 = _model->getVar_<double>(a12->wr.get_idx())->get_value();
-            wi12 = _model->getVar_<double>(a12->wi.get_idx())->get_value();
+            wr12 = a12->wr.get_value();
+            wi12 = a12->wi.get_value();
         }
         if (!a13->imaginary) {
             cout << "a13 real; ";
-            wr13 = _model->getVar_<double>(a13->wr.get_idx())->get_value();
-            wi13 = _model->getVar_<double>(a13->wi.get_idx())->get_value();
+            wr13 = a13->wr.get_value();
+            wi13 = a13->wi.get_value();
         }
         if (!a32->imaginary) {
             cout << "a32 real; ";
-            wr32 = _model->getVar_<double>(a32->wr.get_idx())->get_value();
-            wi32 = _model->getVar_<double>(a32->wi.get_idx())->get_value();
+            wr32 = a32->wr.get_value();
+            wi32 = a32->wi.get_value();
         }
-        double w1 = _model->getVar_<double>(_net->get_node(n1->_name)->w.get_idx())->get_value();
-        double w2 = _model->getVar_<double>(_net->get_node(n2->_name)->w.get_idx())->get_value();
-        double w3 = _model->getVar_<double>(_net->get_node(n3->_name)->w.get_idx())->get_value();
+        double w1 = _net->get_node(n1->_name)->w.get_value();
+        double w2 = _net->get_node(n2->_name)->w.get_value();
+        double w3 = _net->get_node(n3->_name)->w.get_value();
 
         if((a12->imaginary && a13->imaginary) || (a12->imaginary && a32->imaginary) || (a13->imaginary && a32->imaginary)) {
             //cout << "\nTwo lines are missing. Return 'satisfied'.";
@@ -2172,7 +2179,68 @@ void PowerModel::add_bag_SOCP(Bag* b, int id){
     }
 }
 
-int PowerModel::check_SDP(){
+bool PowerModel::clique_psd(Bag* b, igraph_vector_t* cl){
+    int n = igraph_vector_size(cl); //elements of the vector are long int
+    Node* node;
+    cout << "\nn = " << n;
+    vector<Node*> clique_nodes;
+    for(int i = 0; i< n; i++){
+        node = b->_nodes->at((long int)VECTOR(*cl)[i]);
+        clique_nodes.push_back(node);
+        cout << "\nNode in clique #" << (long int)VECTOR(*cl)[i] << " = " << clique_nodes.at(i)->_name << ", id = " << clique_nodes.at(i)->ID;
+    }
+
+    sort(clique_nodes.begin(), clique_nodes.end(), [](Node* a, Node* b) { return a->ID < b->ID; });
+
+    cout << "\nSorted nodes: ";
+    for(int i = 0; i< n; i++){
+        cout << "\nNode = " << clique_nodes.at(i)->_name << ", id = " << clique_nodes.at(i)->ID;
+    }
+
+    vector<vector<pair<double,double>>> L;
+    double AijR, AijI;
+    for(int i = 0; i < n; i++){
+        vector<pair<double,double>> Lrow;
+        for(int j = 0; j <= i; j++) {
+            if(i==j) {
+                AijR = clique_nodes.at(i)->w.get_value();
+                // if (AiiR - sum_k=1^j-1 LjkL*jk < 0 - tol) return false;
+                // LiiR = sqrt( AiiR - sum_k=1^j-1 LjkL*jk )
+            }else{
+                //if(connected in normal order)
+                // Lij = 1/Ljj( Aij - sum_k=1^j-1 LikL*jk )  separate this into re and im
+            }
+            //calculate L using cholesky formulas, return false if expression under root is negative (if negative with small abs val, set it to 0)
+        }
+        L.push_back(Lrow);
+    }
+    //signs?
+    //create a matrix structure
+    //do cholesky
+    //tolerances
+    return true;
+}
+
+void PowerModel::add_clique(Bag* b, igraph_vector_t* cl){
+    //loop through minors with decreasing size
+    //create a method that will create a det function given a minor
+    //det function >= 0
+}
+
+void PowerModel::add_violated_cliques(Bag* b) {// for bags with more than 3 nodes
+    igraph_vector_ptr_t* res = new igraph_vector_ptr_t; // will contain indices of vertices in cliques
+    igraph_vector_t* clique;
+    igraph_vector_ptr_init(res,0);
+    igraph_maximal_cliques(b->graph,res,0,b->size());
+    for(long i = 0; i < igraph_vector_ptr_size(res); i++) {
+//        clique = (igraph_t*)igraph_vector_ptr_e(res,i);
+        clique = (igraph_vector_t*)VECTOR(*res)[i];
+        if(!clique_psd(b, clique)) add_clique(b, clique);
+    }
+    igraph_vector_ptr_destroy(res);
+}
+
+int PowerModel::add_SDP_cuts_dyn(){
     int sdp_alg = _net->sdp_alg;
 
     meta_var* wr12 = new meta_var("wr12", _model);
@@ -2213,8 +2281,8 @@ int PowerModel::check_SDP(){
     SDPr->is_cut = true;
     _model->addMetaConstraint(*SDPr);
 
-    _model->init_functions(_net->_bagsnew->size());
-    _model->print_functions();
+//    _model->init_functions(_net->_bagsnew->size());
+//    _model->print_functions();
 
     Node *n1, *n2, *n3;
     Arc *a12, *a13, *a32;
@@ -2222,11 +2290,22 @@ int PowerModel::check_SDP(){
 
     for (auto b: *_net->_bagsnew){
 //        cout << "\n\nBag number = " << b->_id << ": ";
-        if(SDP_satisfied_new1(b)){
-//            cout << "CUT ALREADY SATISFIED";
-        }else{
+        if(b->size() > 3){
+            cout << "\nBag " << b->_id << " of size " << b->size();
+            if(b->is_complete()) {
+                cout << "\nBag is complete, skipping";
+                continue;
+                //do all checks return true or false
+            }
+
+            if(!b->graph_is_chordal()) {
+                cout << "\nBag graph is non chordal, skipping";
+                continue;
+            };
+            add_violated_cliques(b);
+        }else if(b->size()==3){
 //            cout << "\nADDING NEW CUT " << b->_id;
-            if(b->size()!=3) continue;
+            if(SDP_satisfied_new1(b)) continue;
             b->_added = true;
             add_bag_SOCP(b,id);
             n1 = b->_n1; n2 = b->_n2; n3 = b->_n3;
@@ -2290,8 +2369,9 @@ int PowerModel::check_SDP(){
             }
         }
     }
-
-//    cout << "\nNumber of added cuts = " << id << endl;
+    _model->init_functions(_net->_bagsnew->size());
+    _model->print_functions();
+    cout << "\nNumber of added cuts = " << id << endl;
     return id;
 }
 

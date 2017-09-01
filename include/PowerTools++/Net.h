@@ -194,6 +194,7 @@ public:
     /** sets all nodes to unexplored */
     void reset_nodeExplored();
 
+    /** Create the missing lines in a bag and add them to clone */
     void complete_bag(Bag *b);
 
     void get_tree_decomp_bags_3d();

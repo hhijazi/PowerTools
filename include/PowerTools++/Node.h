@@ -53,6 +53,11 @@ public:
      @brief Returns true if n is an adjacent node.
      */
     bool is_connected(Node* n);
+
+    /*
+     * Same as is_connected, but searches only for lines with free=false
+     */
+    bool is_connected_fixed(Node *n);
     
     /*
      @brief Returns true if there is an arc (this,n)
@@ -85,7 +90,6 @@ public:
     std::vector<Arc*>::iterator removeFirstArc();
     
 //    void print();
-
 };
 
 #endif
