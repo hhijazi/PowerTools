@@ -176,14 +176,17 @@ Function* PowerModel::objective(){
 void PowerModel::min_cost(){
     _objective = MinCost;
     Function* obj = new Function();
+    int i = 0;
     for (auto g:_net->gens) {
-        if (!g->_active)
+        if (!g->_active || g->_bus->_type == 4)
             continue;
+        i++;
         *obj += _net->bMVA*g->_cost->c1*(g->pg) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg^2) + g->_cost->c0;
     }
+    cout << "\nNumber of gens = " << i << "\n";
     _model->setObjective(obj);
     _model->setObjectiveType(minimize); // currently for gurobi
-             obj->print(true);
+             obj->print(false);
     //    _solver->run();
 }
 
@@ -641,7 +644,7 @@ void PowerModel::add_AC_SOCP_vars(){
     set<string> parallel;
 //    Arc* ap = nullptr;
     for (auto a:_net->arcs) {
-        if (a->status==0) {
+        if (a->status==0 || a->src->_type==4 || a->dest->_type==4) {
             continue;
         }
         a->pi.init("p("+a->_name+","+a->src->_name+","+a->dest->_name+")");
@@ -661,19 +664,22 @@ void PowerModel::add_AC_SOCP_vars(){
         if (!a->parallel) {
             //a->wr.init("wr"+a->_name, a->src->vbound.min*a->dest->vbound.min*cos(a->tbound.min), a->src->vbound.max*a->dest->vbound.max);
             a->wr.init("wr"+a->src->_name+a->dest->_name, a->src->vbound.min*a->dest->vbound.min*cos(a->tbound.min), a->src->vbound.max*a->dest->vbound.max);
+//            if(a->src->ID > a->dest->ID) cout << "\n" << a->pi._name;
+//            a->wr.init("wr"+a->src->_name+a->dest->_name, 0, 1.21);
             a->wr = 1;
             _model->addVar(a->wr);
             //a->wi.init("wi"+a->_name, -a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max), a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max));
             a->wi.init("wi"+a->src->_name+a->dest->_name, -a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max), a->src->vbound.max*a->dest->vbound.max*sin(a->tbound.max));
+//            a->wi.init("wi"+a->src->_name+a->dest->_name, -1.21, 1.21);
             _model->addVar(a->wi);
         }
 //        else {
 //            cout << "avoiding parallel line\n";
 //        }
         a->init_complex();
-        
     }
     for (auto n:_net->nodes) {
+        if(n->_type==4) continue;
         n->w.init("w"+n->_name, pow(n->vbound.min,2), pow(n->vbound.max,2));
 //        n->w = pow(n->vs,2);
         n->w = 1.001;
@@ -913,6 +919,8 @@ void PowerModel::add_AC_KCL(Node* n, bool switch_lines){
     KCL_P -= sum(n->_gen, "pg");
     KCL_P += n->gs()*(n->_V_.square_magnitude()) + n->pl();
     KCL_P = 0;
+//    if(n->gs()!=0) KCL_P.print();
+//    KCL_P.print();
     _model->addConstraint(KCL_P);
     
     Constraint KCL_Q("KCL_Q");
@@ -1201,34 +1209,47 @@ void PowerModel::post_AC_SOCP(){
     Node* src = NULL;
     Node* dest = NULL;
     for (auto n:_net->nodes) {
+        if(n->_type==4) continue;
+        //if(n->_name!="5321") continue;// && n->_name!="53204") continue;
+//        continue;
         add_AC_KCL(n, false);
     }
     Arc* ap = nullptr;
-    
+
+    int i = 1;
     for (auto a:_net->arcs) {
-        if (a->status == 0) {
-            continue;
-        }
+//        if(i==1339) break;
+//        i++;
+        //if(i<1338) continue;
+//        if(i<1340) continue;
+
         src = a->src;
         dest = a->dest;
+//        if(src->ID > dest->ID) cout << "\n" << a->pi._name;
+        if (a->status == 0  || src->_type==4 || dest->_type==4) {
+            continue;
+        }
         /** subject to Flow_P_From {(l,i,j) in arcs_from}:
          p[l,i,j] = g[l]*(v[i]/tr[l])^2
          + -g[l]*v[i]/tr[l]*v[j]*cos(t[i]-t[j]-as[l])
          + -b[l]*v[i]/tr[l]*v[j]*sin(t[i]-t[j]-as[l]);
          */
+        ap = _net->get_arc(src, dest);
         Constraint Flow_P_From("Flow_P_From" + a->pi._name);
         Flow_P_From += a->pi;
-//        if(!a->src->_name.compare("9006") && !a->dest->_name.compare("9003")){
-//            cout << "ok";
-//            cout << endl;
-//        }
-
         Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w;
-        ap = _net->get_arc(a->src, a->dest);
         Flow_P_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr;
-        Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
+        if(a->src == ap->src)//(src->ID < dest->ID)
+            Flow_P_From -= (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
+        else {
+            cout << "\nReversed line " << a->pi._name;
+            Flow_P_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
+        }
         Flow_P_From = 0;
-        _model->addConstraint(Flow_P_From);
+//        if(a->src == ap->src)
+            _model->addConstraint(Flow_P_From);
+
+//        Flow_P_From.print();
 
         /** subject to Flow_P_To {(l,i,j) in arcs_to}:
          p[l,i,j] = g[l]*v[i]^2
@@ -1239,9 +1260,13 @@ void PowerModel::post_AC_SOCP(){
         Flow_P_To += a->pj;
         Flow_P_To -= a->g * dest->w;
         Flow_P_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr;
-        Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
+        if(a->src == ap->src)//(src->ID < dest->ID)
+            Flow_P_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
+        else
+            Flow_P_To -= (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
         Flow_P_To = 0;
-        _model->addConstraint(Flow_P_To);
+//        if(a->src == ap->src)
+            _model->addConstraint(Flow_P_To);
 
         /** subject to Flow_Q_From {(l,i,j) in arcs_from}:
          q[l,i,j] = -(charge[l]/2+b[l])*(v[i]/tr[l])^2
@@ -1252,9 +1277,13 @@ void PowerModel::post_AC_SOCP(){
         Flow_Q_From += a->qi;
         Flow_Q_From += (a->ch / 2 + a->b) / (pow(a->cc, 2) + pow(a->dd, 2)) * src->w;
         Flow_Q_From += (-a->b * a->cc - a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr;
-        Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
+        if(a->src == ap->src)//(src->ID < dest->ID)
+            Flow_Q_From -= (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
+        else
+            Flow_Q_From += (-a->g * a->cc + a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
         Flow_Q_From = 0;
-        _model->addConstraint(Flow_Q_From);
+//        if(a->src == ap->src)
+            _model->addConstraint(Flow_Q_From);
 
         /** subject to Flow_Q_To {(l,i,j) in arcs_to}:
          q[l,i,j] = -(charge[l]/2+b[l])*v[i]^2
@@ -1265,9 +1294,13 @@ void PowerModel::post_AC_SOCP(){
         Flow_Q_To += a->qj;
         Flow_Q_To += (a->ch / 2 + a->b) * dest->w;
         Flow_Q_To += (-a->b * a->cc + a->g * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wr;
-        Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
+        if(a->src == ap->src)//(src->ID < dest->ID)
+            Flow_Q_To += (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
+        else
+            Flow_Q_To -= (-a->g * a->cc - a->b * a->dd) / (pow(a->cc, 2) + pow(a->dd, 2)) * ap->wi;
         Flow_Q_To = 0;
-        _model->addConstraint(Flow_Q_To);
+//        if(a->src == ap->src)
+            _model->addConstraint(Flow_Q_To);
 
         /** subject to PSD {l in lines}: w[from_bus[l]]*w[to_bus[l]] >= wr[l]^2 + wi[l]^2;
          */
@@ -1278,7 +1311,7 @@ void PowerModel::post_AC_SOCP(){
         SOCP >= 0;
         SOCP.is_cut = true;
         _model->addConstraint(SOCP);
-
+//
         add_AC_thermal(a, false);
         add_Wr_Wi(a);
     }
@@ -1645,7 +1678,7 @@ bool PowerModel::SDP_satisfied_new1(Bag* b){
 //            if(a12->imaginary || a13->imaginary || a32->imaginary) {
 //                cout << ", SOC12 = " << wr12*wr12 + wi12*wi12 - w1*w2 << ", SOC13 = " << wr13*wr13 + wi13*wi13 - w1*w3 << ", SOC32 = " << wr32*wr32 + wi32*wi32 - w2*w3;
 //            }
-            if(SDP > -tol) return true;
+            if(SDP > -tol) {cout << "\n3d cut satisfied"; return true;}
             else {
                 if(a12->imaginary) {
                     for(auto db: *a12->defining_bags) {
@@ -1662,6 +1695,13 @@ bool PowerModel::SDP_satisfied_new1(Bag* b){
                         db->_need_to_fix=true;
                     }
                 }
+
+                cout << "\nSDP = 2*" << wr12 << "*(" << wr32 << "*" << wr13 << "-" << wi32 << "*" << wi13 << ") + 2*"  <<  wi12 << "*(" << wi32 << "*" << wr13 << " + " << wr32 << "*" << wi13 << ")";
+                cout << " - (" << wr12 << "*" << wr12 << " + " << wi12 << "*" << wi12 << ")*" << w3 << " - (" << wr13 << "*" << wr13 << " + " << wi13 << "*" << wi13 << ")*" << w2 << " - (" << wr32 << "*" << wr32 << " + " << wi32 << "*" << wi32 << ")*" << w1;
+                cout << " + " << w1 << "*" << w2 << "*" << w3;
+                cout << "\nn1 = " << n1->_name << ", n2 = " << n2->_name << ", n3 = " << n3->_name;
+
+                cout << "\nNot satisfied!";
                 return false;
             }
         }else{
@@ -1673,7 +1713,7 @@ bool PowerModel::SDP_satisfied_new1(Bag* b){
 //            if(a12->imaginary || a13->imaginary || a32->imaginary) {
 //                cout << ", SOC12 = " << wr12*wr12 + wi12*wi12 - w1*w2 << ", SOC13 = " << wr13*wr13 + wi13*wi13 - w1*w3 << ", SOC32 = " << wr32*wr32 + wi32*wi32 - w2*w3;
 //            }
-            if(SDPr > -tol) return true;
+            if(SDPr > -tol) {cout << "\n3d cut satisfied"; return true;}
             else {
                 if(a12->imaginary) {
                     for(auto db: *a12->defining_bags) {
@@ -1690,6 +1730,7 @@ bool PowerModel::SDP_satisfied_new1(Bag* b){
                         db->_need_to_fix=true;
                     }
                 }
+                cout << "\nNot satisfied!";
                 return false;
             }
         }
@@ -2180,48 +2221,74 @@ void PowerModel::add_bag_SOCP(Bag* b, int id){
 }
 
 bool PowerModel::clique_psd(Bag* b, igraph_vector_t* cl){
+    double tol = 0.0001;
     int n = igraph_vector_size(cl); //elements of the vector are long int
     Node* node;
-    cout << "\nn = " << n;
+    cout << "\nSize of clique = " << n;
     vector<Node*> clique_nodes;
+    cout << "\nNodes in clique: ";
     for(int i = 0; i< n; i++){
         node = b->_nodes->at((long int)VECTOR(*cl)[i]);
         clique_nodes.push_back(node);
-        cout << "\nNode in clique #" << (long int)VECTOR(*cl)[i] << " = " << clique_nodes.at(i)->_name << ", id = " << clique_nodes.at(i)->ID;
+        cout << clique_nodes.at(i)->_name << ", ";
     }
-
     sort(clique_nodes.begin(), clique_nodes.end(), [](Node* a, Node* b) { return a->ID < b->ID; });
-
-    cout << "\nSorted nodes: ";
-    for(int i = 0; i< n; i++){
-        cout << "\nNode = " << clique_nodes.at(i)->_name << ", id = " << clique_nodes.at(i)->ID;
-    }
-
+//    cout << "\nSorted nodes: ";
+//    for(int i = 0; i< n; i++){
+//        cout << "\nNode = " << clique_nodes.at(i)->_name << ", id = " << clique_nodes.at(i)->ID;
+//    }
     vector<vector<pair<double,double>>> L;
-    double AijR, AijI;
+    double AijR, AijI, LijR, LijI;
     for(int i = 0; i < n; i++){
         vector<pair<double,double>> Lrow;
+        cout << "\n";
         for(int j = 0; j <= i; j++) {
             if(i==j) {
-                AijR = clique_nodes.at(i)->w.get_value();
-                // if (AiiR - sum_k=1^j-1 LjkL*jk < 0 - tol) return false;
-                // LiiR = sqrt( AiiR - sum_k=1^j-1 LjkL*jk )
+                double wrik, wiik;
+                AijR = _net->get_node(clique_nodes[i]->_name)->w.get_value();
+                cout << "  A[" << i << "][" << i << "] = " << AijR;
+                LijR = AijR;
+                for(int k = 0; k <= i-1; k++) {
+                    wrik = Lrow[k].first;
+                    wiik = Lrow[k].second;
+                    LijR -= wrik*wrik - wiik*wiik;
+                }
+                //if(LijR < 0 - tol) return false;
+                if(LijR < 0) LijR = 0;
+                LijR = sqrt(LijR);
+                Lrow.push_back(pair<double,double>(LijR,0));
             }else{
-                //if(connected in normal order)
-                // Lij = 1/Ljj( Aij - sum_k=1^j-1 LikL*jk )  separate this into re and im
+                double LjjR;
+                AijR = _net->get_arc(clique_nodes[j],clique_nodes[i])->wr.get_value();
+                if(_net->has_directed_arc(clique_nodes[j],clique_nodes[i])) {
+//                    cout << "\nhas dir arc from " << clique_nodes[j]->_name << " to " << clique_nodes[i]->_name;
+                    AijI = _net->get_arc(clique_nodes[j], clique_nodes[i])->wi.get_value();
+                }
+                else {
+                    cout << "\ndoesn't have dir arc from " << clique_nodes[j]->_name << " to " << clique_nodes[i]->_name;
+                    AijI = -_net->get_arc(clique_nodes[j], clique_nodes[i])->wi.get_value();
+                }
+                cout << "  A[" << i << "][" << j << "] = W" << clique_nodes[j]->_name << "," << clique_nodes[i]->_name << " = " << AijR << " + " << AijI << "i";
+                LjjR = L[j][j].first;
+                LijR = LjjR*AijR;
+                LijI = LjjR*AijI;
+                for(int k = 0; k <= j-1; k++) {
+                    LijR -= Lrow[k].first*L[j][k].first + Lrow[k].second*L[j][k].second;
+                    LijI -= Lrow[k].second*L[j][k].first - Lrow[k].first*L[j][k].second;
+                }
+                LijR /= LjjR;
+                LijI /= LjjR;
+                Lrow.push_back(pair<double,double>(LijR,LijI));
             }
             //calculate L using cholesky formulas, return false if expression under root is negative (if negative with small abs val, set it to 0)
         }
         L.push_back(Lrow);
     }
-    //signs?
-    //create a matrix structure
-    //do cholesky
-    //tolerances
     return true;
 }
 
 void PowerModel::add_clique(Bag* b, igraph_vector_t* cl){
+    cout << "\nThis clique should be added.";
     //loop through minors with decreasing size
     //create a method that will create a det function given a minor
     //det function >= 0
@@ -2236,6 +2303,7 @@ void PowerModel::add_violated_cliques(Bag* b) {// for bags with more than 3 node
 //        clique = (igraph_t*)igraph_vector_ptr_e(res,i);
         clique = (igraph_vector_t*)VECTOR(*res)[i];
         if(!clique_psd(b, clique)) add_clique(b, clique);
+        else cout << "\nClique is PSD.";
     }
     igraph_vector_ptr_destroy(res);
 }
@@ -2290,47 +2358,51 @@ int PowerModel::add_SDP_cuts_dyn(){
 
     for (auto b: *_net->_bagsnew){
 //        cout << "\n\nBag number = " << b->_id << ": ";
-        if(b->size() > 3){
-            cout << "\nBag " << b->_id << " of size " << b->size();
-            if(b->is_complete()) {
-                cout << "\nBag is complete, skipping";
-                continue;
-                //do all checks return true or false
-            }
+//        if(b->size() > 3){
+//            cout << "\nBag " << b->_id << " of size " << b->size();
 
-            if(!b->graph_is_chordal()) {
-                cout << "\nBag graph is non chordal, skipping";
-                continue;
-            };
-            add_violated_cliques(b);
-        }else if(b->size()==3){
-//            cout << "\nADDING NEW CUT " << b->_id;
-            if(SDP_satisfied_new1(b)) continue;
-            b->_added = true;
-            add_bag_SOCP(b,id);
-            n1 = b->_n1; n2 = b->_n2; n3 = b->_n3;
-            a12 = _net->get_arc(n1,n2);
-            a13 = _net->get_arc(n1,n3);
-            a32 = _net->get_arc(n3,n2);
+//            if(!b->graph_is_chordal()) {
+//                cout << "\nBag graph is non chordal, skipping";
+//                continue;
+//            };
+//            add_violated_cliques(b);
+//        }else if(b->size()==3){
+          if(b->size()==3) {
+              if (SDP_satisfied_new1(b)) continue;
+              b->_added = true;
+              add_bag_SOCP(b, id);
+              n1 = b->_n1;
+              n2 = b->_n2;
+              n3 = b->_n3;
+              a12 = _net->get_arc(n1, n2);
+              a13 = _net->get_arc(n1, n3);
+              a32 = _net->get_arc(n3, n2);
 //            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
 //            cout << "\na12 = " << a12->_name << " a13 = " << a13->_name << " a32 = " << a32->_name;
-            *wr12 = a12->wr;
-            *wi12 = a12->wi;
-            *wr13 = a13->wr;
-            *wi13 = a13->wi;
-            *wr31 = a13->wr;
-            *wi31 = a13->wi;
-            *wr32 = a32->wr;
-            *wi32 = a32->wi;
-            *wr23 = a32->wr;
-            *wi23 = a32->wi;
-            *w1 = _net->get_node(n1->_name)->w;
-            *w2 = _net->get_node(n2->_name)->w;
-            *w3 = _net->get_node(n3->_name)->w;
-            if (b->_rot) _model->concretise(*SDPr, id, "SDP"+to_string(id));
-            else _model->concretise(*SDP, id, "SDP"+to_string(id));
-            id++;
-        }
+              *wr12 = a12->wr;
+              *wi12 = a12->wi;
+              *wr13 = a13->wr;
+              *wi13 = a13->wi;
+              *wr31 = a13->wr;
+              *wi31 = a13->wi;
+              *wr32 = a32->wr;
+              *wi32 = a32->wi;
+              *wr23 = a32->wr;
+              *wi23 = a32->wi;
+              *w1 = _net->get_node(n1->_name)->w;
+              *w2 = _net->get_node(n2->_name)->w;
+              *w3 = _net->get_node(n3->_name)->w;
+              if (b->_rot) _model->concretise(*SDPr, id, "SDP" + to_string(id));
+              else _model->concretise(*SDP, id, "SDP" + to_string(id));
+              id++;
+//        }
+
+//              if (!b->graph_is_chordal()) {
+//                  cout << "\nBag graph is non chordal, skipping";
+//                  continue;
+//              };
+//              add_violated_cliques(b);
+          }
     }
 
 
@@ -2859,7 +2931,7 @@ Function PowerModel::sum(vector<Arc*> vec, string var, bool switch_lines){
     Function res;
     for (auto& a:vec) {
         if (!switch_lines) {
-            if (a->status==1) {
+            if (a->status==1 && a->src->_type!=4 && a->dest->_type!=4) {
                 if (var.compare("pi")==0) {
                     res += a->pi;
                 }

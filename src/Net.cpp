@@ -353,7 +353,7 @@ void Net::get_tree_decomp_bags_new(){
                 // check and modify *clone*
                 if (a12->free) {
                     a12->free = false;
-//                    cout << "\nFixing arc (" << a12->src->_name << ", " << a12->dest->_name << ")";
+//                    cout << "\nFixing arc a12 (" << a12->src->_name << ", " << a12->dest->_name << ")";
                     fixed++;
                     b_fixed++;
                     if (a12->defining_bags == nullptr) a12->defining_bags = new vector<Bag*>;
@@ -367,7 +367,7 @@ void Net::get_tree_decomp_bags_new(){
                 }
                 if (a13->free) {
                     a13->free = false;
-//                    cout << "\nFixing arc (" << a13->src->_name << ", " << a13->dest->_name << ")";
+//                    cout << "\nFixing arc a13 (" << a13->src->_name << ", " << a13->dest->_name << ")";
                     fixed++;
                     b_fixed++;
                     if (a13->defining_bags == nullptr) a13->defining_bags = new vector<Bag*>;
@@ -381,7 +381,7 @@ void Net::get_tree_decomp_bags_new(){
                 }
                 if (a32->free) {
                     a32->free = false;
-//                    cout << "\nFixing arc (" << a32->src->_name << ", " << a32->dest->_name << ")";
+//                    cout << "\nFixing arc a32 (" << a32->src->_name << ", " << a32->dest->_name << ")";
                     fixed++;
                     b_fixed++;
                     if (a32->defining_bags == nullptr) a32->defining_bags = new vector<Bag*>;
@@ -400,19 +400,17 @@ void Net::get_tree_decomp_bags_new(){
                 for(auto a: *b->_clone_arcs) {
                     if(!a->free) continue;
                     n = a->src;
-                    for(auto a1: n->branches) {
-                        if(a1->free) continue;
-                        if(a1->src == n) nn = a1->dest;
-                        else nn = a1->src;
-                        if(find(b->_nodes->begin(), b->_nodes->end(), nn)==b->_nodes->end()) continue;
-                        if(a->dest->is_connected_fixed(nn)) {
+                    for(auto n1: *b->_nodes) {
+                        if(!_clone->get_arc(n,n1) || _clone->get_arc(n,n1)->free) continue;
+                        Arc* a1 = _clone->get_arc(a->dest,n1);
+                        if(a1 && a1->free==false){
                             assert(a->free);
                             a->free = false;
                             bag = new Bag(id);
                             id++;
                             bag->add_node(n);
                             bag->add_node(a->dest);
-                            bag->add_node(nn);
+                            bag->add_node(n1);
                             complete_bag(bag);
                             sort_bag3_elements(bag);
 //                            nb3++;
@@ -423,10 +421,10 @@ void Net::get_tree_decomp_bags_new(){
                             if (a1->imaginary)
                                 a->defining_bags->insert(a->defining_bags->end(), a1->defining_bags->begin(),
                                                          a1->defining_bags->end());
-                            if (_clone->get_arc(a->dest, nn)->imaginary)
+                            if (_clone->get_arc(a->dest, n1)->imaginary)
                                 a->defining_bags->insert(a->defining_bags->end(),
-                                                         _clone->get_arc(a->dest, nn)->defining_bags->begin(),
-                                                         _clone->get_arc(a->dest, nn)->defining_bags->end());
+                                                         _clone->get_arc(a->dest, n1)->defining_bags->begin(),
+                                                         _clone->get_arc(a->dest, n1)->defining_bags->end());
                             bags_sorted->push_back(bag);
                             bag->added = true;
 //                            cout << "\nFixing arc in a larger bag (" << a->src->_name << ", " << a->dest->_name << ")";
@@ -449,13 +447,13 @@ void Net::get_tree_decomp_bags_new(){
             n = b->get_node(i);
             cout << n->_name << "; ";
         }
-//        cout << " :\n";
-//        for(int i = 0; i < b->size()-1; i++) {
-//            for(int j = i+1; j < b->size(); j++) {
-//                n = b->get_node(i); nn = b->get_node(j);
-//                if(_clone->get_arc(n, nn)->free==false) cout << "(" << n->_name << "," << nn->_name << ") ";
-//            }
-//        }
+        cout << " :\n";
+        for(int i = 0; i < b->size()-1; i++) {
+            for(int j = i+1; j < b->size(); j++) {
+                n = b->get_node(i); nn = b->get_node(j);
+                if(_clone->get_arc(n, nn)->free==false) cout << "(" << n->_name << "," << nn->_name << ") ";
+            }
+        }
         b->create_graph();
         if(!b->graph_is_chordal()) notchord++;
     }
@@ -1545,11 +1543,15 @@ int Net::readFile(string fname){
     getline(file, word);
     Node* node = NULL;
     Node* node_clone = NULL;
+    int type;
     file >> word;
     while(word.compare("];")){
         name = word.c_str();
         id = atoi(name.c_str());
-        file >> ws >> word >> ws >> word;
+//        file >> ws >> word >> ws >> word;
+        file >> word;
+        type = atoi(word.c_str());
+        file >> word;
         pl = atof(word.c_str())/bMVA;
         file >> word;
         ql = atof(word.c_str())/bMVA;
@@ -1565,8 +1567,8 @@ int Net::readFile(string fname){
         vmax = atof(word.c_str());
         getline(file, word,';');
         vmin = atof(word.c_str());
-        node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
-        node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
+        node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1, type);
+        node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1, type);
         node->vs = vs;
         add_node(node);
         _clone->add_node(node_clone);
@@ -1600,14 +1602,18 @@ int Net::readFile(string fname){
         file >> word;
         pmin = atof(word.c_str())/bMVA;
         getline(file, word,'\n');
-        if(status==1){
+
+        Gen* g = new Gen(node, to_string(node->_gen.size()), pmin, pmax, qmin, qmax);
+        g->ps = ps;
+        g->qs = qs;
+        gens.push_back(g);
+        node->_gen.push_back(g);
+
+        if(status==1) {
             node->_has_gen = true;
-            Gen* g = new Gen(node, to_string(node->_gen.size()), pmin, pmax, qmin, qmax);
-            g->ps = ps;
-            g->qs = qs;
-            gens.push_back(g);
-            node->_gen.push_back(g);
-        }
+            g->_active = true;
+        }else g->_active = false;
+
 //        g->print();
 //        getline(file, word);
         file >> word;
@@ -1717,8 +1723,8 @@ int Net::readFile(string fname){
 //        n->print();
 //        cout << "node" << n->ID << ": fill_in = " << n->fill_in << endl;
     }
-    if(sdp_alg==0) get_tree_decomp_bags();
-    else get_tree_decomp_bags_new();
+//    if(sdp_alg==0) get_tree_decomp_bags();
+//    else get_tree_decomp_bags_new();
     cout << "\nm_theta_lb = " << m_theta_lb;
     return 0;
 }

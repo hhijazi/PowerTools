@@ -34,8 +34,8 @@ public:
     std::vector<Arc*> branches;
     
     Node();
-    Node(std::string name, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase);
-    Node(std::string name, int id, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase);
+    Node(std::string name, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase, int type);
+    Node(std::string name, int id, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase, int type);
     ~Node();
     Node* clone();
     

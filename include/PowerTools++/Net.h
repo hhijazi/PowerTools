@@ -54,8 +54,8 @@ public:
     Net* _clone;
     
     /** Tree decomposition bags */
-    std::vector<std::vector<Node*>*>* _bags;
-    std::vector<Bag*>* _bagsnew;
+    std::vector<std::vector<Node*>*>* _bags = nullptr;
+    std::vector<Bag*>* _bagsnew = nullptr;
 
     /** Compute the tree decomposition bags **/
     void get_tree_decomp_bags();

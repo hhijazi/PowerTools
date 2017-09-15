@@ -18,9 +18,9 @@ Node::Node(){
     
 }
 
-Node::Node(string name, int id, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase):Bus(name,pl,ql,gs,bs,v_min,v_max,kvb,phase), ID(id), explored(false), cycle(false), cg(false), fill_in(0), distance(INT_MAX), predecessor(NULL){}
+Node::Node(string name, int id, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase, int type):Bus(name,pl,ql,gs,bs,v_min,v_max,kvb,phase,type), ID(id), explored(false), cycle(false), cg(false), fill_in(0), distance(INT_MAX), predecessor(NULL){}
 
-Node::Node(string name, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase):Node(name, -1, pl, ql, gs, bs, v_min, v_max, kvb, phase){}
+Node::Node(string name, double pl, double ql, double gs, double bs, double v_min, double v_max, double kvb,  int phase, int type):Node(name, -1, pl, ql, gs, bs, v_min, v_max, kvb, phase, type){}
 
 Node::~Node(){
 }
