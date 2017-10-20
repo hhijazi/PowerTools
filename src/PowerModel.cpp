@@ -7,6 +7,7 @@
 //
 
 #include "PowerTools++/PowerModel.h"
+#include <armadillo>
 
 //  Windows
 #ifdef _WIN32
@@ -211,6 +212,7 @@ int PowerModel::solve(int output, bool relax){
     double obj, time = 0;
     int sdp_alg = _net->sdp_alg;
     int status;
+    double tol = 0.01;
     if(_type != SDP) status = _solver->run(output,relax);
     else{
         double wall0 = get_wall_time1();
@@ -219,9 +221,11 @@ int PowerModel::solve(int output, bool relax){
             status = _solver->run(output, relax);
             wall1 = get_wall_time1();
             cout << "\ntime spent on SOCP = " << wall1-wall0 << "\n";
-            cuts = add_SDP_cuts_dyn();
+//            cuts = add_SDP_cuts_dyn();
+            add_SDP_OA();
             _solver->warm_start = true;
         }
+//        else add_SDP_OA();
         else cuts = add_SDP_cuts(3);
 
         status = _solver->run(output,relax);
@@ -233,10 +237,23 @@ int PowerModel::solve(int output, bool relax){
 //        for(auto a:_net->arcs){ // Unfix non-existent lines
 //            if(a->imaginary) a->status = 0;
 //        }
-//        add_SDP_cuts_dyn();
-//        status = _solver->run(output,relax);
-//        wall1 = get_wall_time1();
-//        cout << "\ntime2 = " << wall1-wall0 << "\n";
+
+        _model->_opt = 1;
+        double prev_opt = 0;
+        int iter = 0;
+        for(int i = 0; i < 8; i++) {
+//        while((_model->_opt - prev_opt)/_model->_opt > tol) {
+            prev_opt = _model->_opt;
+//            add_SDP_cuts_dyn();
+            add_SDP_OA();
+            _solver->run(output, relax);
+            wall1 = get_wall_time1();
+            cout << "\ntime2 = " << wall1 - wall0 << "\n";
+            cout << "\nDiff = " << (_model->_opt - prev_opt)/_model->_opt*100;
+            iter++;
+        }
+        time = wall1 - wall0;
+        cout << "\nNumber of iterations = " << iter;
 
 //        Checks after
 //        for (auto b: *_net->_bagsnew) {
@@ -1210,19 +1227,15 @@ void PowerModel::post_AC_SOCP(){
     Node* dest = NULL;
     for (auto n:_net->nodes) {
         if(n->_type==4) continue;
-        //if(n->_name!="5321") continue;// && n->_name!="53204") continue;
-//        continue;
         add_AC_KCL(n, false);
     }
     Arc* ap = nullptr;
 
     int i = 1;
     for (auto a:_net->arcs) {
-//        if(i==1339) break;
-//        i++;
-        //if(i<1338) continue;
-//        if(i<1340) continue;
-
+        if (a->status == 0  || a->src->_type==4 || a->dest->_type==4) {
+            continue;
+        }
         src = a->src;
         dest = a->dest;
 //        if(src->ID > dest->ID) cout << "\n" << a->pi._name;
@@ -1235,6 +1248,7 @@ void PowerModel::post_AC_SOCP(){
          + -b[l]*v[i]/tr[l]*v[j]*sin(t[i]-t[j]-as[l]);
          */
         ap = _net->get_arc(src, dest);
+
         Constraint Flow_P_From("Flow_P_From" + a->pi._name);
         Flow_P_From += a->pi;
         Flow_P_From -= (a->g / (pow(a->cc, 2) + pow(a->dd, 2))) * src->w;
@@ -1313,7 +1327,7 @@ void PowerModel::post_AC_SOCP(){
         _model->addConstraint(SOCP);
 //
         add_AC_thermal(a, false);
-        add_Wr_Wi(a);
+        add_Wr_Wi(ap);
     }
 }
 
@@ -1696,9 +1710,9 @@ bool PowerModel::SDP_satisfied_new1(Bag* b){
                     }
                 }
 
-                cout << "\nSDP = 2*" << wr12 << "*(" << wr32 << "*" << wr13 << "-" << wi32 << "*" << wi13 << ") + 2*"  <<  wi12 << "*(" << wi32 << "*" << wr13 << " + " << wr32 << "*" << wi13 << ")";
-                cout << " - (" << wr12 << "*" << wr12 << " + " << wi12 << "*" << wi12 << ")*" << w3 << " - (" << wr13 << "*" << wr13 << " + " << wi13 << "*" << wi13 << ")*" << w2 << " - (" << wr32 << "*" << wr32 << " + " << wi32 << "*" << wi32 << ")*" << w1;
-                cout << " + " << w1 << "*" << w2 << "*" << w3;
+//                cout << "\nSDP = 2*" << wr12 << "*(" << wr32 << "*" << wr13 << "-" << wi32 << "*" << wi13 << ") + 2*"  <<  wi12 << "*(" << wi32 << "*" << wr13 << " + " << wr32 << "*" << wi13 << ")";
+//                cout << " - (" << wr12 << "*" << wr12 << " + " << wi12 << "*" << wi12 << ")*" << w3 << " - (" << wr13 << "*" << wr13 << " + " << wi13 << "*" << wi13 << ")*" << w2 << " - (" << wr32 << "*" << wr32 << " + " << wi32 << "*" << wi32 << ")*" << w1;
+//                cout << " + " << w1 << "*" << w2 << "*" << w3;
                 cout << "\nn1 = " << n1->_name << ", n2 = " << n2->_name << ", n3 = " << n3->_name;
 
                 cout << "\nNot satisfied!";
@@ -2221,9 +2235,11 @@ void PowerModel::add_bag_SOCP(Bag* b, int id){
 }
 
 bool PowerModel::clique_psd(Bag* b, igraph_vector_t* cl){
-    double tol = 0.0001;
+    double wall0 = get_wall_time1();
+    double tol = 0.0005;
     int n = igraph_vector_size(cl); //elements of the vector are long int
     Node* node;
+    arma::cx_mat A(n,n);
     cout << "\nSize of clique = " << n;
     vector<Node*> clique_nodes;
     cout << "\nNodes in clique: ";
@@ -2237,58 +2253,112 @@ bool PowerModel::clique_psd(Bag* b, igraph_vector_t* cl){
 //    for(int i = 0; i< n; i++){
 //        cout << "\nNode = " << clique_nodes.at(i)->_name << ", id = " << clique_nodes.at(i)->ID;
 //    }
-    vector<vector<pair<double,double>>> L;
-    double AijR, AijI, LijR, LijI;
+
     for(int i = 0; i < n; i++){
-        vector<pair<double,double>> Lrow;
-        cout << "\n";
         for(int j = 0; j <= i; j++) {
             if(i==j) {
-                double wrik, wiik;
-                AijR = _net->get_node(clique_nodes[i]->_name)->w.get_value();
-                cout << "  A[" << i << "][" << i << "] = " << AijR;
-                LijR = AijR;
-                for(int k = 0; k <= i-1; k++) {
-                    wrik = Lrow[k].first;
-                    wiik = Lrow[k].second;
-                    LijR -= wrik*wrik - wiik*wiik;
-                }
-                //if(LijR < 0 - tol) return false;
-                if(LijR < 0) LijR = 0;
-                LijR = sqrt(LijR);
-                Lrow.push_back(pair<double,double>(LijR,0));
+                A(i,j) = arma::cx_double(_net->get_node(clique_nodes[i]->_name)->w.get_value(),0);
             }else{
-                double LjjR;
-                AijR = _net->get_arc(clique_nodes[j],clique_nodes[i])->wr.get_value();
+                double AijI;
+//                AijR = _net->get_arc(clique_nodes[j],clique_nodes[i])->wr.get_value();
                 if(_net->has_directed_arc(clique_nodes[j],clique_nodes[i])) {
-//                    cout << "\nhas dir arc from " << clique_nodes[j]->_name << " to " << clique_nodes[i]->_name;
                     AijI = _net->get_arc(clique_nodes[j], clique_nodes[i])->wi.get_value();
                 }
                 else {
-                    cout << "\ndoesn't have dir arc from " << clique_nodes[j]->_name << " to " << clique_nodes[i]->_name;
                     AijI = -_net->get_arc(clique_nodes[j], clique_nodes[i])->wi.get_value();
                 }
-                cout << "  A[" << i << "][" << j << "] = W" << clique_nodes[j]->_name << "," << clique_nodes[i]->_name << " = " << AijR << " + " << AijI << "i";
-                LjjR = L[j][j].first;
-                LijR = LjjR*AijR;
-                LijI = LjjR*AijI;
-                for(int k = 0; k <= j-1; k++) {
-                    LijR -= Lrow[k].first*L[j][k].first + Lrow[k].second*L[j][k].second;
-                    LijI -= Lrow[k].second*L[j][k].first - Lrow[k].first*L[j][k].second;
-                }
-                LijR /= LjjR;
-                LijI /= LjjR;
-                Lrow.push_back(pair<double,double>(LijR,LijI));
+                A(i,j) = arma::cx_double(_net->get_arc(clique_nodes[j],clique_nodes[i])->wr.get_value(),AijI);
+                A(j,i) = arma::cx_double(_net->get_arc(clique_nodes[j],clique_nodes[i])->wr.get_value(),-AijI);
             }
-            //calculate L using cholesky formulas, return false if expression under root is negative (if negative with small abs val, set it to 0)
         }
-        L.push_back(Lrow);
     }
-    return true;
+//    A.print();
+    arma::cx_mat R;
+    arma::vec v = arma::eig_sym(A);
+    cout << "\n";
+    double min_eig = 0, max_eig = -1;
+    for(auto eig: v) {
+        if(eig < min_eig) min_eig = eig;
+        if(eig > max_eig) max_eig = eig;
+    }
+    double wall1 = get_wall_time1();
+    cout << "\nEigen decomposition took " << wall1-wall0 << "s";
+    if(min_eig/max_eig > -tol) return true;
+    else return false;
+//    cout << "\nv:";
+//    v.print();
+//    cout << "\n";
+}
+
+Complex* PowerModel::determinant(vector<vector<Complex*>> A){
+    int n = A.size();
+    if(n==0) {
+        cerr << "\ndeterminant() called for an empty matrix";
+        return NULL;
+    }
+    cout << "\nMatrix:\n";
+    for(int i = 0; i < n; i++){
+        for(int j = 0; j < n; j++) {
+            A[i][j]->print();
+        }
+        cout << "\n";
+    }
+    Complex* res = new Complex();
+    if(n>2) {
+        for(auto& a1i: A[0]){
+            //construct a matrix of the corresponding minor
+            //get its determinant, multiply it by (-1)^i(?)a1i
+            //add it to res
+        }
+    }
+    else if(n==2) {
+        *res = (*A[0][0])*(*A[1][1]) - (*A[0][1])*(*A[1][0]);
+        cout << "\nres in det: ";
+        res->print();
+    }else if(n==1){
+        *res = (*A[0][0]);
+    }
+    return res;
 }
 
 void PowerModel::add_clique(Bag* b, igraph_vector_t* cl){
     cout << "\nThis clique should be added.";
+    Complex* det;
+    vector<vector<Complex*>> A;
+//    int n = igraph_vector_size(cl);
+    int n = 2;//for testing
+    Node* node;
+    vector<Node*> clique_nodes;
+    for(int i = 0; i< n; i++){
+        node = b->_nodes->at((long int)VECTOR(*cl)[i]);
+        clique_nodes.push_back(node);
+    }
+    sort(clique_nodes.begin(), clique_nodes.end(), [](Node* a, Node* b) { return a->ID < b->ID; });
+
+    Complex* entry;
+    for(int i = 0; i < n; i++){
+        vector<Complex*> Arow;
+        for(int j = 0; j < n; j++) {
+            if(i==j) {
+                if(i==1) cout << "\nA[1][1] = " << clique_nodes[i]->_name;
+                entry = new Complex("W",_net->get_node(clique_nodes[i]->_name)->w,0);
+                Arow.push_back(entry);
+            }else{
+                Function AijI;
+                if(_net->has_directed_arc(clique_nodes[j],clique_nodes[i])) {
+                    AijI = _net->get_arc(clique_nodes[j], clique_nodes[i])->wi;
+                }
+                else {
+                    AijI = 0-_net->get_arc(clique_nodes[j], clique_nodes[i])->wi;
+                }
+                entry = new Complex("W",_net->get_arc(clique_nodes[j],clique_nodes[i])->wr,AijI);
+                Arow.push_back(entry);
+            }
+        }
+        A.push_back(Arow);
+    }
+//
+    det = determinant(A);
     //loop through minors with decreasing size
     //create a method that will create a det function given a minor
     //det function >= 0
@@ -2357,7 +2427,7 @@ int PowerModel::add_SDP_cuts_dyn(){
     int id = 0;
 
     for (auto b: *_net->_bagsnew){
-//        cout << "\n\nBag number = " << b->_id << ": ";
+        cout << "\n\nBag number = " << b->_id << ": ";
 //        if(b->size() > 3){
 //            cout << "\nBag " << b->_id << " of size " << b->size();
 
@@ -2368,41 +2438,40 @@ int PowerModel::add_SDP_cuts_dyn(){
 //            add_violated_cliques(b);
 //        }else if(b->size()==3){
           if(b->size()==3) {
-              if (SDP_satisfied_new1(b)) continue;
-              b->_added = true;
-              add_bag_SOCP(b, id);
-              n1 = b->_n1;
-              n2 = b->_n2;
-              n3 = b->_n3;
-              a12 = _net->get_arc(n1, n2);
-              a13 = _net->get_arc(n1, n3);
-              a32 = _net->get_arc(n3, n2);
+              if (!SDP_satisfied_new1(b)) {
+                  b->_added = true;
+                  add_bag_SOCP(b, id);
+                  n1 = b->_n1;
+                  n2 = b->_n2;
+                  n3 = b->_n3;
+                  a12 = _net->get_arc(n1, n2);
+                  a13 = _net->get_arc(n1, n3);
+                  a32 = _net->get_arc(n3, n2);
 //            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
 //            cout << "\na12 = " << a12->_name << " a13 = " << a13->_name << " a32 = " << a32->_name;
-              *wr12 = a12->wr;
-              *wi12 = a12->wi;
-              *wr13 = a13->wr;
-              *wi13 = a13->wi;
-              *wr31 = a13->wr;
-              *wi31 = a13->wi;
-              *wr32 = a32->wr;
-              *wi32 = a32->wi;
-              *wr23 = a32->wr;
-              *wi23 = a32->wi;
-              *w1 = _net->get_node(n1->_name)->w;
-              *w2 = _net->get_node(n2->_name)->w;
-              *w3 = _net->get_node(n3->_name)->w;
-              if (b->_rot) _model->concretise(*SDPr, id, "SDP" + to_string(id));
-              else _model->concretise(*SDP, id, "SDP" + to_string(id));
-              id++;
-//        }
-
+                  *wr12 = a12->wr;
+                  *wi12 = a12->wi;
+                  *wr13 = a13->wr;
+                  *wi13 = a13->wi;
+                  *wr31 = a13->wr;
+                  *wi31 = a13->wi;
+                  *wr32 = a32->wr;
+                  *wi32 = a32->wi;
+                  *wr23 = a32->wr;
+                  *wi23 = a32->wi;
+                  *w1 = _net->get_node(n1->_name)->w;
+                  *w2 = _net->get_node(n2->_name)->w;
+                  *w3 = _net->get_node(n3->_name)->w;
+                  if (b->_rot) _model->concretise(*SDPr, id, "SDP" + to_string(id));
+                  else _model->concretise(*SDP, id, "SDP" + to_string(id));
+                  id++;
+              }
 //              if (!b->graph_is_chordal()) {
 //                  cout << "\nBag graph is non chordal, skipping";
 //                  continue;
 //              };
-//              add_violated_cliques(b);
           }
+        add_violated_cliques(b);
     }
 
 
@@ -2445,6 +2514,70 @@ int PowerModel::add_SDP_cuts_dyn(){
     _model->print_functions();
     cout << "\nNumber of added cuts = " << id << endl;
     return id;
+}
+
+void PowerModel::add_SDP_OA(){
+    Node *n1, *n2, *n3;
+    Arc *a12, *a13, *a32;
+    int id = 0;
+    double tol = 0.001;
+    cout << "\nnb vars = " << _model->get_nb_vars();
+    for (auto b: *_net->_bagsnew){
+        cout << "\n\nBag number = " << b->_id << ": ";
+        if(b->size()==3) {
+            if (!SDP_satisfied_new1(b)) {
+                double* x = new double[_model->get_nb_vars()];
+                add_bag_SOCP(b, id);
+                n1 = b->_n1;
+                n2 = b->_n2;
+                n3 = b->_n3;
+                a12 = _net->get_arc(n1, n2);
+                a13 = _net->get_arc(n1, n3);
+                a32 = _net->get_arc(n3, n2);
+
+                if(a12->wr.get_value()*a12->wr.get_value() + a12->wi.get_value()*a12->wi.get_value()
+                   - _net->get_node(n1->_name)->w.get_value()*_net->get_node(n2->_name)->w.get_value() > tol) continue;
+                if(a13->wr.get_value()*a13->wr.get_value() + a13->wi.get_value()*a13->wi.get_value()
+                   - _net->get_node(n1->_name)->w.get_value()*_net->get_node(n3->_name)->w.get_value() > tol) continue;
+                if(a32->wr.get_value()*a32->wr.get_value() + a32->wi.get_value()*a32->wi.get_value()
+                   - _net->get_node(n3->_name)->w.get_value()*_net->get_node(n2->_name)->w.get_value() > tol) continue;
+
+                Function SDPf;
+                if (b->_rot) {
+                    SDPf = a12->wr*(a32->wr*a13->wr - a32->wi*a13->wi) - a12->wi*(a32->wi*a13->wr + a32->wr*a13->wi);
+                }
+                else {
+                    SDPf = a12->wr*(a32->wr*a13->wr - a32->wi*a13->wi) + a12->wi*(a32->wi*a13->wr + a32->wr*a13->wi);
+                }
+                SDPf *= 2;
+                SDPf -= (((a12->wr)^2)+((a12->wi)^2))*(_net->get_node(n3->_name)->w);
+                SDPf -= (((a13->wr)^2)+((a13->wi)^2))*(_net->get_node(n2->_name)->w);
+                SDPf -= (((a32->wr)^2)+((a32->wi)^2))*(_net->get_node(n1->_name)->w);
+                SDPf += (_net->get_node(n1->_name)->w)*(_net->get_node(n2->_name)->w)*(_net->get_node(n3->_name)->w);
+
+                cout << "\nSDPf: ";
+                SDPf.print(false);
+
+                Constraint SDP("SDP");
+                x[a12->wr.get_idx()] = a12->wr.get_value();
+                x[a13->wr.get_idx()] = a13->wr.get_value();
+                x[a32->wr.get_idx()] = a32->wr.get_value();
+                x[a12->wi.get_idx()] = a12->wi.get_value();
+                x[a13->wi.get_idx()] = a13->wi.get_value();
+                x[a32->wi.get_idx()] = a32->wi.get_value();
+                x[_net->get_node(n1->_name)->w.get_idx()] = _net->get_node(n1->_name)->w.get_value();
+                x[_net->get_node(n2->_name)->w.get_idx()] = _net->get_node(n2->_name)->w.get_value();
+                x[_net->get_node(n3->_name)->w.get_idx()] = _net->get_node(n3->_name)->w.get_value();
+                SDP += SDPf.outer_approx(x);
+                SDP >= 0;
+                _model->addConstraint(SDP);
+//                SDP.print();
+                delete[] x;
+                id++;
+            }
+        }
+    }
+    cout << "\nNumber of added cuts = " << id << endl;
 }
 
 int PowerModel::add_SDP_cuts(int dim){
@@ -2510,7 +2643,7 @@ int PowerModel::add_SDP_cuts(int dim){
         if (b->size()==dim) {
             rot_bag = _net->rotation_bag(b);
             if (rot_bag) {
-                                //cout << "rot_bag: ";
+                                cout << "rot_bag: ";
                 n1 = b->at(0);
                 if (_net->_clone->has_directed_arc(n1, b->at(1))){
                     n2 = b->at(1);
@@ -2524,7 +2657,7 @@ int PowerModel::add_SDP_cuts(int dim){
                 a32 = _net->get_arc(n2,n3);
             }
             else {
-                //cout << "not rot_bag: ";
+                cout << "not rot_bag: ";
                 n_i1 = get_order(b,1);
                 n1 = b->at(n_i1);
                 n_i2 = get_order(b,2);
@@ -2534,16 +2667,8 @@ int PowerModel::add_SDP_cuts(int dim){
                 a13 = _net->get_arc(n1,n3);
                 a32 = _net->get_arc(n3,n2);
             }
-            //cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
+            cout << "\nn1 = " << n1->_name << " n2 = " << n2->_name << " n3 = " << n3->_name;
             a12 = _net->get_arc(n1,n2);
-
-            //if ((!a12 && !a13) || (!a13 && !a32) || (!a12 && !a32)) cout << "\nJust one arc in bag!";
-
-            //if (!a12 || !a13 || !a32) cout << "\nArc missing in bag!";
-            //else {
-                //cout << "\na12 = " << a12->_name << " a13 = " << a13->_name << " a32 = " << a32->_name << endl;
-                //a12->print();
-            //}
             
             if(!a12 || a12->status==0) {
                 //cout << "\nadding a12\n";
@@ -2701,6 +2826,7 @@ int PowerModel::add_SDP_cuts(int dim){
                 _model->addConstraint(SOCP3);
                 //                _net->_clone->remove_arc(a32);
             }
+
             
             if (_type==QC_SDP) {
                 *wr12 = a12->wr;

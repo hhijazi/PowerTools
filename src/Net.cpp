@@ -1723,8 +1723,8 @@ int Net::readFile(string fname){
 //        n->print();
 //        cout << "node" << n->ID << ": fill_in = " << n->fill_in << endl;
     }
-//    if(sdp_alg==0) get_tree_decomp_bags();
-//    else get_tree_decomp_bags_new();
+    if(sdp_alg==0) get_tree_decomp_bags();
+    else get_tree_decomp_bags_new();
     cout << "\nm_theta_lb = " << m_theta_lb;
     return 0;
 }

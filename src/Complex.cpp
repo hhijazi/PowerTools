@@ -14,7 +14,7 @@ using namespace std;
 //@{
 Complex::Complex():_idx(-1), _polar(true), _lifted(false){};
 
-Complex::Complex(Complex& c): _name(c._name), _real(c._real), _imag(c._imag), _magni(c._magni), _angle(c._angle), _idx(c._idx), _polar(c._polar), _lifted(c._lifted){}
+Complex::Complex(const Complex& c): _name(c._name), _real(c._real), _imag(c._imag), _magni(c._magni), _angle(c._angle), _idx(c._idx), _polar(c._polar), _lifted(c._lifted){}
 
 Complex::Complex(string name, var<>* real, var<>* imag):_name(name), _real(*real), _imag(*imag), _polar(false), _lifted(false){
     _idx = -1;
@@ -32,6 +32,12 @@ Complex::Complex(string name, var<>* angle):_name(name), _angle(*angle), _polar(
 
 
 Complex::Complex(string name, var<>* real, var<>* imag, var<>* angle, var<>* magni):_name(name), _real(*real), _imag(*imag), _angle(*angle), _magni(*magni), _polar(true), _lifted(false){
+};
+
+Complex::Complex(string name, Function real, Function imag):_name(name), _real(real), _polar(false), _lifted(false){
+    _imag = imag;
+    _idx = -1;
+    _magni += (_real^2) + (_imag^2);
 };
 
 //Complex::Complex(string name, Function* real, Function* imag, Function* angle):Complex(name, 0, real, imag, angle){
@@ -88,13 +94,13 @@ Complex::~Complex(){
  
 /* Operators */
 
-Complex& Complex::operator+=(Complex& c){
+Complex& Complex::operator+=(const Complex& c){
     _real += c._real;
     _imag += c._imag;
     return *this;
 }
 
-Complex& Complex::operator-=(Complex& c){
+Complex& Complex::operator-=(const Complex& c){
     _real -= c._real;
     _imag -= c._imag;
     return *this;
@@ -112,13 +118,15 @@ Complex& Complex::operator-=(Complex& c){
 //    ir *= c._real;
 //    _real += ri;
 //    _real += ir;
-Complex& Complex::operator*=(Complex& c){
-    _real = (_real*c._real) - (_imag*c._imag);
+Complex& Complex::operator*=(const Complex& c){
+    Function real = (_real*c._real) - (_imag*c._imag);
+//    _real = (_real*c._real) - (_imag*c._imag);
     _imag = (_imag*c._real) + (_real*c._imag);
+    _real = real;
     return *this;
 }
 
-Complex& Complex::operator/=(Complex& c){
+Complex& Complex::operator/=(const Complex& c){//TODO: real used in imag is incorrect
     _real = (_real*c._real) + (_imag*c._imag);
     _real /= ((c._real^2) + (c._imag^2));
     _imag = (_imag*c._real) + (_real*c._imag);
@@ -127,13 +135,30 @@ Complex& Complex::operator/=(Complex& c){
 }
 
 
-Complex operator+(Complex c1, Complex& c2){
+Complex operator+(Complex c1, const Complex& c2){
     return c1+=c2;
 };
 
-Complex operator-(Complex c1, Complex& c2){
+Complex operator-(Complex c1, const Complex& c2){
     return c1-=c2;
 };
+
+Complex operator*(Complex c1, const Complex& c2) {
+    return c1 *= c2;
+}
+
+Complex& Complex::operator=(const Complex& c){
+    _real = c._real;
+    _imag = c._imag;
+    _name = c._name;
+    _idx = c._idx;
+    _angle = c._angle;
+    _magni = c._magni;
+    _smagni = c._smagni;
+    _polar = c._polar;
+    _lifted = c._lifted;
+    return *this;
+}
 
 /** Conjugate operator */
 Complex Complex::operator--(){

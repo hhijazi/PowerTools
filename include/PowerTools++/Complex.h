@@ -38,7 +38,8 @@ public:
     Complex(std::string name, var<>* real, var<>* imag, var<>* smag);
     Complex(std::string name, var<>* real, var<>* imag, var<>* angle, var<>* magni);
     Complex(std::string name, int idx, var<>* real, var<>* imag, var<>* angle, var<>* magni);
-    Complex(Complex& c);
+    Complex(std::string name, Function real, Function imag);
+    Complex(const Complex& c);
     
 //    Complex(std::string name, Function* real, Function* imag, Function* angle);
 //    Complex(std::string name, int idx, Function* real, Function* imag, Function* angle);
@@ -54,15 +55,17 @@ public:
     ~Complex();
     
     /* Operators */
-    Complex& operator+=(Complex& c2);
-    Complex& operator-=(Complex& c2);
-    Complex& operator*=(Complex& c2);
-    Complex& operator/=(Complex& c2);
+    Complex& operator+=(const Complex& c2);
+    Complex& operator-=(const Complex& c2);
+    Complex& operator*=(const Complex& c2);
+    Complex& operator/=(const Complex& c2);
     
     friend Complex operator+(Complex c1, const Complex& c2);
     friend Complex operator-(Complex c1, const Complex& c2);
     friend Complex operator*(Complex c1, const Complex& c2);
     friend Complex operator/(Complex c1, const Complex& c2);
+
+    Complex& operator=(const Complex& c);
     /** Conjugate operator */
     Complex operator--();
 //    bool operator==(Complex& f);

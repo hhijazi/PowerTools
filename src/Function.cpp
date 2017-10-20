@@ -185,7 +185,7 @@ bool Function::is_quadratic() const{
 
 bool Function::is_linear() const{
     if(!is_nonlinear() && _quad.is_linear()){
-        assert(_ftype==lin_);
+        assert(_ftype==lin_ || _ftype==constant_);
         return true;
     }
     return false;

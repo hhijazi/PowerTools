@@ -113,6 +113,10 @@ public:
     bool clique_psd(Bag *b, igraph_vector_t *cl);
 
     void add_clique(Bag *b, igraph_vector_t *cl);
+
+    void add_SDP_OA();
+
+    Complex *determinant(vector<vector<Complex *>> A);
 };
 
 #endif /* defined(__PowerTools____PowerModel__) */
