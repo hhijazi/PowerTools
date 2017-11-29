@@ -504,6 +504,8 @@ Quadratic& Quadratic::operator-=(const Quadratic& q){
 };
 
 Quadratic& Quadratic::operator*=(const Quadratic& q){
+    //this = a-x, q = a-x
+
     assert((!is_quadratic() && !q.is_quadratic())); // This function should only be called for the product of two linear/constant functions or the product of a quadratic and a constant
     // Taking care of zero
     if (is_constant() && _cst==0){
@@ -571,6 +573,7 @@ Quadratic& Quadratic::operator*=(const Quadratic& q){
                 }
             }
         }
+        coeff = it0.second;
         if (q._cst!=0) {
             if (this->_coefs.count(vid)==0){
                 this->_coefs.insert(pair<int, double> (vid,coeff*q._cst));
