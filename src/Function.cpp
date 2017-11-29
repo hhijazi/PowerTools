@@ -681,11 +681,38 @@ void Function::merge_vars(const Function& f1){
 }
 
 Function Function::outer_approx(const double* x) const{
-    Function res; // res = gradf(x*)*(x-x*) + f(x*)
+    Function res, add; // res = gradf(x*)*(x-x*) + f(x*)
     for(auto it: _vars){
+        add = eval_dfdx(it.first, x)*(x[it.first]-*(it.second));
+//        cout << "\n - ";
+//        add.print(false);
         res -= eval_dfdx(it.first, x)*(x[it.first]-*(it.second));
     }
+//    cout << "\nend oa";
     res += eval(x);
+    return res;
+}
+
+Function Function::tang_param(const double* x) {
+    Function res, add, norm; // res = (gradf(x)*(x*-x) + f(x))^2 / |gradf(x)|^2
+    Function dfdx;
+    for(auto it: _vars){
+        compute_dfdx(it.second);
+        dfdx = Function(*(_dfdx.find(it.first)->second));
+        norm += dfdx*dfdx;// + dfdx*dfdx*(*(it.second))*(*(it.second));
+    }
+//    norm += *this*(*this);
+    for(auto it: _vars){
+        dfdx = Function(*(_dfdx.find(it.first)->second));
+        add = (dfdx)*(x[it.first]-*(it.second));
+//        cout << "\n + ";
+//        add.print(false);
+        res += add;
+    }
+    res += *this;
+    res *= res;
+    res /= norm;
+//    cout << "\nend tang.";
     return res;
 }
 
@@ -1400,7 +1427,7 @@ void Function::print_expr(bool brackets) const {
     }
     
     if (_rparent) {
-        if (_otype==plus_ || _rparent->get_nb_vars()<=1) {
+        if (_otype==plus_ || (_rparent->get_nb_vars()<=1 && _rparent->_quad._cst==0)) {
             _rparent->print(false);
         }
         else {

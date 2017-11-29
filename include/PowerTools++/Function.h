@@ -165,8 +165,9 @@ public:
     void print_expr(bool brackets) const;
     void print_linear() const;
     void print_quad() const;
-    
 
+
+    Function tang_param(const double *x);
 };
 
 

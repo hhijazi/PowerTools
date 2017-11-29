@@ -10,19 +10,27 @@
 #define __PowerTools____Solver__
 
 #include <stdio.h>
-#include <BonTMINLP.hpp>
 #include <PowerTools++/Model.h>
 #include <PowerTools++/IpoptProgram.h>
+#ifdef USE_GUROBI
 #include <PowerTools++/GurobiProgram.h>
+#endif
+#ifdef USE_BONMIN
+#include <BonTMINLP.hpp>
 #include <PowerTools++/BonminProgram.h>
+#endif
 
 class PTSolver {
     
 protected:
     union {
+#ifdef USE_GUROBI
         GurobiProgram* grb_prog;
+#endif
         IpoptProgram* ipopt_prog;
+#ifdef USE_BONMIN
         BonminProgram* bonmin_prog;
+#endif
     } prog;
 
 public:
@@ -35,6 +43,7 @@ public:
     PTSolver(Model* model, SolverType stype);
     //@}
     void set_model(Model* m);
+    double conv_tol = 0;
     
     /* Destructor */
     ~PTSolver();

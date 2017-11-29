@@ -107,16 +107,28 @@ public:
     /** Add any missing SOCP constraints for a 3D bag */
     void add_bag_SOCP(Bag *b, int id);
 
+#ifdef USE_IGRAPH
     /** For a partially defined bag, add SDP constraints for all non-PSD maximal cliques */
     void add_violated_cliques(Bag *b);
 
     bool clique_psd(Bag *b, igraph_vector_t *cl);
 
     void add_clique(Bag *b, igraph_vector_t *cl);
+#endif
 
     void add_SDP_OA();
 
     Complex *determinant(vector<vector<Complex *>> A);
+
+    int add_SDP_OA_closest_point();
+
+    void add_SDP_OA_projections();
+
+    void add_SDP_OA_deepest_cut();
+
+    void add_SDP_OA_best_proj_obj();
+
+    void add_SDP_OA_cp_and_deepcut();
 };
 
 #endif /* defined(__PowerTools____PowerModel__) */

@@ -22,6 +22,7 @@ PTSolver::PTSolver(Model* model, SolverType stype){
             prog.ipopt_prog = new IpoptProgram(model);
             break;
         case gurobi:
+#ifdef USE_GUROBI
             try{
                 prog.grb_prog = new GurobiProgram(model);
             }catch(GRBException e) {
@@ -29,9 +30,16 @@ PTSolver::PTSolver(Model* model, SolverType stype){
                 cerr << e.getMessage() << endl;
                 exit(1);
             }
+#else
+            cout << "\nGurobi is turned off";
+#endif
             break;
         case bonmin:
+#ifdef USE_BONMIN
             prog.bonmin_prog = new BonminProgram(model);
+#else
+            cout << "\nBonmin is turned off";
+#endif
             break;
         default:
             break;
@@ -40,12 +48,16 @@ PTSolver::PTSolver(Model* model, SolverType stype){
 };
 
 PTSolver::~PTSolver(){
+#ifdef USE_GUROBI
     if (_stype == gurobi) delete prog.grb_prog;
+#endif
     if (_stype == ipopt) delete prog.ipopt_prog;
 }
 
 void PTSolver::set_model(Model* m) {
+#ifdef USE_GUROBI
     if (_stype == gurobi) prog.grb_prog->model = m;
+#endif
     if (_stype == ipopt) prog.ipopt_prog->model = m; 
 }
 
@@ -67,12 +79,13 @@ int PTSolver::run(int output, bool relax){
 //        prog.ipopt_prog;
             //            iapp.Options()->SetStringValue("hessian_constant", "yes");
 //                        iapp.Options()->SetStringValue("derivative_test", "second-order");
-        iapp->Options()->SetNumericValue("tol", 1e-6);
+        if(!conv_tol) iapp->Options()->SetNumericValue("tol", 1e-6); //default tol
+        else iapp->Options()->SetNumericValue("tol", conv_tol);
         iapp->Options()->SetIntegerValue("max_iter", std::numeric_limits<int>::max());
         iapp->Options()->SetNumericValue("max_cpu_time", 7200);
             //            iapp->Options()->SetStringValue("derivative_test", "second-order");
             //            iapp.Options()->SetNumericValue("bound_relax_factor", 0);
-            //            iapp->Options()->SetIntegerValue("print_level", 1);
+        if(!output) iapp->Options()->SetIntegerValue("print_level", 0);
                         if(warm_start) {cout << "\nWarm starting"; iapp->Options()->SetStringValue("warm_start_init_point", "yes");}
             //            iapp.Options()->SetStringValue("derivative_test_print_all", "yes");
         status = iapp->OptimizeTNLP(tmp);
@@ -89,6 +102,7 @@ int PTSolver::run(int output, bool relax){
         }
     }
     else if(_stype==gurobi)
+#ifdef USE_GUROBI
             try{
                 //                prog.grbprog = new GurobiProgram();
                 prog.grb_prog->_output = output;
@@ -99,7 +113,11 @@ int PTSolver::run(int output, bool relax){
                 cerr << "\nError code = " << e.getErrorCode() << endl;
                 cerr << e.getMessage() << endl;
             }
+#else
+        cout << "\nGurobi is turned off";
+#endif
     else if(_stype==bonmin) {
+#ifdef USE_BONMIN
         BonminSetup bonmin;
         bonmin.initializeOptionsAndJournalist();
         bonmin.initialize(prog.bonmin_prog);
@@ -121,6 +139,7 @@ int PTSolver::run(int output, bool relax){
             <<std::endl
             <<E.message()<<std::endl;
         }
+#endif
     }
     return -1;
 }
