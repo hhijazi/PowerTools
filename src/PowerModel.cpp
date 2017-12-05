@@ -249,16 +249,12 @@ int PowerModel::solve(int output, bool relax){
             _model->_opt = 1;
             double prev_opt = 0;
             int iter = 0;
-//            for (int i = 0; i < 14; i++) {
             while((_model->_opt - prev_opt)/_model->_opt > tol) {
                 prev_opt = _model->_opt;
     //                add_SDP_cuts_dyn();
 //                add_SDP_OA_deepest_cut();
                 cuts += add_SDP_OA_closest_point();
-//                add_SDP_OA_cp_and_deepcut();
                 _solver->run(output, relax);
-//                wall1 = get_wall_time1();
-//                cout << "\ntime2 = " << wall1 - wall0 << "\n";
 //                cout << "\nDiff = " << (_model->_opt - prev_opt) / _model->_opt * 100;
                 iter++;
             }
@@ -2727,6 +2723,19 @@ void PowerModel::add_SDP_OA_projections(){
     cout << "\nNumber of added cuts = " << id << ", skipped cuts = " << skipped << endl;
 }
 
+/* Generate a hyperplane orthogonal to x1-x0 such that x0 lies on this hyperplane.
+ * res <= 0 will describe a half-space such that x1-x0 points outward */
+Function PowerModel::ort_plane(const double *x0, const double *x1, vector<int> *ind) const{
+    Function res;
+    var<double>* xi;
+    for(auto idx: *ind) {
+        xi = _model->getVar_<double>(idx);
+        res += (x1[idx]-x0[idx])*(*xi);
+        res -= (x1[idx]-x0[idx])*x0[idx];
+    }
+    return res;
+}
+
 int PowerModel::add_SDP_OA_closest_point(){
     Node *n1, *n2, *n3;
     Arc *a12, *a13, *a32;
@@ -2737,25 +2746,34 @@ int PowerModel::add_SDP_OA_closest_point(){
         if(b->size()==3) {
             if (!SDP_satisfied_new1(b)) {
 //                cout << "\nrot = " << b->_rot;
-                double* x = new double[_model->get_nb_vars()];
+//                double* x = new double[_model->get_nb_vars()];
                 add_bag_SOCP(b, id);
-                n1 = b->_n1;
-                n2 = b->_n2;
-                n3 = b->_n3;
+                n1 = b->_n1; n2 = b->_n2; n3 = b->_n3;
                 a12 = _net->get_arc(n1, n2);
                 a13 = _net->get_arc(n1, n3);
                 a32 = _net->get_arc(n3, n2);
 //                cout << "\nn1 = " << n1->_name << ", n2 = " << n2->_name << ", n3 = " << n3->_name;
 
-                wr12 = a12->wr.get_value();
-                wr13 = a13->wr.get_value();
-                wr32 = a32->wr.get_value();
-                wi12 = a12->wi.get_value();
-                wi13 = a13->wi.get_value();
-                wi32 = a32->wi.get_value();
+                wr12 = a12->wr.get_value(); wr13 = a13->wr.get_value(); wr32 = a32->wr.get_value();
+                wi12 = a12->wi.get_value(); wi13 = a13->wi.get_value(); wi32 = a32->wi.get_value();
                 w1 = _net->get_node(n1->_name)->w.get_value();
                 w2 = _net->get_node(n2->_name)->w.get_value();
                 w3 = _net->get_node(n3->_name)->w.get_value();
+
+                double* xstar = new double[_model->get_nb_vars()];
+                vector<int>* indices = new vector<int>;
+
+                xstar[a12->wr.get_idx()] = wr12; xstar[a13->wr.get_idx()] = wr13; xstar[a32->wr.get_idx()] = wr32;
+                xstar[a12->wi.get_idx()] = wi12; xstar[a13->wi.get_idx()] = wi13; xstar[a32->wi.get_idx()] = wi32;
+                xstar[_net->get_node(n1->_name)->w.get_idx()] = w1;
+                xstar[_net->get_node(n2->_name)->w.get_idx()] = w2;
+                xstar[_net->get_node(n3->_name)->w.get_idx()] = w3;
+
+                indices->push_back(a12->wr.get_idx()); indices->push_back(a13->wr.get_idx()); indices->push_back(a32->wr.get_idx());
+                indices->push_back(a12->wi.get_idx()); indices->push_back(a13->wi.get_idx()); indices->push_back(a32->wi.get_idx());
+                indices->push_back(_net->get_node(n1->_name)->w.get_idx());
+                indices->push_back(_net->get_node(n2->_name)->w.get_idx());
+                indices->push_back(_net->get_node(n3->_name)->w.get_idx());
 
 //                cout << "\nSDP is violated for x*: \nwr12 = " << wr12 << ", wr13 = " << wr13 << ", wr32 = " << wr32;
 //                cout << ",\nwi12 = " << wi12 << ", wi13 = " << wi13 << ", wi32 = " << wi32;
@@ -2852,40 +2870,57 @@ int PowerModel::add_SDP_OA_closest_point(){
                 delete s1;
                 delete m1;
 
+                /* Generate a cut perpendicular to x*-x^ */
+
+                double* xhat = new double[_model->get_nb_vars()];
+
+                xhat[a12->wr.get_idx()] = wr12; xhat[a13->wr.get_idx()] = wr13; xhat[a32->wr.get_idx()] = wr32;
+                xhat[a12->wi.get_idx()] = wi12; xhat[a13->wi.get_idx()] = wi13; xhat[a32->wi.get_idx()] = wi32;
+                xhat[_net->get_node(n1->_name)->w.get_idx()] = w1;
+                xhat[_net->get_node(n2->_name)->w.get_idx()] = w2;
+                xhat[_net->get_node(n3->_name)->w.get_idx()] = w3;
+
+                Constraint p("p");
+                p = ort_plane(xhat, xstar, indices);
+                p <= 0;
+//                p.print();
+                _model->addConstraint(p);
+
+                /* ------------------------------------- */
+
 //                cout << "\nNearest point x^ is: \nwr12 = " << wr12 << ", wr13 = " << wr13 << ", wr32 = " << wr32;
 //                cout << ",\nwi12 = " << wi12 << ", wi13 = " << wi13 << ", wi32 = " << wi32;
 //                cout << ",\nw1 = " << w1 << ", w2 = " << w2 << ", w3 = " << w3;
 
-                Function SDPf;
-                if (b->_rot) {
-                    SDPf = a12->wr*(a32->wr*a13->wr - a32->wi*a13->wi) - a12->wi*(a32->wi*a13->wr + a32->wr*a13->wi);
-                }
-                else {
-                    SDPf = a12->wr*(a32->wr*a13->wr - a32->wi*a13->wi) + a12->wi*(a32->wi*a13->wr + a32->wr*a13->wi);
-                }
-                SDPf *= 2;
-                SDPf -= (((a12->wr)^2)+((a12->wi)^2))*(_net->get_node(n3->_name)->w);
-                SDPf -= (((a13->wr)^2)+((a13->wi)^2))*(_net->get_node(n2->_name)->w);
-                SDPf -= (((a32->wr)^2)+((a32->wi)^2))*(_net->get_node(n1->_name)->w);
-                SDPf += (_net->get_node(n1->_name)->w)*(_net->get_node(n2->_name)->w)*(_net->get_node(n3->_name)->w);
+//                Function SDPf;
+//                if (b->_rot) {
+//                    SDPf = a12->wr*(a32->wr*a13->wr - a32->wi*a13->wi) - a12->wi*(a32->wi*a13->wr + a32->wr*a13->wi);
+//                }
+//                else {
+//                    SDPf = a12->wr*(a32->wr*a13->wr - a32->wi*a13->wi) + a12->wi*(a32->wi*a13->wr + a32->wr*a13->wi);
+//                }
+//                SDPf *= 2;
+//                SDPf -= (((a12->wr)^2)+((a12->wi)^2))*(_net->get_node(n3->_name)->w);
+//                SDPf -= (((a13->wr)^2)+((a13->wi)^2))*(_net->get_node(n2->_name)->w);
+//                SDPf -= (((a32->wr)^2)+((a32->wi)^2))*(_net->get_node(n1->_name)->w);
+//                SDPf += (_net->get_node(n1->_name)->w)*(_net->get_node(n2->_name)->w)*(_net->get_node(n3->_name)->w);
 
 //                cout << "\nSDPf: ";
 //                SDPf.print(false);
 
-                x[a12->wr.get_idx()] = wr12; x[a13->wr.get_idx()] = wr13; x[a32->wr.get_idx()] = wr32;
-                x[a12->wi.get_idx()] = wi12; x[a13->wi.get_idx()] = wi13; x[a32->wi.get_idx()] = wi32;
-                x[_net->get_node(n1->_name)->w.get_idx()] = w1;
-                x[_net->get_node(n2->_name)->w.get_idx()] = w2;
-                x[_net->get_node(n3->_name)->w.get_idx()] = w3;
+//                x[a12->wr.get_idx()] = wr12; x[a13->wr.get_idx()] = wr13; x[a32->wr.get_idx()] = wr32;
+//                x[a12->wi.get_idx()] = wi12; x[a13->wi.get_idx()] = wi13; x[a32->wi.get_idx()] = wi32;
+//                x[_net->get_node(n1->_name)->w.get_idx()] = w1;
+//                x[_net->get_node(n2->_name)->w.get_idx()] = w2;
+//                x[_net->get_node(n3->_name)->w.get_idx()] = w3;
 
 //                cout << "\nSDPf(x*) = " << SDPf.eval(x);
 
-                Constraint SDP("SDP");
-                SDP += SDPf.outer_approx(x);
-                SDP >= 0;
+//                Constraint SDP("SDP");
+//                SDP += SDPf.outer_approx(x);
+//                SDP >= 0;
 //                SDP.print();
-                _model->addConstraint(SDP);
-                id++;
+//                _model->addConstraint(SDP);
 
 //                cout << "\nValue of SDPf at x^ = " << SDPf.eval(x);
 //                cout << ", SOCPs: " << wr13*wr13 + wi13*wi13 - w1*w3 << ", " << wr12*wr12 + wi12*wi12 - w1*w2 << ", " << wr32*wr32 + wi32*wi32 - w2*w3;
@@ -2899,7 +2934,8 @@ int PowerModel::add_SDP_OA_closest_point(){
 //                cout << "\nValue of the cut at x* = " << SDP.eval(x);
 
 //                SDP.print();
-                delete[] x;
+//                delete[] x;
+                id++;
             }
         }
     }

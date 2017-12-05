@@ -129,6 +129,8 @@ public:
     void add_SDP_OA_best_proj_obj();
 
     void add_SDP_OA_cp_and_deepcut();
+
+    Function ort_plane(const double *x0, const double *x1, vector<int> *ind) const;
 };
 
 #endif /* defined(__PowerTools____PowerModel__) */
