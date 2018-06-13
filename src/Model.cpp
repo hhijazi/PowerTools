@@ -905,46 +905,46 @@ void Model::fill_in_hess_nnz(int* iRow , int* jCol){
     }
 }
 
-void Model::fill_in_var_linearity(Ipopt::TNLP::LinearityType* var_types){
-    int vid = 0, cid = 0;
-//    var_* vi = NULL;
-    Constraint* c = NULL;
-    bool linear = true;
-    for(auto& vi: _vars)
-    {
-        vid = vi->get_idx();
-        linear = true;
-        for(auto itc = vi->_cstrs.cbegin(); itc != vi->_cstrs.cend(); ++itc)
-        {
-            cid = itc->first;
-            c = itc->second;
-            if (c->get_ftype()>=lin_) {
-                linear=false;
-            }
-            
-        }
-        if (linear) {
-            var_types[vid]=Ipopt::TNLP::LINEAR;
-        }
-        else
-            var_types[vid]=Ipopt::TNLP::NON_LINEAR;
-    }
-
-}
-
-void Model::fill_in_cstr_linearity(Ipopt::TNLP::LinearityType* const_types){
-    int cid = 0;
-    for(auto& c :_cons)
-    {
-        cid = c->get_idx();
-            if (c->get_ftype()<=lin_) {
-                const_types[cid]=Ipopt::TNLP::LINEAR;
-            }
-            else
-                const_types[cid]=Ipopt::TNLP::NON_LINEAR;
-            
-        }
-}
+//void Model::fill_in_var_linearity(Ipopt::TNLP::LinearityType* var_types){
+//    int vid = 0, cid = 0;
+////    var_* vi = NULL;
+//    Constraint* c = NULL;
+//    bool linear = true;
+//    for(auto& vi: _vars)
+//    {
+//        vid = vi->get_idx();
+//        linear = true;
+//        for(auto itc = vi->_cstrs.cbegin(); itc != vi->_cstrs.cend(); ++itc)
+//        {
+//            cid = itc->first;
+//            c = itc->second;
+//            if (c->get_ftype()>=lin_) {
+//                linear=false;
+//            }
+//            
+//        }
+//        if (linear) {
+//            var_types[vid]=Ipopt::TNLP::LINEAR;
+//        }
+//        else
+//            var_types[vid]=Ipopt::TNLP::NON_LINEAR;
+//    }
+//
+//}
+//
+//void Model::fill_in_cstr_linearity(Ipopt::TNLP::LinearityType* const_types){
+//    int cid = 0;
+//    for(auto& c :_cons)
+//    {
+//        cid = c->get_idx();
+//            if (c->get_ftype()<=lin_) {
+//                const_types[cid]=Ipopt::TNLP::LINEAR;
+//            }
+//            else
+//                const_types[cid]=Ipopt::TNLP::NON_LINEAR;
+//            
+//        }
+//}
 
 
 void Model::fill_in_hess1(const double* x , double obj_factor, const double* lambda, double* res){

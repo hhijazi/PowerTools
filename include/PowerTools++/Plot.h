@@ -5,7 +5,7 @@
 #ifndef POWERTOOLS_PLOT_H
 #define POWERTOOLS_PLOT_H
 //#include "plc++demos.h"
-#include "plplot/plstream.h"
+//#include "plplot/plstream.h"
 #include "PowerTools++/Net.h"
 
 #ifdef PL_USE_NAMESPACE
@@ -22,16 +22,16 @@ public:
     void plot_PV( int, const char ** , PowerModel& power_model);
     void plot_flow( int, const char ** , PowerModel& power_model);
     void plot_soc( int argc, const char **argv , PowerModel& power_model);
-    void plfbox( PLFLT, double, int);
+//    void plfbox( PLFLT, double, int);
 
-    vector<plstream*>         pls;
+//    vector<plstream*>         pls;
     //plstream                    *pls;
 private:
     // Class data
 
 
 
-    static PLFLT       pos[], red[], green[], blue[];
+//    static PLFLT       pos[], red[], green[], blue[];
 };
 
 

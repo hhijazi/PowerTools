@@ -23,7 +23,7 @@ protected:
 #ifdef ENABLE_GUROBI
         GurobiProgram* grb_prog;
 #endif
-        IpoptProgram* ipopt_prog;
+//        IpoptProgram* ipopt_prog;
     } prog;
 
 public:

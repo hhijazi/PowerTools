@@ -33,15 +33,15 @@ if (ENABLE_GUROBI)
 endif()
 
 # Find Plplot
-find_package(PLPLOT REQUIRED)
-include_directories(${PLPLOT_INCLUDE_DIRS}/..)
-set(LIBS ${LIBS} ${PLPLOT_LIBRARIES})
+#find_package(PLPLOT REQUIRED)
+#include_directories(${PLPLOT_INCLUDE_DIRS}/..)
+#set(LIBS ${LIBS} ${PLPLOT_LIBRARIES})
 
 
 # Find Ipopt.
-find_package(IPOPT REQUIRED)
-include_directories(${IPOPT_INCLUDE_DIRS}/..)
-set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
+#find_package(IPOPT REQUIRED)
+#include_directories(${IPOPT_INCLUDE_DIRS}/..)
+#set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
 #set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
 
 
@@ -51,6 +51,7 @@ set(LIBS ${LIBS} ${IPOPT_LIBRARIES})
 # specify the cross compiler
 set(CMAKE_C_COMPILER_ID GNU)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -g")
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,-rpath,'\$ORIGIN/lib'")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -ggdb")
 #string (REPLACE "-Wmost" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")

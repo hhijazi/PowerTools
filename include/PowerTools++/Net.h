@@ -31,16 +31,29 @@ public:
     double bMVA;
     
 
-    /** Max PV capacity in kW */
+    /** PV capacity in kW */
     double PV_CAP = 945;
     
-    /** Max PV capacity in kW */
+    /** PV efficiency */
     double PV_EFF = 0.92;
+
+    /** PV capacity in kW */
+    double BATT_CAP = 500;
     
-    std::vector<double> c0;
-    std::vector<double> c1;
-    std::vector<double> c2;
-    std::vector<double> c3;
+    /** PV efficiency */
+    double BATT_EFF = 0.9;
+    
+    double              _peak_rate = 0.16952*1.1;
+    //    double              _peak_tariff = 0.191*1.1;
+    double              _demand_growth = 1;    
+    int                 _nb_years = 15, _nb_samples = 0;
+    double              _pv_cost = 1800;// $ per Watt for PV rooftop installation
+    double              _price_inflation = 1;
+    double              _metering_charges = 30.13698;
+    double              _supply_charges = 19;
+    
+    std::vector<double> weekday_cost;
+    std::vector<double> weekend_cost;
     
 //    var<> max_kVa;//Max demand for the last 13 months
     
@@ -174,6 +187,7 @@ public:
     
     int readpvmax(std::string ffname);
     int readcost(std::string ffname, int _timesteps);
+    int readparams(std::string ffname);
     int choosetime();
     int readrad(std::string fname, int _timesteps);
     int readmap(std::string ffname, int timesteps);

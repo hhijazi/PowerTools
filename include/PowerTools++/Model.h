@@ -18,8 +18,6 @@
 #include <unordered_set>
 #include <math.h>
 #include <vector>
-#include <coin/IpIpoptApplication.hpp>
-#include <coin/IpTNLP.hpp>
 #include <thread>
 
 class Model {
@@ -111,8 +109,8 @@ public:
     void fill_in_hess_multithread(const double* x , double obj_factor, const double* lambda, double* res, int start, int end);
     void multi_thread_hess(std::map<int, Constraint*>* cons, const double* x , const double* lambda, double* res, int start, int end);
     void fill_in_hess_nnz(int* iRow , int* jCol);
-    void fill_in_var_linearity(Ipopt::TNLP::LinearityType* var_types);
-    void fill_in_cstr_linearity(Ipopt::TNLP::LinearityType* const_types);
+//    void fill_in_var_linearity(Ipopt::TNLP::LinearityType* var_types);
+//    void fill_in_cstr_linearity(Ipopt::TNLP::LinearityType* const_types);
     void solve();
     friend std::vector<int> bounds(int parts, int mem);
 //    IpoptProgram* create_ipopt_program();

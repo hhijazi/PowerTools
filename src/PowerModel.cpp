@@ -627,16 +627,16 @@ void PowerModel::post_NF(bool PV){
 void PowerModel::post_AC_PF_Peak() {
     
     post_AC_PF_Time();
-    for (int y = 0; y < _nb_years; y++) {
+    for (int y = 0; y < _net->_nb_years; y++) {
         for (int t = 0; t < _timesteps*_nb_days; t++) {
             for (int g = 0; g < _net->gens.size(); g++) {
                 Constraint kVa_MAX("kVa_MAX_"+to_string(g)+"_"+to_string(t));
                 kVa_MAX += _net->max_kVas_year[y];
                 if (t<24) {
-                    kVa_MAX -= (1/_summer_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                    kVa_MAX -= (1/_summer_power_factor)*pow(_net->_demand_growth, y)*_net->gens[g]->pg_t[t];
                 }
                 else {
-                    kVa_MAX -= (1/_winter_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                    kVa_MAX -= (1/_winter_power_factor)*pow(_net->_demand_growth, y)*_net->gens[g]->pg_t[t];
                 }
                 kVa_MAX >= 0;
                 _model->addConstraint(kVa_MAX);
@@ -651,16 +651,16 @@ void PowerModel::post_AC_PF_Peak() {
 void PowerModel::post_AC_PF_PV_Peak() {
     
     post_AC_PF_PV_Time();
-    for (int y = 0; y < _nb_years; y++) {
+    for (int y = 0; y < _net->_nb_years; y++) {
         for (int t = 0; t < _timesteps*_nb_days; t++) {
             for (int g = 0; g < _net->gens.size(); g++) {
                 Constraint kVa_MAX("kVa_MAX_"+to_string(g)+"_"+to_string(t));
                 kVa_MAX += _net->max_kVas_year[y];
                 if (t<24) {
-                    kVa_MAX -= (1/_summer_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                    kVa_MAX -= (1/_summer_power_factor)*pow(_net->_demand_growth, y)*_net->gens[g]->pg_t[t];
                 }
                 else {
-                    kVa_MAX -= (1/_winter_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                    kVa_MAX -= (1/_winter_power_factor)*pow(_net->_demand_growth, y)*_net->gens[g]->pg_t[t];
                 }
                 kVa_MAX >= 0;
                 _model->addConstraint(kVa_MAX);
@@ -674,16 +674,16 @@ void PowerModel::post_AC_PF_PV_Peak() {
 void PowerModel::post_NF_Peak(bool PV) {
     
     post_NF(PV);
-    for (int y = 0; y < _nb_years; y++) {
+    for (int y = 0; y < _net->_nb_years; y++) {
         for (int t = 0; t < _timesteps*_nb_days; t++) {
             for (int g = 0; g < _net->gens.size(); g++) {
                 Constraint kVa_MAX("kVa_MAX_"+to_string(g)+"_"+to_string(t));
                 kVa_MAX += _net->max_kVas_year[y];
                 if (t<24) {
-                    kVa_MAX -= (1/_summer_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                    kVa_MAX -= (1/_summer_power_factor)*pow(_net->_demand_growth, y)*_net->gens[g]->pg_t[t];
                 }
                 else {
-                    kVa_MAX -= (1/_winter_power_factor)*pow(_demand_growth, y)*_net->gens[g]->pg_t[t];
+                    kVa_MAX -= (1/_winter_power_factor)*pow(_net->_demand_growth, y)*_net->gens[g]->pg_t[t];
                 }
                 kVa_MAX >= 0;
                 _model->addConstraint(kVa_MAX);
@@ -1290,17 +1290,17 @@ void PowerModel::min_cost(){
 void PowerModel::min_cost_time() {
     _objective = MinCostTime;
     Function* obj = new Function();
-    for (int y = 0; y < _nb_years; y++) {
+    for (int y = 0; y < _net->_nb_years; y++) {
         for (int t = 0; t < _timesteps*_nb_days; t++) {
             for (auto g:_net->gens) {
                 if ((t>=0)&&(t<24)){ //summer Feb
-                    *obj += 20*6*_net->bMVA*(_net->c1[t])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                    *obj += 20*6*_net->bMVA*(_net->weekday_cost[t])*(pow(_net->_demand_growth,y)*g->pg_t[t])*1000*pow(_net->_price_inflation,y);
                 }
                 if ((t>=24)&&(t<48)){ //spring or autumn Sep
-                    *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                    *obj += 20*6*_net->bMVA*(_net->weekday_cost[t-24])*(pow(_net->_demand_growth,y)*g->pg_t[t])*1000*pow(_net->_price_inflation,y);
                 }
                 if ((t>=48)&&(t<72)){ //weekends
-                    *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                    *obj += 2.6*4*12*_net->bMVA*(_net->weekend_cost[t-48])*(pow(_net->_demand_growth,y)*g->pg_t[t])*1000*pow(_net->_price_inflation,y);
                 }
             }
             
@@ -1314,17 +1314,17 @@ void PowerModel::min_cost_time() {
 void PowerModel::min_cost_peak() {
     _objective = MinCostTime;
     Function* obj = new Function();
-    for (int y = 0; y < _nb_years; y++) {
+    for (int y = 0; y < _net->_nb_years; y++) {
         for (int t = 0; t < _timesteps*_nb_days; t++) {
             for (auto g:_net->gens) {
                 if ((t>=0)&&(t<24)){ //summer Feb
-                    *obj += 20*6*_net->bMVA*(_net->c1[t])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                    *obj += 20*6*_net->bMVA*(_net->weekday_cost[t])*(pow(_net->_demand_growth,y)*g->pg_t[t])*1000*pow(_net->_price_inflation,y);
                 }
                 if ((t>=24)&&(t<48)){ //spring or autumn Sep
-                    *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                    *obj += 20*6*_net->bMVA*(_net->weekday_cost[t-24])*(pow(_net->_demand_growth,y)*g->pg_t[t])*1000*pow(_net->_price_inflation,y);
                 }
                 if ((t>=48)&&(t<72)){ //weekends
-                    *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(pow(_demand_growth,y)*g->pg_t[t])*1000*pow(_price_inflation,y);
+                    *obj += 2.6*4*12*_net->bMVA*(_net->weekend_cost[t-48])*(pow(_net->_demand_growth,y)*g->pg_t[t])*1000*pow(_net->_price_inflation,y);
                 }
             }
             
@@ -1346,28 +1346,28 @@ void PowerModel::min_cost_pv(){
     for (int t = 0; t < _timesteps*_nb_days; t++) {
         for (auto g:_net->gens) {
             //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
-            //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+            //            *obj += _net->bMVA*_net->weekday_cost[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
             if ((t>=0)&&(t<24)){ //summer Feb
-                *obj += 20*6*_net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;
+                *obj += 20*6*_net->bMVA*(_net->weekday_cost[t])*(g->pg_t[t])*1000*1.3;
             }
             if ((t>=24)&&(t<48)){ //spring or autumn Sep
-                *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(g->pg_t[t])*1000*1.3;
+                *obj += 20*6*_net->bMVA*(_net->weekday_cost[t-24])*(g->pg_t[t])*1000*1.3;
             }
             
-            //*obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            //*obj += _net->bMVA*(_net->weekday_cost[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
             if ((t>=48)&&(t<72)){ //weekend
-                *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(g->pg_t[t])*1000*1.3;
+                *obj += 2.6*4*12*_net->bMVA*(_net->weekend_cost[t-48])*(g->pg_t[t])*1000*1.3;
             }
-            //*obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            //*obj += _net->bMVA*(_net->weekend_cost[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
             
             
             //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+            //        *obj += _net->bMVA*g->_cost->weekday_cost*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
         
     }
     
-    *obj *= _nb_years;   // 10 years
+    *obj *= _net->_nb_years;   // 10 years
 //    for (auto n:_net->nodes){
 //        if (n->candidate()) {
 //            //                *obj += 0.0000001*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
@@ -1392,28 +1392,28 @@ void PowerModel::min_cost_pv_fixed(){
     for (int t = 0; t < _timesteps*_nb_days; t++) {
         for (auto g:_net->gens) {
             //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
-            //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+            //            *obj += _net->bMVA*_net->weekday_cost[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
             if ((t>=0)&&(t<24)){ //summer Feb
-                *obj += 20*6*_net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;
+                *obj += 20*6*_net->bMVA*(_net->weekday_cost[t])*(g->pg_t[t])*1000*1.3;
             }
             if ((t>=24)&&(t<48)){ //spring or autumn Sep
-                *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(g->pg_t[t])*1000*1.3;
+                *obj += 20*6*_net->bMVA*(_net->weekday_cost[t-24])*(g->pg_t[t])*1000*1.3;
             }
             
-            //*obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            //*obj += _net->bMVA*(_net->weekday_cost[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
             if ((t>=48)&&(t<72)){ //weekend
-                *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(g->pg_t[t])*1000*1.3;
+                *obj += 2.6*4*12*_net->bMVA*(_net->weekend_cost[t-48])*(g->pg_t[t])*1000*1.3;
             }
-            //*obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+            //*obj += _net->bMVA*(_net->weekend_cost[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
             
             
             //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+            //        *obj += _net->bMVA*g->_cost->weekday_cost*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
         
     }
     
-    *obj *= _nb_years;   // 10 years
+    *obj *= _net->_nb_years;   // 10 years
 //    for (auto n:_net->nodes){
 //        if (n->candidate()) {
 //            //                *obj += 0.0000001*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
@@ -1438,10 +1438,10 @@ void PowerModel::min_cost_batt(){
     for (int t = 0; t < _timesteps; t++) {
         for (auto g:_net->gens) {
 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
-//            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
-            *obj += _net->bMVA*_net->c1[t]*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+//            *obj += _net->bMVA*_net->weekday_cost[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+            *obj += _net->bMVA*_net->weekday_cost[t]*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
 //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-            //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+            //        *obj += _net->bMVA*g->_cost->weekday_cost*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
         }
 //        for (auto n:_net->nodes) {
 //            if (n->in()) {
@@ -1479,17 +1479,17 @@ void PowerModel::min_cost_batt(){
         for (int t = 0; t < _timesteps; t++) {
             for (auto g:_net->gens) {
                 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
-                //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+                //            *obj += _net->bMVA*_net->weekday_cost[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
                 if (_net->tag[t]==1){
  
-                    *obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                    *obj += _net->bMVA*(_net->weekday_cost[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
                 }else{
  
-                    *obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                    *obj += _net->bMVA*(_net->weekend_cost[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
                 }
                 
                 //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-                //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+                //        *obj += _net->bMVA*g->_cost->weekday_cost*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
             }
             
         }
@@ -1518,33 +1518,33 @@ void PowerModel::min_cost_pv_batt(){
         for (int t = 0; t < _timesteps*_nb_days; t++) {
             for (auto g:_net->gens) {
                 //            *obj += _net->bMVA*0.050060*1000*(g->pg_t[t])/6;          //$0.05006/kwh*(1/6hour)*pg=cost
-                //            *obj += _net->bMVA*_net->c1[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
+                //            *obj += _net->bMVA*_net->weekday_cost[t]*1000*(g->pg_t[t])/6;          //$c1/kwh*(1/6hour)*pg=cost
                     if ((t>=0)&&(t<24)){ //summer Feb
-                        *obj += 20*6*_net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;
+                        *obj += 20*6*_net->bMVA*(_net->weekday_cost[t])*(g->pg_t[t])*1000*1.3;
                     }
                     if ((t>=24)&&(t<48)){ //spring or autumn Sep
-                        *obj += 20*6*_net->bMVA*(_net->c1[t-24])*(g->pg_t[t])*1000*1.3;
+                        *obj += 20*6*_net->bMVA*(_net->weekday_cost[t-24])*(g->pg_t[t])*1000*1.3;
                     }
                 
-                    //*obj += _net->bMVA*(_net->c1[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                    //*obj += _net->bMVA*(_net->weekday_cost[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
                     if ((t>=48)&&(t<72)){ //weekend
-                        *obj += 2.6*4*12*_net->bMVA*(_net->c3[t-48])*(g->pg_t[t])*1000*1.3;
+                        *obj += 2.6*4*12*_net->bMVA*(_net->weekend_cost[t-48])*(g->pg_t[t])*1000*1.3;
                     }
-                    //*obj += _net->bMVA*(_net->c3[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
+                    //*obj += _net->bMVA*(_net->weekend_cost[t])*(g->pg_t[t])*1000*1.3;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
                 
                 
                 //            *obj += _net->bMVA*0.169520*(g->pg_t[t] + g->qg)*1000;          //$c1/kwh*(1 hour)*pg(MWh)*1000=cost //currently using
-                //        *obj += _net->bMVA*g->_cost->c1*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
+                //        *obj += _net->bMVA*g->_cost->weekday_cost*(g->pg_t[t]) + pow(_net->bMVA,2)*g->_cost->c2*(g->pg_t[t]^2) + g->_cost->c0;
             }
             
         }
     
-    *obj *= _nb_years;   // 10 years
+    *obj *= _net->_nb_years;   // 10 years
         for (auto n:_net->nodes){
             if (n->candidate()) {
 //                *obj += 0.0000001*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
 //                *obj += n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
-                *obj += _pv_cost*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
+                *obj += _net->_pv_cost*n->pv_rate; // 2 dollars per W = 2000 dollars per square meter divided by ten years
                 *obj += (350.*_net->bMVA*1000)*n->batt_cap; // 3500 dollars per 10kW battery divided by ten years
                 
             }
@@ -1960,8 +1960,8 @@ void PowerModel::add_NF_vars(bool PV) {
 
 void PowerModel::add_AC_Rect_vars_Peak() {
     add_AC_Rect_vars_Time();
-    _net->max_kVas_year.resize(_nb_years);
-    for (int y = 0; y<_nb_years; y++) {
+    _net->max_kVas_year.resize(_net->_nb_years);
+    for (int y = 0; y<_net->_nb_years; y++) {
         _net->max_kVas_year[y].init("max_kVA_"+to_string(y), 0, 1);
         _model->addVar(_net->max_kVas_year[y]);
         _net->max_kVas_year[y]._print = true;
@@ -1972,8 +1972,8 @@ void PowerModel::add_AC_Rect_vars_Peak() {
 
 void PowerModel::add_AC_Rect_PV_vars_Peak() {
     add_AC_Rect_PV_vars_Time();
-    _net->max_kVas_year.resize(_nb_years);
-    for (int y = 0; y<_nb_years; y++) {
+    _net->max_kVas_year.resize(_net->_nb_years);
+    for (int y = 0; y<_net->_nb_years; y++) {
         _net->max_kVas_year[y].init("max_kVA_"+to_string(y), 0, 1);
         _model->addVar(_net->max_kVas_year[y]);
         _net->max_kVas_year[y]._print = true;
@@ -2003,9 +2003,10 @@ void PowerModel::add_COPPER_vars(bool PV) {
     int nb_days = 0;
     int idx = 0;
     auto copy_time = *_start_date;
-    _net->max_kVas_month.resize(_nb_years*12);// 1 per month
-    _net->max_kVas_year.resize(_nb_years*12);
-    for (int y = 0; y<_nb_years; y++) {
+    _net->max_kVas_month.resize(_net->_nb_years*12);// 1 per month
+    _net->max_kVas_year.resize(_net->_nb_years*12);
+    cout << "Building Models...\n";
+    for (int y = 0; y<_net->_nb_years; y++) {
         for (int m = 0; m<12; m++) {
             _net->max_kVas_year[y*12+m].init("max_kVA_year_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year), 0, 10e10);
 //            _model->addVar(_net->max_kVas_year[y*12+m]);
@@ -2041,6 +2042,7 @@ void PowerModel::add_COPPER_vars(bool PV) {
 
         }
     }
+//    cout << endl;
 //    cout << "idx = " << idx << endl;
     
 }
@@ -2053,9 +2055,9 @@ void PowerModel::post_COPPER(bool PV){
     int nb_days = 0;
     auto copy_time = *_start_date;
     int idx = 0;
-    _net->max_kVas_month.resize(_nb_years*12);
-    _net->max_kVas_year.resize(_nb_years*12);
-    for (int y = 0; y<_nb_years; y++) {
+    _net->max_kVas_month.resize(_net->_nb_years*12);
+    _net->max_kVas_year.resize(_net->_nb_years*12);
+    for (int y = 0; y<_net->_nb_years; y++) {
         for (int m = 0; m<12; m++) {
             if (y==0 || (y==1 && m==1)) {
                 Constraint Max_kVA_year("Max_kVA_year_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year));
@@ -2073,17 +2075,17 @@ void PowerModel::post_COPPER(bool PV){
                 }
                 
             }
-            *obj += 0.16952*pow(_price_inflation,y)*(_net->max_kVas_year[12*y+m] + _net->max_kVas_month[12*y+m]);
+            *obj += 0.16952*pow(_net->_price_inflation,y)*(_net->max_kVas_year[12*y+m] + _net->max_kVas_month[12*y+m]);
             nb_days = get_nb_days_in_month(copy_time);
             for (int d = 0; d<nb_days; d++) {
                 Constraint Max_kVA_month("Max_kVA_month_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year));
                 Max_kVA_month += _net->max_kVas_month[12*y+m];
                 for (int h = 0; h<24; h++) {
                     if (copy_time.tm_wday==0||copy_time.tm_wday==6) {//Weekend
-                        *obj += _net->c3[copy_time.tm_hour]*pow(_price_inflation,y)*(_net->gen[idx]);
+                        *obj += _net->weekend_cost[copy_time.tm_hour]*pow(_net->_price_inflation,y)*(_net->gen[idx]);
                     }
                     else{
-                        *obj += _net->c1[copy_time.tm_hour]*pow(_price_inflation,y)*(_net->gen[idx]);
+                        *obj += _net->weekday_cost[copy_time.tm_hour]*pow(_net->_price_inflation,y)*(_net->gen[idx]);
                     }
                     Constraint Demand("Demand_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year)+" : "+to_string(copy_time.tm_hour)+ "h");
                     Demand += _net->gen[idx];
@@ -2091,13 +2093,13 @@ void PowerModel::post_COPPER(bool PV){
                     if (PV) {
                         Demand += _net->pv_gen[idx];
                     }
-                    Demand -= pow(_demand_growth, y)*_net->_load_kW[idx];
+                    Demand -= pow(_net->_demand_growth, y)*_net->_load_kW[idx];
                     Demand >= 0;
                     _model->addConstraint(Demand);
                     if (PV) {
                         Constraint PV_gen("PV_gen_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year)+" : "+to_string(copy_time.tm_hour)+ "h");
                         PV_gen += _net->pv_gen[idx];
-                        PV_gen -= pow(_demand_growth, y)*_net->_load_kW[idx%_net->_load_kW.size()];
+                        PV_gen -= pow(_net->_demand_growth, y)*_net->_load_kW[idx%_net->_load_kW.size()];
                         PV_gen >= 0;
                         _model->addConstraint(PV_gen);
                     }
@@ -2234,7 +2236,7 @@ void PowerModel::random_generator(){
     _distr_day = uniform_int_distribution<>(0, 31); // randomly pick a day
 //    copy_time.tm_isdst = 0;
     int idx = 0, new_idx;
-    for (int y = 0; y<_nb_years; y++) {
+    for (int y = 0; y<_net->_nb_years; y++) {
         copy_time.tm_mon = 0;
         copy_time.tm_yday = 0;
         for (int m = 0; m<12; m++) {
@@ -2273,12 +2275,12 @@ void PowerModel::post_COPPER_static(bool PV){
     int r_weather = 0;
     auto copy_time = *_start_date;
     int idx = 0;
-    _net->max_kVas_month.resize(_nb_years*12);
-    _net->max_kVas_year.resize(_nb_years*12);
-    vector<double> c1 = _net->c1;
-    vector<double> c3 = _net->c3;
-    double peak_tariff = _peak_tariff;
-    for (int y = 0; y<_nb_years; y++) {
+    _net->max_kVas_month.resize(_net->_nb_years*12);
+    _net->max_kVas_year.resize(_net->_nb_years*12);
+    vector<double> c1 = _net->weekday_cost;
+    vector<double> c3 = _net->weekend_cost;
+    double peak_tariff = _net->_peak_rate;
+    for (int y = 0; y<_net->_nb_years; y++) {
 //        if (y > 1 && y%3==0) {
 //            if (y == 3) {
 //            for (int h = 0; h<24; h++) {
@@ -2312,7 +2314,7 @@ void PowerModel::post_COPPER_static(bool PV){
                         
                         _net->pv_gen[idx].set_val(_net->_radiation[r_weather+h] * _net->PV_CAP * _net->PV_EFF*pow(0.99, y) *_random_PV_uncert[d_idx]);
 //                        _net->pv_gen[idx].set_val(_net->_radiation[r_idx] * _net->PV_CAP * _net->PV_EFF);
-                        _net->gen[idx].set_val(1.*(pow(_demand_growth, y)*_net->_load_kW[r_load+h]*_random_load_uncert[d_idx] - (_net->pv_gen[idx].get_value())));
+                        _net->gen[idx].set_val(1.*(pow(_net->_demand_growth, y)*_net->_load_kW[r_load+h]*_random_load_uncert[d_idx] - (_net->pv_gen[idx].get_value())));
 //                        _net->gen[idx].set_val((pow(_demand_growth, y+1)*_net->_load_kW[idx%(_net->_load_kW.size()-1)] - 1.01*(_net->pv_gen[idx].get_value())));
                         tot_PV += _net->pv_gen[idx].get_value();
                     }
@@ -2322,7 +2324,7 @@ void PowerModel::post_COPPER_static(bool PV){
 //                        cout << "h = " << h << " | Load = " << val;
 //                        double val = _net->_load_kW[(d_idx%731)*24+h];
 //                        double val = _net->_load_kW[idx%(_net->_load_kW.size()-1)];
-                        _net->gen[idx].set_val(1.*(pow(_demand_growth, y)*val));
+                        _net->gen[idx].set_val(1.*(pow(_net->_demand_growth, y)*val));
                     }
                     tot_kw += _net->gen[idx].get_value();
                     assert(tot_kw>=0);
@@ -2330,14 +2332,14 @@ void PowerModel::post_COPPER_static(bool PV){
 //                    if(y>0){
                         if (copy_time.tm_wday==0||copy_time.tm_wday==6) {//Weekend
 //                            cout << "tariff = " << c3[copy_time.tm_hour] << endl;
-                            objective += c3[h]*pow(_price_inflation,y)*(_net->gen[idx].get_value());
-                            monthly_bill +=c3[h]*pow(_price_inflation,y)*(_net->gen[idx].get_value());;
+                            objective += c3[h]*pow(_net->_price_inflation,y)*(_net->gen[idx].get_value());
+                            monthly_bill +=c3[h]*pow(_net->_price_inflation,y)*(_net->gen[idx].get_value());;
                             tot_off_peak += _net->gen[idx].get_value();
                         }
                         else{
 //                            cout << "h = " << h << " | tariff = " << c1[h] << endl;
-                            objective += c1[h]*pow(_price_inflation,y)*(_net->gen[idx].get_value());
-                            monthly_bill += c1[h]*pow(_price_inflation,y)*(_net->gen[idx].get_value());
+                            objective += c1[h]*pow(_net->_price_inflation,y)*(_net->gen[idx].get_value());
+                            monthly_bill += c1[h]*pow(_net->_price_inflation,y)*(_net->gen[idx].get_value());
                             if (h<7) {
                                 tot_off_peak += _net->gen[idx].get_value();
                             }
@@ -2362,8 +2364,8 @@ void PowerModel::post_COPPER_static(bool PV){
 //            printf("Monthly bill before max charges for %d/%d = %f\n",m+1,1900+copy_time.tm_year,monthly_bill);
                 _net->max_kVas_month[12*y+m].set_val(_net->max_kVas_month[12*y+m].get_value()*nb_days);
 //            printf("Monthly max charges for %d/%d = %f\n",m+1,1900+copy_time.tm_year,peak_tariff*_net->max_kVas_month[12*y+m].get_value());
-                objective += peak_tariff*pow(_price_inflation,y)*(_net->max_kVas_month[12*y+m].get_value());
-                monthly_bill += peak_tariff*pow(_price_inflation,y)*(_net->max_kVas_month[12*y+m].get_value());
+                objective += peak_tariff*pow(_net->_price_inflation,y)*(_net->max_kVas_month[12*y+m].get_value());
+                monthly_bill += peak_tariff*pow(_net->_price_inflation,y)*(_net->max_kVas_month[12*y+m].get_value());
 
 //                printf("Monthly total demand = %f\n",tot_kw);
 //                printf("Monthly peak demand = %f\n",_net->max_kVas_month[12*y+m].get_value());
@@ -2383,17 +2385,17 @@ void PowerModel::post_COPPER_static(bool PV){
             }
 //            if(y>0){
 //            printf("Monthly yearly max charges for %d/%d = %f\n",m+1,1900+copy_time.tm_year,peak_tariff*_net->max_kVas_year[12*y+m].get_value());
-                objective += peak_tariff*pow(_price_inflation,y)*(_net->max_kVas_year[12*y+m].get_value());
-            monthly_bill +=peak_tariff*pow(_price_inflation,y)*(_net->max_kVas_year[12*y+m].get_value());
-            monthly_bill += 30.13698 * nb_days; // Metering charges
-            monthly_bill += 19 * nb_days *3; // Supply charge
+                objective += peak_tariff*pow(_net->_price_inflation,y)*(_net->max_kVas_year[12*y+m].get_value());
+            monthly_bill +=peak_tariff*pow(_net->_price_inflation,y)*(_net->max_kVas_year[12*y+m].get_value());
+            monthly_bill += _net->_metering_charges * nb_days; // Metering charges
+            monthly_bill += _net->_supply_charges * nb_days *3; // Supply charge
             
 //                printf("Yearly peak demand = %f\n",_net->max_kVas_year[12*y+m].get_value());
 //            }
 //            printf("Monthly bill for %d/%d = %f\n",m+1,1900+copy_time.tm_year,monthly_bill);
             copy_time.tm_mon = (copy_time.tm_mon + 1)%12;
         }
-//        printf("Yearly kWh generation = %f\n",tot_PV);
+//        printf("Yearly kWh generation for %d = %f\n",1900+copy_time.tm_year,tot_PV);
         copy_time.tm_year+=1;
     }
 //    cout << "idx =" << idx << endl;
@@ -2404,8 +2406,8 @@ void PowerModel::post_COPPER_static(bool PV){
 
 void PowerModel::add_NF_Peak_vars(bool PV) {
     add_NF_vars(PV);
-    _net->max_kVas_year.resize(_nb_years);
-    for (int y = 0; y<_nb_years; y++) {
+    _net->max_kVas_year.resize(_net->_nb_years);
+    for (int y = 0; y<_net->_nb_years; y++) {
         _net->max_kVas_year[y].init("max_kVA_"+to_string(y), 0, 1);
         _model->addVar(_net->max_kVas_year[y]);
         _net->max_kVas_year[y]._print = true;

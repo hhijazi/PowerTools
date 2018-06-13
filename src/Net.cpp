@@ -1012,17 +1012,17 @@ void Net::precise(ofstream &myfile, float f){
 
 
 int Net::readrad(string fname, int _timesteps){
-    Debug( "Loading file " << fname << endl);
+    Debug2( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){
-        Debug( "Could not open file\n");
+        Debug2( "Could not open file\n");
         return -1;
     }
     
     
     
     if(file.peek()==EOF)
-    {Debug( "File is empty" <<endl);
+    {Debug2( "File is empty" <<endl);
         return 999;
     }
     
@@ -1059,10 +1059,10 @@ int Net::readrad(string fname, int _timesteps){
 ////        }
 ////        avg_sub_time_rad = sum_rad_ / sub_time_count;
 ////        av_rad.push_back(avg_sub_time_rad);
-//        Debug( "rad at time " << t << " : " << _radiation[_time_count] << endl);
+//        Debug2( "rad at time " << t << " : " << _radiation[_time_count] << endl);
 //        
 //    }
-//    Debug( endl);
+//    Debug2( endl);
 //    _radiation = av_rad;
     
 //    av_rad.clear();
@@ -1071,17 +1071,17 @@ int Net::readrad(string fname, int _timesteps){
 }
 
 int Net::read_agg_load(string fname){
-    Debug( "Loading file " << fname << endl);
+    Debug2( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){
-        Debug( "Could not open file\n");
+        Debug2( "Could not open file\n");
         return -1;
     }
     
     
     
     if(file.peek()==EOF)
-    {Debug( "File is empty" <<endl);
+    {Debug2( "File is empty" <<endl);
         return 999;
     }
     
@@ -1142,14 +1142,14 @@ int Net::read_agg_load(string fname){
             }
         }
         _power_factor.push_back(pf);
-        Debug("Date = " << get<2>(_date[_time_count]) << "/" << get<1>(_date[_time_count]) << "/" << get<0>(_date[_time_count]) << " " <<get<3>(_date[_time_count]) << "h" << endl);
+        Debug2("Date = " << get<2>(_date[_time_count]) << "/" << get<1>(_date[_time_count]) << "/" << get<0>(_date[_time_count]) << " " <<get<3>(_date[_time_count]) << "h" << endl);
         Debug("power factor at time " << _time_count << " : " << _power_factor[_time_count] << endl);
         getline(copy, word, ',');
         _load_kVA.push_back(atof(word.c_str()));
         Debug("kVA demand at time " << _time_count << " : " << _load_kVA[_time_count] << endl);
         getline(copy, word, ',');
         _load_kW.push_back(atof(word.c_str()));
-        Debug("kW demand at time " << _time_count << " : " << _load_kW[_time_count] << endl);
+        Debug2("Total demand (kW) = " << _load_kW[_time_count] << endl);
     }
     return 0;
 }
@@ -1261,7 +1261,7 @@ int Net::read_agg_rad_all(string path){
                 totRad += rad;
             }
             _radiation.push_back(totRad/60.);
-            Debug("Irradiance at time " << time_count << " : " << _radiation[time_count] << endl);
+            Debug2("Irradiance = " << _radiation[time_count] << endl);
             time_count++;
         }
         file.close();
@@ -1280,17 +1280,17 @@ int Net::read_agg_rad(string fname){
     
     
     
-    Debug( "Loading file " << fname << endl);
+    Debug2( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){
-        Debug( "Could not open file\n");
+        Debug2( "Could not open file\n");
         return -1;
     }
     
     
     
     if(file.peek()==EOF)
-    {Debug( "File is empty" <<endl);
+    {Debug2( "File is empty" <<endl);
         return 999;
     }
     
@@ -1312,7 +1312,7 @@ int Net::read_agg_rad(string fname){
         auto strEnd = word.find_last_not_of(" ");
         auto strRange = strEnd - strBegin + 1;
         date = word.substr(strBegin, strRange);
-        Debug("date = " << date << endl);
+        Debug2("date = " << date << endl);
         year = atof(date.substr(0,4).c_str());
         Debug("year = " << to_string(year) << endl);
         month = atof(date.substr(5,7).c_str());
@@ -1328,7 +1328,7 @@ int Net::read_agg_rad(string fname){
         _date.push_back(make_tuple<>(year,month,day,hour));
         getline(copy, word, ',');
         _radiation.push_back(atof(word.c_str()));
-        Debug("Irradiance at time " << time_count << " : " << _radiation[time_count] << endl);
+        Debug2("Irradiance = " << _radiation[time_count] << endl);
         time_count++;
     }
     
@@ -1356,17 +1356,17 @@ std::vector<char> read_vector_from_file(std::string filename)
 
 
 //int Net::readpvmax(string fname){
-//    Debug( "Loading file " << fname << endl;
+//    Debug2( "Loading file " << fname << endl;
 //    ifstream file(fname.c_str());
 //    if(!file.is_open()){
-//        Debug( "Could not open file\n";
+//        Debug2( "Could not open file\n";
 //        return -1;
 //    }
 //    
 //    
 //    
 //    if(file.peek()==EOF)
-//    {Debug( "File is empty" <<endl;
+//    {Debug2( "File is empty" <<endl;
 //        return 999;
 //    }
 //    
@@ -1408,20 +1408,76 @@ std::vector<char> read_vector_from_file(std::string filename)
 //
 //
 
+int Net::readparams(string fname){
+    Debug2( "Loading file " << fname << endl);
+    ifstream file(fname.c_str());
+    if(!file.is_open()){
+        Debug2( "Could not open file\n");
+        return -1;
+    }
+        
+    if(file.peek()==EOF)
+    {Debug2( "File is empty" <<endl);
+        return 999;
+    }
+    
+    string line;
+    string word;
+    
+    getline(file,line);                               //first line to ignore
+    while(file.peek()!=EOF)
+    {
+        getline(file,line);                           //second line store in 'line'
+        stringstream copy(line);                 //store the whole line into copy
+        getline(copy,word,',');                       //nb years
+        _nb_years = atoi(word.c_str());
+        cout << "Number of years for the simulation = " << _nb_years << " years"<< endl;
+        getline(copy,word,',');                       //PV costs
+        _pv_cost = atof(word.c_str());
+        cout << "Rooftop PV installation costs = " << _pv_cost << " $/kW" << endl;
+        getline(copy,word,',');                       //Annual Demand Growth
+        _demand_growth = atof(word.c_str());
+        cout << "Annual demand growth = " << _demand_growth << "%" << endl;
+        _demand_growth = 1 + _demand_growth*0.01;
+        
+        getline(copy,word,',');                       //Inflation
+        _price_inflation = atof(word.c_str());
+        cout << "Annual inflation = " << _price_inflation << "%" << endl;
+        _price_inflation = 1+ _price_inflation*0.01;
+        
+        getline(copy,word,',');                       //PV Capacity
+        PV_CAP = atof(word.c_str());
+        cout << "Rooftop PV capacity = " << PV_CAP << " kW" << endl;
+        getline(copy,word,',');                       //PV efficiency
+        PV_EFF = atof(word.c_str());
+        cout << "Rooftop PV efficiency = " << PV_EFF << endl;
+        getline(copy,word,',');                       //PV Capacity
+        BATT_CAP = atof(word.c_str());
+        cout << "Batery capacity = " << BATT_CAP << " kW" << endl;
+        getline(copy,word,',');                       //PV efficiency
+        BATT_EFF = atof(word.c_str());
+        cout << "Battery efficiency = " << BATT_EFF << endl;
+        getline(copy,word,',');                       //PV efficiency
+        _nb_samples = atoi(word.c_str());
+        cout << "Number of Samples = " << _nb_samples << endl;
+    }
+    return 0;
+    
+}
 
 
 int Net::readcost(string fname, int _timesteps){
-    Debug( "Loading file " << fname << endl);
+    Debug2( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){
-        Debug( "Could not open file\n");
+        Debug2( "Could not open file\n");
         return -1;
     }
     
     
     
     if(file.peek()==EOF)
-    {Debug( "File is empty" <<endl);
+    {Debug2( "File is empty" <<endl);
         return 999;
     }
     
@@ -1430,96 +1486,60 @@ int Net::readcost(string fname, int _timesteps){
     string word;
     
     getline(file,line);                               //first line to ignore
-//    int t=0;
-//    
-//
-//    for (auto &n: gens){
-//        n->_timecost->c0.push_back(0);                        //c0[0]=0
-//        n->_timecost->c1.push_back(0);                        //c1[0]=0
-//        n->_timecost->c2.push_back(0);                        //c2[0]=0
-//    }
-
     int _time_count = 0;
-    while(file.peek()!=EOF)
-    {
-//        t++;                                          //new time interval start from 1
+    for (int i = 0; i<24; i++) {
         getline(file,line);                           //second line store in 'line'
-        
-      
         stringstream copy(line);                 //store the whole line into copy
         getline(copy,word,',');                       //first column to ignore
-        getline(copy,word,',');                       //c0 original unit:$/kWh
-        c0.push_back(atof(word.c_str()));
-        
         getline(copy,word,',');                       //c1 original unit:$/kWh   weekday
-        c1.push_back(atof(word.c_str()));
-        
-        getline(copy,word,',');                       //c2 original unit:$/kWh
-        c2.push_back(atof(word.c_str()));
+        weekday_cost.push_back(atof(word.c_str()));
         
         getline(copy,word,',');                       //c3 original unit:$/kWh   weekend
-        c3.push_back(atof(word.c_str()));
-
+        weekend_cost.push_back(atof(word.c_str()));
         _time_count++;
-//        
-//        getline(copy,word,',');                       //c1
-//        gens[1]->_timecost->c1.push_back(atof(word.c_str())/1000/bMVA);
-//        
-//        getline(copy,word,',');                       //c2
-//        gens[1]->_timecost->c2.push_back(atof(word.c_str())/1000/bMVA);
-//
-}
+    }
+    for (int i = 0; i<24; i++) {
+        cout << "Weekday rate for hour " << i << " = " << weekday_cost[i] << " $/kWh" << endl;
+    }
+    for (int i = 0; i<24; i++) {
+        cout << "Weekend rate for hour " << i << " = " << weekend_cost[i] << " $/kWh" << endl;
+    }
+    
+    getline(file,line);                           //second line store in 'line'
+    stringstream copy(line);                 //store the whole line into copy
+    getline(copy,word,',');                       //first column to ignore
+    getline(copy,word,',');                       // Highest Peak Rate
+    _peak_rate = atof(word.c_str());
+    cout << "Highest Peak Rate = " << _peak_rate << " $/kVA" << endl;
     int sub_time_count = _time_count/_timesteps; //time count of each division
-    float sum_gen_0;
     float sum_gen_1;
-    float sum_gen_2;
     float sum_gen_3;
-    float avg_sub_time_gen_0;
-    float avg_sub_time_gen_1;
-    float avg_sub_time_gen_2;
-    float avg_sub_time_gen_3;
-    vector<double> av_gen_0;
-    vector<double> av_gen_1;
-    vector<double> av_gen_2;
-    vector<double> av_gen_3;
+    float avg_sub_time_gen_weekday;
+    float avg_sub_time_gen_weekend;
+    vector<double> av_gen_weekday;
+    vector<double> av_gen_weekend;
 
     for (int t = 1; t <= _timesteps; t++) {
-        sum_gen_0 = 0;
         sum_gen_1 = 0;
-        sum_gen_2 = 0;
         sum_gen_3 = 0;
         for (int stc = (t - 1) * sub_time_count; stc < (t - 1) * sub_time_count + sub_time_count; stc++) {
-            sum_gen_0 += c0[stc]; //sum for each division
-            sum_gen_1 += c1[stc];
-            sum_gen_2 += c2[stc];
-            sum_gen_3 += c3[stc];
+            sum_gen_1 += weekday_cost[stc];
+            sum_gen_3 += weekend_cost[stc];
         }
-        avg_sub_time_gen_0 = sum_gen_0 / sub_time_count;
-        avg_sub_time_gen_1 = sum_gen_1 / sub_time_count;
-        avg_sub_time_gen_2 = sum_gen_2 / sub_time_count;
-        avg_sub_time_gen_3 = sum_gen_3 / sub_time_count;
-        av_gen_0.push_back(avg_sub_time_gen_0);
-        av_gen_1.push_back(avg_sub_time_gen_1);
-        av_gen_2.push_back(avg_sub_time_gen_2);
-        av_gen_3.push_back(avg_sub_time_gen_3);
-//        Debug( "average cost c0" << " ; " << avg_sub_time_gen_0 << endl;
-        Debug( "average cost c1" << " ; " << avg_sub_time_gen_1 << endl);
-//        Debug( "average cost c2 " << " ; " << avg_sub_time_gen_2 << endl;
+        avg_sub_time_gen_weekday = sum_gen_1 / sub_time_count;
+        avg_sub_time_gen_weekend = sum_gen_3 / sub_time_count;
+        av_gen_weekday.push_back(avg_sub_time_gen_weekday);
+        av_gen_weekend.push_back(avg_sub_time_gen_weekend);
+        Debug( "average weekday cost: " << avg_sub_time_gen_weekday << " $/kWh" << endl);
+        Debug( "average weekend cost: " << avg_sub_time_gen_weekend << " $/kWh" <<endl);
     }
     Debug( endl);
-    c0 = av_gen_0;
-    c1 = av_gen_1;
-    c2 = av_gen_2;
-    c3 = av_gen_3;
-
-    av_gen_0.clear();
-    av_gen_1.clear();
-    av_gen_2.clear();
-    av_gen_3.clear();
-    
+    av_gen_weekday.clear();
+    av_gen_weekend.clear();
     return 0;
 
 }
+
 // trim from start (in place)
 static inline void ltrim(string &s) {
     s.erase(s.begin(), find_if(s.begin(), s.end(),
@@ -1545,15 +1565,15 @@ static inline void trim(string &s) {
     return wkd_tag;
 }*/
 int Net::readmap(string fname, int timesteps){
-    Debug( "Loading file " << fname << endl);
+    Debug2( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){          // if file is not opened
-        Debug( "Could not open file\n");
+        Debug2( "Could not open file\n");
         return -1;
     }
     
     if(file.peek()==EOF)          // if peek naxt char is at the end
-    {Debug( "File is empty" <<endl);
+    {Debug2( "File is empty" <<endl);
         return 999;
     }
     
@@ -1637,15 +1657,15 @@ int Net::readmap(string fname, int timesteps){
 
 
 int Net::readload(string fname, int _timesteps){
-    Debug( "Loading file " << fname << endl);
+    Debug2( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){          // if file is not opened
-        Debug( "Could not open file\n");
+        Debug2( "Could not open file\n");
         return -1;
     }
     
     if(file.peek()==EOF)          // if peek naxt char is at the end
-    {Debug( "File is empty" <<endl);
+    {Debug2( "File is empty" <<endl);
         return 999;
     }
     
@@ -1817,7 +1837,7 @@ int Net::readload(string fname, int _timesteps){
             auto iter = busmap.find(b_name);
             if (iter!= busmap.end()) {
                 id = iter->second;
-                Debug("Bus: " << id << " name = " << nodes[id]->_name << "id in load file = " << b_name << " load = " << pl_one_line[idx] << endl << endl);
+                Debug2("Bus: " << id << " name = " << nodes[id]->_name << "id in load file = " << b_name << " load = " << pl_one_line[idx] << endl << endl);
                 tot += pl_one_line[idx];
                 nodes[id]->_cond[0]->_pl.push_back(pl_one_line[idx]);
                 nodes[id]->_has_load = true;
@@ -2152,10 +2172,10 @@ int Net::readFile(string fname){
     vector<string> bus_name;
     double pl = 0, ql = 0, gs = 0, bs = 0, kvb = 0, vmin = 0, vmax = 0, vs = 0;
     int id = 0;
-    Debug( "Loading file " << fname << endl);
+    Debug2( "Loading file " << fname << endl);
     ifstream file(fname.c_str());
     if(!file.is_open()){
-        Debug( "Could not open file\n");
+        Debug2( "Could not open file\n");
         return -1;
     }
     _clone = new Net();
@@ -2167,14 +2187,14 @@ int Net::readFile(string fname){
     file >> word;
 //    getline(file, word);
     _name = word;
-//    Debug("name is "<< _name << endl;
+//    Debug2("name is "<< _name << endl;
     while (word.compare("mpc.baseMVA")){
         file >> word;
     }
     file.ignore(3);
     getline(file, word,';');
     bMVA = atoi(word.c_str());
-//    Debug( "BaseMVA = " << bMVA << endl;
+//    Debug2( "BaseMVA = " << bMVA << endl;
     
     /* Bus name */
     while (word.compare("mpc.bus_name")){
@@ -2184,7 +2204,7 @@ int Net::readFile(string fname){
     while(word.compare("};")){
         file >> word;
         bus_name.push_back(word.substr(1,(word.length()-3)));
-        //Debug("Bus name is "<<name <<"; "<<"\n";
+        //Debug2("Bus name is "<<name <<"; "<<"\n";
     }
     file.seekg (0, file.beg);
     
@@ -2199,9 +2219,9 @@ int Net::readFile(string fname){
     int i=0;
     while(word.compare("];")){
         name = word.c_str();
-        //Debug("Bus name is "<<name<<"; ";
+        //Debug2("Bus name is "<<name<<"; ";
         id = atoi(name.c_str());
-        //Debug("Bus name is "<<id<<"; ";
+        //Debug2("Bus name is "<<id<<"; ";
         file >> ws >> word >> ws >> word;
         pl = atof(word.c_str())/bMVA;
         file >> word;
@@ -2222,7 +2242,7 @@ int Net::readFile(string fname){
         vmin = 0.95;
         node = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
         node_clone = new Node(name, pl, ql, gs, bs, vmin, vmax, kvb, 1);
-        //Debug("Bus name is "<<bus_name[id-1] <<"; "<<"\n";
+        //Debug2("Bus name is "<<bus_name[id-1] <<"; "<<"\n";
         i++;
         Debug("times is "<<i<<"; ");
         node->vs = vs;

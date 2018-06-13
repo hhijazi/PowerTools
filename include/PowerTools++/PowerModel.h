@@ -35,14 +35,14 @@ public:
     double              _optimal;
     double              _summer_power_factor = 0.96;
     double              _winter_power_factor = 0.98;
-    double              _price_inflation = 1;
+//    double              _price_inflation = 1;
 //    double              _peak_tariff = 0.167*1.1;
-    double              _peak_tariff = 0.16952*1.1;
+//    double              _peak_tariff = 0.16952*1.1;
 //    double              _peak_tariff = 0.191*1.1;
-    double              _demand_growth = 1;
+//    double              _demand_growth = 1;
     int                 _nb_days = 31;
-    int                 _nb_years = 15;
-    double              _pv_cost = 1800;// $ per Watt for PV rooftop installation
+//    int                 _nb_years = 15;
+//    double              _pv_cost = 1800;// $ per Watt for PV rooftop installation
     time_t              _rawtime;
     struct tm*          _start_date;// First day in simulation
     vector<int>         _random_load;
