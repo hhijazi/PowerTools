@@ -1312,10 +1312,10 @@ int Net::read_agg_rad(string fname){
         auto strEnd = word.find_last_not_of(" ");
         auto strRange = strEnd - strBegin + 1;
         date = word.substr(strBegin, strRange);
-        Debug2("date = " << date << endl);
+        Debug("date = " << date << endl);
         year = atof(date.substr(0,4).c_str());
         Debug("year = " << to_string(year) << endl);
-        month = atof(date.substr(5,7).c_str());
+        month = atof(date.substr(5,7).c_str())-1;
         Debug("month = " << to_string(month) << endl);
         day = atof(date.substr(8,10).c_str());
         Debug("day = " << to_string(day) << endl);
@@ -1328,11 +1328,11 @@ int Net::read_agg_rad(string fname){
         _date.push_back(make_tuple<>(year,month,day,hour));
         getline(copy, word, ',');
         _radiation.push_back(atof(word.c_str()));
+        Debug2("Date = " << get<2>(_date.back()) << "/" << get<1>(_date.back()) << "/" << get<0>(_date.back()) << " " <<get<3>(_date.back()) << "h" << endl);
         Debug2("Irradiance = " << _radiation[time_count] << endl);
         time_count++;
     }
-    
-    
+        
     return 0;
 }
 
@@ -1430,36 +1430,69 @@ int Net::readparams(string fname){
         getline(file,line);                           //second line store in 'line'
         stringstream copy(line);                 //store the whole line into copy
         getline(copy,word,',');                       //nb years
-        _nb_years = atoi(word.c_str());
+        if (_nb_years==-1) {
+            _nb_years = atoi(word.c_str());
+        }
         cout << "Number of years for the simulation = " << _nb_years << " years"<< endl;
         getline(copy,word,',');                       //PV costs
-        _pv_cost = atof(word.c_str());
+        if (_pv_cost==-1) {
+            _pv_cost = atof(word.c_str());
+        }
         cout << "Rooftop PV installation costs = " << _pv_cost << " $/kW" << endl;
         getline(copy,word,',');                       //Annual Demand Growth
-        _demand_growth = atof(word.c_str());
+        if (_demand_growth==-1) {
+            _demand_growth = atof(word.c_str());
+        }
         cout << "Annual demand growth = " << _demand_growth << "%" << endl;
         _demand_growth = 1 + _demand_growth*0.01;
         
         getline(copy,word,',');                       //Inflation
-        _price_inflation = atof(word.c_str());
+        if (_price_inflation==-1) {
+            _price_inflation = atof(word.c_str());
+        }
         cout << "Annual inflation = " << _price_inflation << "%" << endl;
         _price_inflation = 1+ _price_inflation*0.01;
         
         getline(copy,word,',');                       //PV Capacity
-        PV_CAP = atof(word.c_str());
+        if (PV_CAP==-1) {
+            PV_CAP = atof(word.c_str());
+        }
         cout << "Rooftop PV capacity = " << PV_CAP << " kW" << endl;
         getline(copy,word,',');                       //PV efficiency
-        PV_EFF = atof(word.c_str());
+        if (PV_EFF==-1) {
+            PV_EFF = atof(word.c_str());
+        }
         cout << "Rooftop PV efficiency = " << PV_EFF << endl;
         getline(copy,word,',');                       //PV Capacity
-        BATT_CAP = atof(word.c_str());
+        if (BATT_CAP==-1) {
+            BATT_CAP = atof(word.c_str());
+        }
         cout << "Batery capacity = " << BATT_CAP << " kW" << endl;
         getline(copy,word,',');                       //PV efficiency
-        BATT_EFF = atof(word.c_str());
+        if (BATT_EFF==-1) {
+            BATT_EFF = atof(word.c_str());
+        }
         cout << "Battery efficiency = " << BATT_EFF << endl;
         getline(copy,word,',');                       //PV efficiency
-        _nb_samples = atoi(word.c_str());
+        if (_nb_samples==-1) {
+            _nb_samples = atoi(word.c_str());
+        }
         cout << "Number of Samples = " << _nb_samples << endl;
+        getline(copy,word,',');                       //PV efficiency
+        if (_uncert_perc==-1) {
+            _uncert_perc = atof(word.c_str());
+        }
+        cout << "Uncertainty Percentage = " << _uncert_perc << "%" << endl;
+        getline(copy,word,',');                       //Demand Data nb of Years
+        if (_demand_nb_years==-1) {
+            _demand_nb_years = atoi(word.c_str());
+        }
+        cout << "Demand Data Number of Years = " << _demand_nb_years << endl;
+        getline(copy,word,',');                       //Irradiance Data nb of Years
+        if (_irrad_nb_years==-1) {
+            _irrad_nb_years = atoi(word.c_str());
+        }
+        cout << "Irradiance Data Number of Years = " << _irrad_nb_years << endl;
     }
     return 0;
     
@@ -1511,6 +1544,35 @@ int Net::readcost(string fname, int _timesteps){
     getline(copy,word,',');                       // Highest Peak Rate
     _peak_rate = atof(word.c_str());
     cout << "Highest Peak Rate = " << _peak_rate << " $/kVA" << endl;
+    getline(file,line);                           //second line store in 'line'
+    copy.clear();
+    copy.str(line);
+    getline(copy,word,',');                       //first column to ignore
+    getline(copy,word,',');                       // Metering Charges
+    _metering_charges = atof(word.c_str());
+    cout << "Metering Charges = " << _metering_charges << " $/(nb_meters*days)" << endl;
+    getline(file,line);                           //second line store in 'line'
+    copy.clear();
+    copy.str(line);
+    getline(copy,word,',');                       //first column to ignore
+    getline(copy,word,',');                       // Supply Charges
+    _supply_charges = atof(word.c_str());
+    cout << "Supply Charges = " << _supply_charges << " $/(nb_connection_points*days)" << endl;
+    getline(file,line);                           //second line store in 'line'
+    copy.clear();
+    copy.str(line);
+    getline(copy,word,',');                       //first column to ignore
+    getline(copy,word,',');                       // Nb meters
+    _nb_meters = atoi(word.c_str());
+    cout << "Number of meters installed = " << _nb_meters << endl;
+    getline(file,line);                           //second line store in 'line'
+    copy.clear();
+    copy.str(line);
+    getline(copy,word,',');                       //first column to ignore
+    getline(copy,word,',');                       // Nb connection points
+    _nb_connect_points = atoi(word.c_str());
+    cout << "Number of connection points with the utility = " << _nb_connect_points << endl;
+    
     int sub_time_count = _time_count/_timesteps; //time count of each division
     float sum_gen_1;
     float sum_gen_3;

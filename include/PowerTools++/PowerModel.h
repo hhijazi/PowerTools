@@ -45,6 +45,8 @@ public:
 //    double              _pv_cost = 1800;// $ per Watt for PV rooftop installation
     time_t              _rawtime;
     struct tm*          _start_date;// First day in simulation
+    struct tm*          _demand_start_date;// First day in historical demand data
+    struct tm*          _irrad_start_date;// First day in historical irradiance data
     vector<int>         _random_load;
     vector<int>         _random_weather;
     vector<double>      _random_load_uncert;
@@ -64,7 +66,7 @@ public:
     ~PowerModel();
     void reset();
     void build(int time_steps=1);
-    void random_generator();
+    void random_generator(double uncert_perc);
     void run_grb_lin_test();
     void run_grb_quad_test();
     /** Accessors */
@@ -203,6 +205,7 @@ public:
     void min_cost_load();
     void compute_losses();
     int get_nb_days_in_month(const tm& timeinfo) const;
+    int get_nb_days_in_year(const tm& timeinfo) const;
     void print();
 
     void add_SineCutsPos(Arc *a);

@@ -32,9 +32,7 @@ PowerModel::PowerModel(PowerModelType type, Net* net, SolverType stype):_type(ty
     mktime ( _start_date );
     _eng = mt19937(_rd()); // seed the generator
     _model = new Model();
-    _solver = new PTSolver(_model, _stype);
-
-    printf ( "Starting date is: %s", asctime (_start_date) );
+    _solver = new PTSolver(_model, _stype);    
 };
 
 
@@ -42,6 +40,8 @@ PowerModel::PowerModel(PowerModelType type, Net* net, SolverType stype):_type(ty
 PowerModel::~PowerModel(){
     delete _model;
     delete _solver;
+    delete _demand_start_date;
+    delete _irrad_start_date;
     //    delete _net;
 };
 
@@ -2000,6 +2000,23 @@ int PowerModel::get_nb_days_in_month(const tm& timeinfo) const{
 
 
 void PowerModel::add_COPPER_vars(bool PV) {
+    
+    _irrad_start_date = new tm();
+    _irrad_start_date->tm_year = get<0>(_net->_date[0]) - 1900;
+    _irrad_start_date->tm_mon = get<1>(_net->_date[0]);
+    _irrad_start_date->tm_mday = get<2>(_net->_date[0]);
+    _irrad_start_date->tm_hour = get<3>(_net->_date[0]);
+    
+    mktime ( _irrad_start_date );
+    
+    _demand_start_date = new tm();
+    _demand_start_date->tm_year = get<0>(_net->_date[0]) - 1900;
+    _demand_start_date->tm_mon = get<1>(_net->_date[0]);
+    _demand_start_date->tm_mday = get<2>(_net->_date[0]);
+    _demand_start_date->tm_hour = get<3>(_net->_date[0]);
+    mktime ( _demand_start_date );
+    cout << "Historical demand data start time is: " << asctime(_demand_start_date);
+    cout << "Simulation start date is: " << asctime (_start_date);
     int nb_days = 0;
     int idx = 0;
     auto copy_time = *_start_date;
@@ -2124,9 +2141,9 @@ int PowerModel::get_week_day_of_1st(tm time_c){
     auto copy_time = time_c;
     int year = copy_time.tm_year +1900;
     int month = copy_time.tm_mon;
-    int wday = 1;// The first day of 1900 was a monday
-    int curr_year = 1900;
-    for (int i = 0; i<year-1900; i++) {
+    int wday = 1;// The first day of 2001 was a monday
+    int curr_year = 2001;
+    for (int i = 0; i<year-2001; i++) {
         wday = (wday + 1)%7;
         if(((curr_year%4) == 0) && (((curr_year%100)!=0) || ((curr_year%400) == 0))){   //leap year
             wday = (wday + 1)%7;
@@ -2146,15 +2163,14 @@ int PowerModel::get_week_day_of_1st(tm time_c){
 int PowerModel::random_load(tm time_c, int start_year, int end_year) {
     auto copy_time = time_c;
     int year = time_c.tm_year+1900;
-    if ( year < start_year || year > end_year) { // No uncertainty for past events
+    if ( year < start_year || year > end_year) { // No uncertainty for historical data
         year = _distr_year_load(_eng);
         copy_time.tm_year = year - 1900;// tm_year starts counting at 1900
         int week_nb = floor(time_c.tm_mday/7.);
         copy_time.tm_yday -= (copy_time.tm_mday - 1);// back to first day in month
         copy_time.tm_wday = get_week_day_of_1st(copy_time);
+//        copy_time.tm_wday = time_c.tm_wday;
         copy_time.tm_mday = 1;
-    //    copy_time.tm_isdst=0;
-        
         int i = 0;
         while (i<week_nb) {
             if (copy_time.tm_wday==time_c.tm_wday || copy_time.tm_yday==364) {
@@ -2168,12 +2184,21 @@ int PowerModel::random_load(tm time_c, int start_year, int end_year) {
                 }
             }
         }
+        while (copy_time.tm_wday!=time_c.tm_wday) {
+            copy_time.tm_yday++;
+            copy_time.tm_mday++;
+            copy_time.tm_wday++;
+            copy_time.tm_wday = copy_time.tm_wday%7;
+        }
+        //    copy_time.tm_isdst=0;
+        
+        
     }
-//    mktime(&copy_time);
-//    cout << "Load random:" << endl;
-//    cout << "input time = " << asctime(&time_c) << endl;
-//    cout << "output time = " << asctime(&copy_time) << endl;
-//    cout << "yday = " << copy_time.tm_yday << endl;
+//        mktime(&copy_time);
+//        cout << "Load random:" << endl;
+//        cout << "input time = " << asctime(&time_c) << endl;
+//        cout << "output time = " << asctime(&copy_time) << endl;
+//        cout << "yday = " << copy_time.tm_yday << endl;
     
     int new_idx = 0;
     int curr_year = start_year;
@@ -2182,7 +2207,7 @@ int PowerModel::random_load(tm time_c, int start_year, int end_year) {
             new_idx += 366*_timesteps;
         }
         else{
-         new_idx += 365*_timesteps;
+            new_idx += 365*_timesteps;
         }
         curr_year += 1;
     }
@@ -2206,7 +2231,7 @@ int PowerModel::random_weather(tm time_c, int start_year, int end_year) {
         copy_time.tm_yday = copy_time.tm_yday - (copy_time.tm_mday - 1) + day;
         copy_time.tm_mday = day+1;
     }
-//    mktime(&copy_time);
+//        mktime(&copy_time);
 //        cout << "Weather random:" << endl;
 //        cout << "input time = " << asctime(&time_c) << endl;
 //        cout << "output time = " << asctime(&copy_time) << endl;
@@ -2226,13 +2251,13 @@ int PowerModel::random_weather(tm time_c, int start_year, int end_year) {
 }
 
 
-void PowerModel::random_generator(){
+void PowerModel::random_generator(double uncert_perc){
     int nb_days;
     auto copy_time = *_start_date;
     mktime(&copy_time);
-    _distr_uncert = uniform_int_distribution<>(-5, 5); // randomly pick a percentage
-    _distr_year_PV = uniform_int_distribution<>(2005, 2015); // randomly pick a year
-    _distr_year_load = uniform_int_distribution<>(2015, 2016); // randomly pick a year
+    _distr_uncert = uniform_int_distribution<>(-uncert_perc, uncert_perc); // randomly pick a percentage
+    _distr_year_PV = uniform_int_distribution<>(_irrad_start_date->tm_year+1900, _irrad_start_date->tm_year+1900 + _net->_irrad_nb_years-1); // randomly pick a year
+    _distr_year_load = uniform_int_distribution<>(_demand_start_date->tm_year+1900, _demand_start_date->tm_year+1900 + _net->_demand_nb_years-1); // randomly pick a year
     _distr_day = uniform_int_distribution<>(0, 31); // randomly pick a day
 //    copy_time.tm_isdst = 0;
     int idx = 0, new_idx;
@@ -2243,16 +2268,16 @@ void PowerModel::random_generator(){
             copy_time.tm_mday = 1;
              nb_days = get_nb_days_in_month(copy_time);
             for (int d = 0; d<nb_days; d++) {
-                    new_idx = random_load(copy_time, 2015, 2016);
+                    new_idx = random_load(copy_time, _demand_start_date->tm_year+1900, _demand_start_date->tm_year+1900 + _net->_demand_nb_years-1);
                     assert(new_idx>=0);
                     _random_load.push_back(new_idx);
-//                    _random_load_uncert.push_back((1 + _distr_uncert(_eng)/100.));
-                    _random_load_uncert.push_back(1);
-                    new_idx = random_weather(copy_time, 2005, 2015);
+                    _random_load_uncert.push_back((1 + _distr_uncert(_eng)/100.));
+//                    _random_load_uncert.push_back(1);
+                    new_idx = random_weather(copy_time, _irrad_start_date->tm_year+1900, _irrad_start_date->tm_year+1900 + _net->_irrad_nb_years-1);
                     assert(new_idx>=0);
                     _random_weather.push_back(new_idx);
-//                    _random_PV_uncert.push_back((1 + _distr_uncert(_eng)/100.));
-                    _random_PV_uncert.push_back(1);
+                    _random_PV_uncert.push_back((1 + _distr_uncert(_eng)/100.));
+//                    _random_PV_uncert.push_back(1);
                 copy_time.tm_wday = (copy_time.tm_wday + 1)%7;
                 copy_time.tm_mday++;
                 copy_time.tm_yday++;
@@ -2311,7 +2336,9 @@ void PowerModel::post_COPPER_static(bool PV){
                 for (int h = 0; h<24; h++) {
                     if (PV) {
 //                        _net->pv_gen[idx].set_val(_net->_radiation[idx%(_net->_radiation.size()-1)] * _net->PV_CAP * _net->PV_EFF);
-                        
+//                        cout << "random pv  = " << _random_PV_uncert[d_idx] << endl;
+//                        cout << "Total radiation at hour " << h << " = " << _net->_radiation[r_weather+h] << endl;
+//                        cout << "Total PV generation at hour " << h << " = " << _net->_radiation[r_weather+h] * _net->PV_CAP * _net->PV_EFF*pow(0.99, y) *_random_PV_uncert[d_idx] << endl;
                         _net->pv_gen[idx].set_val(_net->_radiation[r_weather+h] * _net->PV_CAP * _net->PV_EFF*pow(0.99, y) *_random_PV_uncert[d_idx]);
 //                        _net->pv_gen[idx].set_val(_net->_radiation[r_idx] * _net->PV_CAP * _net->PV_EFF);
                         _net->gen[idx].set_val(1.*(pow(_net->_demand_growth, y)*_net->_load_kW[r_load+h]*_random_load_uncert[d_idx] - (_net->pv_gen[idx].get_value())));
@@ -2387,15 +2414,17 @@ void PowerModel::post_COPPER_static(bool PV){
 //            printf("Monthly yearly max charges for %d/%d = %f\n",m+1,1900+copy_time.tm_year,peak_tariff*_net->max_kVas_year[12*y+m].get_value());
                 objective += peak_tariff*pow(_net->_price_inflation,y)*(_net->max_kVas_year[12*y+m].get_value());
             monthly_bill +=peak_tariff*pow(_net->_price_inflation,y)*(_net->max_kVas_year[12*y+m].get_value());
-            monthly_bill += _net->_metering_charges * nb_days; // Metering charges
-            monthly_bill += _net->_supply_charges * nb_days *3; // Supply charge
+            monthly_bill += _net->_metering_charges * nb_days * _net->_nb_meters; // Metering charges
+            monthly_bill += _net->_supply_charges * nb_days * _net->_nb_connect_points; // Supply charge
             
 //                printf("Yearly peak demand = %f\n",_net->max_kVas_year[12*y+m].get_value());
 //            }
 //            printf("Monthly bill for %d/%d = %f\n",m+1,1900+copy_time.tm_year,monthly_bill);
             copy_time.tm_mon = (copy_time.tm_mon + 1)%12;
         }
-//        printf("Yearly kWh generation for %d = %f\n",1900+copy_time.tm_year,tot_PV);
+//        if (tot_PV>0) {
+//            printf("Yearly kWh generation for %d = %f\n",1900+copy_time.tm_year,tot_PV);
+//        }
         copy_time.tm_year+=1;
     }
 //    cout << "idx =" << idx << endl;
