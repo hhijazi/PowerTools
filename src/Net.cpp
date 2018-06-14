@@ -1526,9 +1526,14 @@ int Net::readcost(string fname, int _timesteps){
         getline(copy,word,',');                       //first column to ignore
         getline(copy,word,',');                       //c1 original unit:$/kWh   weekday
         weekday_cost.push_back(atof(word.c_str()));
-        
+        if (min_cost_week>weekday_cost[i]) {
+            min_cost_week = weekday_cost[i];
+        }
         getline(copy,word,',');                       //c3 original unit:$/kWh   weekend
         weekend_cost.push_back(atof(word.c_str()));
+        if (min_cost_weekend>weekend_cost[i]) {
+            min_cost_weekend = weekend_cost[i];
+        }
         _time_count++;
     }
     for (int i = 0; i<24; i++) {

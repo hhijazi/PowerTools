@@ -34,7 +34,7 @@ public:
     int                 _timesteps = 24; // number of time steps per day
     double              _optimal;
     double              _summer_power_factor = 0.96;
-    double              _winter_power_factor = 0.98;
+    double              _winter_power_factor = 0.97;
 //    double              _price_inflation = 1;
 //    double              _peak_tariff = 0.167*1.1;
 //    double              _peak_tariff = 0.16952*1.1;
@@ -168,7 +168,7 @@ public:
     void post_AC_PF_PV_Time();
     void post_AC_PF_PV_Peak();
     void post_COPPER(bool PV = false);
-    void post_COPPER_static(bool PV = false);
+    void post_COPPER_static(bool PV = false, bool Batt = false);
     void post_AC_PF_Time_Fixed();
     void post_AC_PF_Time_Fixed_Compact();
     void post_AC_PF_PV_Batt_Time();

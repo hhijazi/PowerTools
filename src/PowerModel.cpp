@@ -25,7 +25,7 @@ PowerModel::PowerModel(PowerModelType type, Net* net, SolverType stype):_type(ty
     _start_date->tm_year = 2018 - 1900;
     _start_date->tm_mon = 0;
     _start_date->tm_mday = 1;
-    _start_date->tm_hour = 0;
+    _start_date->tm_hour = 1;
     _start_date->tm_min = 0;
     _start_date->tm_sec = 0;
 //    _timeinfo->tm_isdst = 0;
@@ -2035,15 +2035,18 @@ void PowerModel::add_COPPER_vars(bool PV) {
             _net->max_kVas_month[y*12+m] = 0;
             nb_days = get_nb_days_in_month(copy_time);
             _net->gen.resize(_net->gen.size()+nb_days*24);
-//            if (PV) {
-                _net->pv_gen.resize(_net->pv_gen.size()+nb_days*24);
-//            }
+            _net->pv_gen.resize(_net->pv_gen.size()+nb_days*24);
+            _net->batt.resize(_net->batt.size()+nb_days*24);
+            
             for (int d = 0; d<nb_days; d++) {
                 for (int h = 0; h<24; h++) {
 //                    if (PV) {
                         _net->pv_gen[idx].init("pv_gen_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year)+" : "+to_string(copy_time.tm_hour)+ "h", 0, _net->PV_CAP);
                         (_net->pv_gen[idx])._print = true;
                         _net->pv_gen[idx] = 0;
+                    _net->batt[idx].init("batt"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon)+"_"+to_string(1900+copy_time.tm_year)+" : "+to_string(copy_time.tm_hour)+ "h", 0, _net->BATT_CAP);
+                    (_net->batt[idx])._print = true;
+                    _net->batt[idx] = 0;
 //                        _model->addVar(_net->pv_gen[idx]);
 //                    }
                     _net->gen[idx].init("gen_"+to_string(copy_time.tm_mday)+"_"+to_string(copy_time.tm_mon+1)+"_"+to_string(1900+copy_time.tm_year)+" : "+to_string(copy_time.tm_hour)+ "h", 0, 50000);// Max set to 50 MW
@@ -2289,10 +2292,10 @@ void PowerModel::random_generator(double uncert_perc){
     }
 }
 
-void PowerModel::post_COPPER_static(bool PV){
+void PowerModel::post_COPPER_static(bool PV, bool Batt){
     double tot_off_peak = 0, tot_peak = 0, tot_ev = 0;
     double objective = 0;
-    double tot_kw = 0, tot_PV = 0;
+    double tot_kw = 0, tot_PV = 0, tot_Batt_Ch = 0, tot_Batt_Dis = 0;
     double monthly_bill = 0;
     int nb_days = 0;
     int d_idx = 0;
@@ -2334,28 +2337,228 @@ void PowerModel::post_COPPER_static(bool PV){
 
 
                 for (int h = 0; h<24; h++) {
-                    if (PV) {
-//                        _net->pv_gen[idx].set_val(_net->_radiation[idx%(_net->_radiation.size()-1)] * _net->PV_CAP * _net->PV_EFF);
-//                        cout << "random pv  = " << _random_PV_uncert[d_idx] << endl;
-//                        cout << "Total radiation at hour " << h << " = " << _net->_radiation[r_weather+h] << endl;
-//                        cout << "Total PV generation at hour " << h << " = " << _net->_radiation[r_weather+h] * _net->PV_CAP * _net->PV_EFF*pow(0.99, y) *_random_PV_uncert[d_idx] << endl;
+                    if (PV && Batt) {
+                        auto pv_gen = _net->_radiation[r_weather+h] * _net->PV_CAP * _net->PV_EFF*pow(0.99, y) *_random_PV_uncert[d_idx];
+                        _net->pv_gen[idx].set_val(pv_gen);
+                        tot_PV += pv_gen;
+                        double charge_amount = 0, discharge_amount = 0;
+                        if (copy_time.tm_wday==0||copy_time.tm_wday==6) {//Weekend
+                            if (c3[h]==_net->min_cost_weekend) {
+                                //charge
+                                double prev_soc = 0;
+                                if (idx==0) {
+                                    prev_soc=_net->BATT_CAP*0.1;
+                                }
+                                else {
+                                    prev_soc =_net->batt[idx-1].get_value();
+                                }
+                                if (prev_soc!=_net->BATT_CAP) {
+                                    charge_amount = _net->BATT_CAP/5;
+                                    if (prev_soc + charge_amount > _net->BATT_CAP) {
+                                        charge_amount = _net->BATT_CAP - prev_soc;
+                                    }
+                                    _net->batt[idx].set_val(prev_soc + charge_amount);
+                                    tot_Batt_Ch += charge_amount;
+                                    //Import charge amount from PV then Grid if not sufficient pv
+                                    if (pv_gen >= charge_amount) {
+                                        pv_gen -= charge_amount;
+                                        charge_amount = 0;
+                                    }
+                                    else {
+                                        charge_amount -= pv_gen;
+                                        pv_gen = 0;
+                                        
+                                    }
+                                }
+                                else{
+                                    _net->batt[idx].set_val(prev_soc);
+                                }
+                            }
+                            else {
+                                //discharge
+                                double prev_soc = 0;
+                                if (idx==0) {
+                                    prev_soc=_net->BATT_CAP*0.1;
+                                }
+                                else {
+                                    prev_soc =_net->batt[idx-1].get_value();
+                                }
+                                if (prev_soc>_net->BATT_CAP*0.1) {
+                                    discharge_amount = _net->BATT_CAP/5;
+                                    if (prev_soc - discharge_amount < _net->BATT_CAP*0.1) {
+                                        discharge_amount = prev_soc - _net->BATT_CAP*0.1;
+                                    }
+                                    _net->batt[idx].set_val(prev_soc - discharge_amount);
+                                    tot_Batt_Dis += discharge_amount;
+                                }
+                                else{
+                                    _net->batt[idx].set_val(prev_soc);
+                                }
+                            }
+                        }
+                        else{
+                            if (c1[h]==_net->min_cost_week) {
+                                //charge
+                                double prev_soc = 0;
+                                if (idx==0) {
+                                    prev_soc=_net->BATT_CAP*0.1;
+                                }
+                                else {
+                                    prev_soc =_net->batt[idx-1].get_value();
+                                }
+                                if (prev_soc!=_net->BATT_CAP) {
+                                    charge_amount = _net->BATT_CAP/5;
+                                    if (prev_soc + charge_amount > _net->BATT_CAP) {
+                                        charge_amount = _net->BATT_CAP - prev_soc;
+                                    }
+                                    _net->batt[idx].set_val(prev_soc + charge_amount);
+                                    tot_Batt_Ch += charge_amount;
+                                    //Import charge amount from PV then Grid if not sufficient pv
+                                    if (pv_gen >= charge_amount) {
+                                        pv_gen -= charge_amount;
+                                        charge_amount = 0;
+                                    }
+                                    else {
+                                        charge_amount -= pv_gen;
+                                        pv_gen = 0;
+                                        
+                                    }
+                                }
+                                else{
+                                    _net->batt[idx].set_val(prev_soc);
+                                }
+                            }
+                            else {
+                                //discharge
+                                double prev_soc = 0;
+                                if (idx==0) {
+                                    prev_soc=_net->BATT_CAP*0.1;
+                                }
+                                else {
+                                    prev_soc =_net->batt[idx-1].get_value();
+                                }
+                                if (prev_soc>_net->BATT_CAP*0.1) {
+                                    discharge_amount = _net->BATT_CAP/5;
+                                    if (prev_soc - discharge_amount < _net->BATT_CAP*0.1) {
+                                        discharge_amount = prev_soc - _net->BATT_CAP*0.1;
+                                    }
+                                    _net->batt[idx].set_val(prev_soc - discharge_amount);
+                                    tot_Batt_Dis += discharge_amount;
+                                }
+                                else{
+                                    _net->batt[idx].set_val(prev_soc);
+                                }
+                            }
+                        }
+                        _net->gen[idx].set_val(1.*(pow(_net->_demand_growth, y)*_net->_load_kW[r_load+h]*_random_load_uncert[d_idx] - (pv_gen - 1/(_net->BATT_EFF*pow(0.9999, y))*charge_amount + _net->BATT_EFF*pow(0.9999, y)*discharge_amount)));
+                    }
+                    else if (PV && !Batt) {
                         _net->pv_gen[idx].set_val(_net->_radiation[r_weather+h] * _net->PV_CAP * _net->PV_EFF*pow(0.99, y) *_random_PV_uncert[d_idx]);
-//                        _net->pv_gen[idx].set_val(_net->_radiation[r_idx] * _net->PV_CAP * _net->PV_EFF);
                         _net->gen[idx].set_val(1.*(pow(_net->_demand_growth, y)*_net->_load_kW[r_load+h]*_random_load_uncert[d_idx] - (_net->pv_gen[idx].get_value())));
-//                        _net->gen[idx].set_val((pow(_demand_growth, y+1)*_net->_load_kW[idx%(_net->_load_kW.size()-1)] - 1.01*(_net->pv_gen[idx].get_value())));
                         tot_PV += _net->pv_gen[idx].get_value();
                     }
-                    else{
+                    else if (!PV && Batt) {
+                        double charge_amount = 0, discharge_amount = 0;
+                        if (copy_time.tm_wday==0||copy_time.tm_wday==6) {//Weekend
+                            if (c3[h]==_net->min_cost_weekend) {
+                                //charge
+                                double prev_soc = 0;
+                                if (idx==0) {
+                                    prev_soc=_net->BATT_CAP*0.1;
+                                }
+                                else {
+                                    prev_soc =_net->batt[idx-1].get_value();
+                                }
+                                if (prev_soc!=_net->BATT_CAP) {
+                                    charge_amount = _net->BATT_CAP/5;
+                                    if (prev_soc + charge_amount > _net->BATT_CAP) {
+                                        charge_amount = _net->BATT_CAP - prev_soc;
+                                    }
+                                    _net->batt[idx].set_val(prev_soc + charge_amount);
+                                    tot_Batt_Ch += charge_amount;
+                                }
+                                else{
+                                    _net->batt[idx].set_val(prev_soc);
+                                }
+                            }
+                            else {
+                                //discharge
+                                double prev_soc = 0;
+                                if (idx==0) {
+                                    prev_soc=_net->BATT_CAP*0.1;
+                                }
+                                else {
+                                    prev_soc =_net->batt[idx-1].get_value();
+                                }
+                                if (prev_soc>_net->BATT_CAP*0.1) {
+                                    discharge_amount = _net->BATT_CAP/5;
+                                    if (prev_soc - discharge_amount < _net->BATT_CAP*0.1) {
+                                        discharge_amount = prev_soc - _net->BATT_CAP*0.1;
+                                    }
+                                    _net->batt[idx].set_val(prev_soc - discharge_amount);
+                                    tot_Batt_Dis += discharge_amount;
+                                }
+                                else{
+                                    _net->batt[idx].set_val(prev_soc);
+                                }
+                            }
+                        }
+                        else{
+                            if (c1[h]==_net->min_cost_week) {
+                                //charge
+                                double prev_soc = 0;
+                                if (idx==0) {
+                                    prev_soc=_net->BATT_CAP*0.1;
+                                }
+                                else {
+                                    prev_soc =_net->batt[idx-1].get_value();
+                                }
+                                if (prev_soc!=_net->BATT_CAP) {
+                                    charge_amount = _net->BATT_CAP/5;
+                                    if (prev_soc + charge_amount > _net->BATT_CAP) {
+                                        charge_amount = _net->BATT_CAP - prev_soc;
+                                    }
+                                    _net->batt[idx].set_val(prev_soc + charge_amount);
+                                    tot_Batt_Ch += charge_amount;
+                                }
+                                else{
+                                    _net->batt[idx].set_val(prev_soc);
+                                }
+                            }
+                            else {
+                                //discharge
+                                double prev_soc = 0;
+                                if (idx==0) {
+                                    prev_soc=_net->BATT_CAP*0.1;
+                                }
+                                else {
+                                    prev_soc =_net->batt[idx-1].get_value();
+                                }
+                                if (prev_soc>_net->BATT_CAP*0.1) {
+                                    discharge_amount = _net->BATT_CAP/5;
+                                    if (prev_soc - discharge_amount < _net->BATT_CAP*0.1) {
+                                        discharge_amount = prev_soc - _net->BATT_CAP*0.1;
+                                    }
+                                    _net->batt[idx].set_val(prev_soc - discharge_amount);
+                                    tot_Batt_Dis += discharge_amount;
+                                }
+                                else{
+                                    _net->batt[idx].set_val(prev_soc);
+                                }
+                            }
+                        }
+//                        _net->gen[idx].set_val(1.*(pow(_net->_demand_growth, y)*_net->_load_kW[r_load+h]*_random_load_uncert[d_idx] + charge_amount - discharge_amount));
+                        _net->gen[idx].set_val(1.*(pow(_net->_demand_growth, y)*_net->_load_kW[r_load+h]*_random_load_uncert[d_idx] + 1/(_net->BATT_EFF*pow(0.9999, y))*charge_amount - _net->BATT_EFF*pow(0.9999, y)*discharge_amount));
+                        
+                    }
+                    else{ // No PV and no Batt
                         double val = _net->_load_kW[r_load+h]*_random_load_uncert[d_idx];
-//                        cout << " Original val = " << _net->_load_kW[r_load+h] << endl;
-//                        cout << "h = " << h << " | Load = " << val;
-//                        double val = _net->_load_kW[(d_idx%731)*24+h];
-//                        double val = _net->_load_kW[idx%(_net->_load_kW.size()-1)];
                         _net->gen[idx].set_val(1.*(pow(_net->_demand_growth, y)*val));
                     }
                     tot_kw += _net->gen[idx].get_value();
                     assert(tot_kw>=0);
-                    _net->max_kVas_month[12*y+m].set_val(max(_net->max_kVas_month[12*y+m].get_value(), (1/_winter_power_factor)*_net->gen[idx].get_value()));
+                    _net->max_kVas_month[12*y+m].set_val(max(_net->max_kVas_month[12*y+m].get_value(), _winter_power_factor*_net->gen[idx].get_value()));
+//                    _net->max_kVas_month[12*y+m].set_val(0.97*_net->gen[idx].get_value());
 //                    if(y>0){
                         if (copy_time.tm_wday==0||copy_time.tm_wday==6) {//Weekend
 //                            cout << "tariff = " << c3[copy_time.tm_hour] << endl;
@@ -2426,6 +2629,8 @@ void PowerModel::post_COPPER_static(bool PV){
 //            printf("Yearly kWh generation for %d = %f\n",1900+copy_time.tm_year,tot_PV);
 //        }
         copy_time.tm_year+=1;
+//        cout << "Total Energy Charged in the Batteries = " << tot_Batt_Ch << endl;
+//        cout << "Total Energy Discharged from the Batteries = " << tot_Batt_Dis << endl;
     }
 //    cout << "idx =" << idx << endl;
 //    printf("Optimal cost = %f\n",objective);

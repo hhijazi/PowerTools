@@ -259,25 +259,35 @@ int main (int argc, const char * argv[]) {
 //        assert(power_model._net->_radiation[i]<=1);
     }
     power_model.add_COPPER_vars();    
-    int diff[net._nb_samples], bill[net._nb_samples];
-    int min_diff = __INT_MAX__;
-    int max_diff = 0;
-    double tot = 0;
-    std::chrono::duration<int, std::milli> timer_duration(5000);
+    int diff_PV[net._nb_samples], bill[net._nb_samples], diff_Batt[net._nb_samples], diff_PV_Batt[net._nb_samples];
+    int min_diff_PV = __INT_MAX__, min_diff_Batt = __INT_MAX__, min_diff_PV_Batt = __INT_MAX__;
+    int max_diff_PV = 0, max_diff_Batt = 0, max_diff_PV_Batt = 0;
+    double tot_PV = 0, tot_Batt = 0, tot_PV_Batt = 0;
+    std::chrono::duration<int, std::milli> timer_duration(2500);
     Ticker ticker(std::function<void()>(tick), timer_duration);
     ticker.start();
     cout << "Running Simulation...\n";
     for (int i = 0; i<net._nb_samples; i++) {
         power_model.random_generator(net._uncert_perc);
-        power_model.post_COPPER_static(false);
+        power_model.post_COPPER_static();
         double no_pv = power_model._optimal;
         bill[i] = no_pv/(12*net._nb_years);
         power_model._type = COPPER_PV_PEAK;
-        power_model.post_COPPER_static(true);
-        diff[i] = (no_pv - power_model._optimal)/net._nb_years;
-        min_diff = min(min_diff, diff[i]);
-        max_diff = max(max_diff, diff[i]);
-        tot += diff[i];
+        power_model.post_COPPER_static(true,false); /*< ONLY PV */
+        diff_PV[i] = (no_pv - power_model._optimal)/net._nb_years;
+        min_diff_PV = min(min_diff_PV, diff_PV[i]);
+        max_diff_PV = max(max_diff_PV, diff_PV[i]);
+        tot_PV += diff_PV[i];
+        power_model.post_COPPER_static(false,true); /*< ONLY Batt */
+        diff_Batt[i] = (no_pv - power_model._optimal)/net._nb_years;
+        min_diff_Batt = min(min_diff_Batt, diff_Batt[i]);
+        max_diff_Batt = max(max_diff_Batt, diff_Batt[i]);
+        tot_Batt += diff_Batt[i];
+        power_model.post_COPPER_static(true,true); /*< Both PV and Batt */
+        diff_PV_Batt[i] = (no_pv - power_model._optimal)/net._nb_years;
+        min_diff_PV_Batt = min(min_diff_PV_Batt, diff_PV_Batt[i]);
+        max_diff_PV_Batt = max(max_diff_PV_Batt, diff_PV_Batt[i]);
+        tot_PV_Batt += diff_PV_Batt[i];
         power_model._random_load.clear();
         power_model._random_weather.clear();
         power_model._random_load_uncert.clear();
@@ -290,29 +300,94 @@ int main (int argc, const char * argv[]) {
         printfcomma(bill[i]);
         cout << endl;
     }
+    printf("\n ---------------- \n");
+    printf("\n PV ONLY SCENARIO \n");
+    printf("\n ---------------- \n");
     printf("\nAnnual Savings For Each Sample: \n");
     for (int i = 0; i<net._nb_samples; i++) {
         cout << "$";
-        printfcomma(diff[i]);
+        printfcomma(diff_PV[i]);
         cout << endl;
     }
     printf("\nMinimum Annual Savings = $");
-    printfcomma(min_diff);
+    printfcomma(min_diff_PV);
     cout << endl;
     printf("Maximum Annual Savings = $");
-    printfcomma(max_diff);
+    printfcomma(max_diff_PV);
     cout << endl;
-    double mean = tot/net._nb_samples;
+    double mean = tot_PV/net._nb_samples;
     printf("Average Annual Savings = $");
     printfcomma(mean);
     cout << endl;
     double aver_dev = 0;
     for (int i = 0; i<net._nb_samples; i++) {
-        aver_dev += abs(diff[i] - mean);
+        aver_dev += abs(diff_PV[i] - mean);
     }
     aver_dev /= net._nb_samples;
     printf("Average Deviation = $%d\n", (int)aver_dev);
-    printf("Total Average Savings Over %d years = $", net._nb_years);
+    printf("Total Average Savings Over %d years if we consider only PV = $", net._nb_years);
+    printfcomma(mean*net._nb_years);
+    cout << endl;
+    cout << "Given annual demand growth of " << 100*(net._demand_growth-1) << "% ";
+    cout << "and annual inflation of " << 100*(net._price_inflation-1) << "%" << endl;
+    
+    printf("\n --------------------- \n");
+    printf("\n BATTERY ONLY SCENARIO \n");
+    printf("\n --------------------- \n");
+    printf("\nAnnual Savings For Each Sample: \n");
+    for (int i = 0; i<net._nb_samples; i++) {
+        cout << "$";
+        printfcomma(diff_Batt[i]);
+        cout << endl;
+    }
+    printf("\nMinimum Annual Savings = $");
+    printfcomma(min_diff_Batt);
+    cout << endl;
+    printf("Maximum Annual Savings = $");
+    printfcomma(max_diff_Batt);
+    cout << endl;
+    mean = tot_Batt/net._nb_samples;
+    printf("Average Annual Savings = $");
+    printfcomma(mean);
+    cout << endl;
+    aver_dev = 0;
+    for (int i = 0; i<net._nb_samples; i++) {
+        aver_dev += abs(diff_Batt[i] - mean);
+    }
+    aver_dev /= net._nb_samples;
+    printf("Average Deviation = $%d\n", (int)aver_dev);
+    printf("Total Average Savings Over %d years if we consider only Batteries  = $", net._nb_years);
+    printfcomma(mean*net._nb_years);
+    cout << endl;
+    cout << "Given annual demand growth of " << 100*(net._demand_growth-1) << "% ";
+    cout << "and annual inflation of " << 100*(net._price_inflation-1) << "%" << endl;
+    
+    printf("\n --------------------- \n");
+    printf("\n PV + BATTERY SCENARIO \n");
+    printf("\n --------------------- \n");
+    printf("\nAnnual Savings For Each Sample: \n");
+    for (int i = 0; i<net._nb_samples; i++) {
+        cout << "$";
+        printfcomma(diff_PV_Batt[i]);
+        cout << endl;
+    }
+    printf("\nMinimum Annual Savings = $");
+    printfcomma(min_diff_PV_Batt);
+    cout << endl;
+    printf("Maximum Annual Savings = $");
+    printfcomma(max_diff_PV_Batt);
+    cout << endl;
+    mean = tot_PV_Batt/net._nb_samples;
+    printf("Average Annual Savings = $");
+    printfcomma(mean);
+    cout << endl;
+    aver_dev = 0;
+    for (int i = 0; i<net._nb_samples; i++) {
+        aver_dev += abs(diff_PV_Batt[i] - mean);
+    }
+    aver_dev /= net._nb_samples;
+    printf("Average Deviation = $%d\n", (int)aver_dev);
+    printf("Total Average Savings Over %d years if we consider PV + Batteries = $", net._nb_years);
     printfcomma(mean*net._nb_years);
     cout << endl;
     cout << "Given annual demand growth of " << 100*(net._demand_growth-1) << "% ";

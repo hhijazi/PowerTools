@@ -57,12 +57,15 @@ public:
     
     std::vector<double> weekday_cost;
     std::vector<double> weekend_cost;
+    double              min_cost_week = MAXFLOAT;/*< Smallest Time of Use rate for weekdays */
+    double              min_cost_weekend = MAXFLOAT;/*< Smallest Time of Use rate for weekdays */
     
 //    var<> max_kVa;//Max demand for the last 13 months
     
     vector<var<>> max_kVas_month; // Max demands for each billing period
     vector<var<>> max_kVas_year; // Max demands for the last 13 months
     vector<var<>> pv_gen; // Global PV generation in network, time dependant
+    vector<var<>> batt; // Global Energy stored in Batteries, time dependant
     vector<var<>> gen; // Global generation from utility, time dependant
     
     std::map<string, int> busmap;  //mapping between building names in load file and bus ids.
